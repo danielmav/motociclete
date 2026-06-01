@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -v)",
+      "Bash(composer --version)",
+      "Read(//c/laragon/etc/apache2/sites-enabled/**)",
+      "Bash(cat)",
+      "Bash(python /tmp/sample.py)",
+      "Bash(composer install *)",
+      "Bash(composer update *)",
+      "Bash(composer dump-autoload *)",
+      "Bash(curl -s http://motociclete.test/health)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code} size=%{size_download}\\\\n\" http://motociclete.test/)",
+      "Bash(curl -s http://motociclete.test/)",
+      "Bash(grep -oE \"Motocicleta ta.{0,30}\")",
+      "Read(//c/Program Files/Google/Chrome/Application/**)",
+      "Read(//c/Program Files \\(x86\\)/Microsoft/Edge/Application/**)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --window-size=1440,2400 --screenshot=C:/laragon/www/motociclete/storage/shots/home-desktop.png http://motociclete.test/)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --hide-scrollbars --window-size=390,2200 --screenshot=C:/laragon/www/motociclete/storage/shots/home-mobile.png http://motociclete.test/)",
+      "Bash(ls -la /c/laragon/www/motociclete/storage/shots)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --virtual-time-budget=3000 --run-all-compositor-stages-before-draw --window-size=1440,2600 --screenshot=C:/laragon/www/motociclete/storage/shots/home-desktop.png http://motociclete.test/)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --hide-scrollbars --virtual-time-budget=3000 --run-all-compositor-stages-before-draw --window-size=390,2400 --screenshot=C:/laragon/www/motociclete/storage/shots/home-mobile.png http://motociclete.test/)",
+      "Bash(ls -la \"C:/laragon/www/motociclete/storage/shots/\")",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --virtual-time-budget=3000 --run-all-compositor-stages-before-draw --window-size=1440,3600 --screenshot=C:/laragon/www/motociclete/storage/shots/home-full.png http://motociclete.test/)",
+      "Bash(python -c \"from PIL import Image; im=Image.open\\(r'C:/laragon/www/motociclete/storage/shots/home-full.png'\\); print\\('size', im.size\\); im.crop\\(\\(0, 1950, 1440, 3600\\)\\).save\\(r'C:/laragon/www/motociclete/storage/shots/home-bottom.png'\\)\")",
+      "Bash(ls -la \"C:/laragon/www/motociclete/storage/shots/home-bottom.png\")"
+    ]
+  }
+}

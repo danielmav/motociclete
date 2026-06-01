@@ -1,0 +1,82 @@
+<header class="site-header" data-header>
+    <div class="container site-header__inner">
+        <a class="brand" href="{{ base }}/" aria-label="Dual Motors — acasă">
+            <img src="{{ base }}/assets/img/logo.png" alt="Dual Motors" class="brand__logo" width="240" height="126">
+        </a>
+
+        <nav class="nav" aria-label="Navigație principală">
+            {% for item in nav %}
+                {% if item.mega is defined %}
+                    <div class="nav__item" data-menu>
+                        <button class="nav__link" aria-expanded="false">
+                            {{ item.label }}
+                            <svg class="nav__caret" width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+                        </button>
+                        <div class="mega">
+                            <div class="container mega__inner">
+                                <div class="mega__cols">
+                                    {% for col in item.mega.columns %}
+                                        <div class="mega__col">
+                                            <span class="mega__title">{{ col.title }}</span>
+                                            <ul class="mega__list">
+                                                {% for link in col.links %}
+                                                    <li><a href="{{ base }}{{ link[1] }}">{{ link[0] }}</a></li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                <a class="mega__feature" href="{{ base }}{{ item.mega.feature.href }}">
+                                    {% if item.mega.feature.img %}
+                                        <img class="mega__feature-img" src="{{ base }}{{ item.mega.feature.img }}" alt="{{ item.mega.feature.title }}" loading="lazy" width="900" height="600">
+                                    {% endif %}
+                                    <span class="mega__feature-kicker">{{ item.mega.feature.kicker }}</span>
+                                    <span class="mega__feature-title">{{ item.mega.feature.title }}</span>
+                                    <span class="link-arrow link-arrow--sm">Descoperă <span aria-hidden="true">→</span></span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <a class="nav__link" href="{{ item.href starts with '#' ? item.href : base ~ item.href }}">{{ item.label }}</a>
+                {% endif %}
+            {% endfor %}
+        </nav>
+
+        <div class="site-header__actions">
+            <button class="iconbtn" aria-label="Caută" data-search-open>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.7"/><path d="M20 20l-3.2-3.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            </button>
+            <a class="iconbtn" href="{{ base }}/garage" aria-label="My Garage">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 10l9-6 9 6v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 20v-6h8v6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+            </a>
+            <a class="iconbtn" href="{{ base }}/cont" aria-label="Cont">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.6" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            </a>
+            <a class="btn btn--primary btn--sm header-cta" href="{{ testride_url }}">Test ride</a>
+            <button class="burger" aria-label="Meniu" data-burger>
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </div>
+
+    {# Full-content search overlay #}
+    <div class="search" data-search hidden>
+        <div class="container search__inner">
+            <form class="search__form" action="{{ base }}/cauta" method="get" role="search">
+                <svg class="search__icon" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.7"/><path d="M20 20l-3.2-3.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                <input class="search__input" type="search" name="q" placeholder="Caută motociclete, echipament, piese, articole…" aria-label="Caută în tot site-ul" autocomplete="off">
+                <button class="iconbtn search__close" type="button" aria-label="Închide căutarea" data-search-close>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+            </form>
+            <div class="search__hints">
+                <span>Populare:</span>
+                <a href="{{ base }}/cauta?q=MT-09">MT-09</a>
+                <a href="{{ base }}/cauta?q=cască%20Arai">cască Arai</a>
+                <a href="{{ base }}/cauta?q=Ténéré%20700">Ténéré 700</a>
+                <a href="{{ base }}/cauta?q=ulei%20Putoline">ulei Putoline</a>
+            </div>
+        </div>
+    </div>
+</header>

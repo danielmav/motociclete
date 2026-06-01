@@ -1,0 +1,207 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Dual Motors — Motociclete Yamaha & CFMOTO, echipament moto | motociclete.com.ro{% endblock %}
+{% block description %}Dealer autorizat Yamaha și CFMOTO și importator oficial Arai, Dainese, AGV, TCX, MOMO, Putoline, Twin Air. Showroom Pipera București, test ride online și piese filtrate pe motocicleta ta.{% endblock %}
+
+{% block content %}
+
+{# ============ HERO ============ #}
+<section class="hero" data-reveal-root>
+    <div class="container hero__grid">
+        <div class="hero__copy">
+            <span class="kicker" data-reveal>{{ hero.kicker }}</span>
+            <h1 class="hero__title" data-reveal>{{ hero.title|nl2br }}</h1>
+            <p class="hero__sub" data-reveal>{{ hero.subtitle }}</p>
+            <div class="hero__cta" data-reveal>
+                <a class="btn btn--primary" href="{{ base }}{{ hero.ctaPrimary.href }}">{{ hero.ctaPrimary.label }}</a>
+                <a class="btn btn--ghost" href="{{ testride_url }}">{{ hero.ctaSecondary.label }} <span aria-hidden="true">→</span></a>
+            </div>
+            <dl class="hero__stats" data-reveal>
+                <div><dt>23</dt><dd>ani experiență</dd></div>
+                <div><dt>2</dt><dd>branduri ca dealer</dd></div>
+                <div><dt>7</dt><dd>branduri importate</dd></div>
+            </dl>
+        </div>
+
+        <div class="hero__stage" data-reveal>
+            <div class="hero__media">
+                <img src="{{ base }}{{ hero.image }}" alt="{{ hero.imageAlt }}" width="1600" height="900" fetchpriority="high">
+                <span class="media-corner" aria-hidden="true"></span>
+            </div>
+            <span class="hero__ghost" aria-hidden="true">MT-09</span>
+        </div>
+    </div>
+</section>
+
+{# ============ BRANDS ============ #}
+<section class="brands">
+    <div class="container brands__inner">
+        {% for label, names in brands %}
+            <div class="brands__group">
+                <p class="brands__lead">{{ label }}</p>
+                <ul class="brands__row">
+                    {% for n in names %}<li class="brands__item">{{ n }}</li>{% endfor %}
+                </ul>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+{# ============ FEATURED MODELS ============ #}
+<section class="section" id="modele">
+    <div class="container">
+        <header class="section__head">
+            <div>
+                <span class="kicker">Gama 2026</span>
+                <h2 class="section__title">Modele de pus în garaj</h2>
+            </div>
+            <a class="link-arrow" href="{{ base }}/motociclete">Toate motocicletele <span aria-hidden="true">→</span></a>
+        </header>
+
+        <div class="grid grid--models">
+            {% for m in models %}
+                <article class="card-moto">
+                    <div class="card-moto__media{{ m.img ? '' : ' media-ph' }}">
+                        <span class="badge">{{ m.tag }}</span>
+                        {% if m.img %}
+                            <img src="{{ base }}{{ m.img }}" alt="{{ m.name }}" loading="lazy" width="900" height="600">
+                        {% else %}
+                            <span class="media-ph__label">{{ m.name }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-moto__body">
+                        <div class="card-moto__meta">
+                            <span class="chip">{{ m.cat }}</span>
+                            <span class="chip chip--ghost">{{ m.cc }} cc</span>
+                            <span class="chip chip--permis">Permis {{ m.permis }}</span>
+                        </div>
+                        <h3 class="card-moto__name">{{ m.name }}</h3>
+                        <div class="card-moto__foot">
+                            <span class="price"><small>de la</small> {{ m.price|money }}</span>
+                            <span class="link-arrow link-arrow--sm">Detalii <span aria-hidden="true">→</span></span>
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{# ============ FIT MY BIKE + ACCESSORIES (BikerShop) ============ #}
+<section class="fitbike" id="fit">
+    <div class="container fitbike__grid">
+        <div class="fitbike__intro">
+            <span class="kicker kicker--light">Fit My Bike</span>
+            <h2 class="fitbike__title">Spune-ne ce motocicletă ai.<br>Îți arătăm doar ce se potrivește.</h2>
+            <p class="fitbike__text">Piesele și echipamentul vin live din <strong>BikerShop</strong> — sute de mii de produse, filtrate automat pe motocicleta ta, fără să mai cauți manual.</p>
+
+            <form class="fitbike__form" data-fit>
+                <label>Marcă
+                    <select name="make" data-fit-make>
+                        <option value="">Alege marca…</option>
+                        {% for m in makes %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label>Model
+                    <select name="model" data-fit-model disabled>
+                        <option value="">Alege întâi marca</option>
+                    </select>
+                </label>
+                <label>An
+                    <select name="year" data-fit-year disabled>
+                        <option value="">Toți anii</option>
+                    </select>
+                </label>
+                <button class="btn btn--primary" type="submit" data-fit-submit disabled>Arată produsele</button>
+            </form>
+        </div>
+
+        <div class="fitbike__results">
+            <div class="fitbike__results-head">
+                <span data-fit-title>{{ accessoriesLive ? 'Noutăți din BikerShop' : 'Produse compatibile' }}</span>
+                {% if accessoriesLive %}
+                    <span class="dot-live" data-fit-status>live din BikerShop</span>
+                {% else %}
+                    <span class="dot-demo">previzualizare — conectează BikerShop</span>
+                {% endif %}
+            </div>
+
+            <div class="grid grid--acc" data-fit-results>
+                {% if accessories|length %}
+                    {% for a in accessories %}
+                        <a class="card-acc" href="{{ a.url }}" target="_blank" rel="noopener">
+                            <div class="card-acc__media media-ph media-ph--sm">
+                                {% if a.image %}<img loading="lazy" src="{{ a.image }}" alt="{{ a.name }}" width="300" height="300">{% else %}<span class="media-ph__label">{{ a.manufacturer }}</span>{% endif %}
+                            </div>
+                            <span class="card-acc__brand">{{ a.manufacturer }}</span>
+                            <span class="card-acc__name">{{ a.name }}</span>
+                            <span class="card-acc__price">{{ a.price|money }}</span>
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    {% for i in 1..6 %}
+                        <div class="card-acc card-acc--ph">
+                            <div class="card-acc__media media-ph media-ph--sm"><span class="media-ph__label">Produs</span></div>
+                            <span class="card-acc__brand">BikerShop</span>
+                            <span class="card-acc__name skeleton-line"></span>
+                            <span class="card-acc__price skeleton-line skeleton-line--sm"></span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ============ VIRTUAL TOUR ============ #}
+<section class="tour" id="tur">
+    <div class="container">
+        <div class="tour__frame" data-tour data-tour-url="{{ tour.url }}">
+            <img class="tour__poster" src="{{ base }}{{ tour.image }}" alt="Showroom Dual Motors Pipera" loading="lazy" width="1600" height="900">
+            <div class="tour__overlay">
+                <span class="kicker kicker--light">Tur virtual 360°</span>
+                <h2 class="tour__title">Vizitează showroom-ul fără să pleci de acasă</h2>
+                <button class="btn btn--primary btn--lg" type="button" data-tour-play>
+                    <span class="tour__play" aria-hidden="true">▶</span> Pornește turul virtual
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+{# ============ TEST RIDE BAND ============ #}
+<section class="ride">
+    <div class="container ride__inner">
+        <div class="ride__copy">
+            <span class="kicker kicker--light">Test ride online</span>
+            <h2 class="ride__title">Alege ziua, modelul și ora.<br>Te urci pe ea.</h2>
+            <p class="ride__text">Rezervare în câțiva pași, confirmare pe e-mail și SMS. Vino în showroom și condu modelul care îți place.</p>
+        </div>
+        <a class="btn btn--primary btn--lg" href="{{ testride_url }}">Programează test ride <span aria-hidden="true">→</span></a>
+    </div>
+</section>
+
+{# ============ EDITORIAL ============ #}
+<section class="section" id="blog">
+    <div class="container">
+        <header class="section__head">
+            <div>
+                <span class="kicker">Pe Două Roți</span>
+                <h2 class="section__title">Ghiduri, review-uri, drumuri</h2>
+            </div>
+            <a class="link-arrow" href="{{ base }}/blog">Tot blogul <span aria-hidden="true">→</span></a>
+        </header>
+
+        <div class="grid grid--articles">
+            {% for art in articles %}
+                <article class="card-art">
+                    <div class="card-art__media media-ph"><span class="media-ph__label">{{ art.cat }}</span></div>
+                    <span class="card-art__cat">{{ art.cat }} · {{ art.read }}</span>
+                    <h3 class="card-art__title">{{ art.title }}</h3>
+                </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{% endblock %}

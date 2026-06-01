@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ro">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>window.BASE={{ base|json_encode|raw }};document.documentElement.classList.add('js');</script>
+
+    {% set canonical = app.url ~ (canonical_path|default('/')) %}
+    {% set og_image_url = app.url ~ (og_image|default('/assets/img/og-default.jpg')) %}
+
+    <title>{% block title %}Dual Motors — Motociclete Yamaha & CFMOTO | motociclete.com.ro{% endblock %}</title>
+    <meta name="description" content="{% block description %}Dealer autorizat Yamaha și CFMOTO, importator oficial de echipament moto. Showroom Pipera, București.{% endblock %}">
+    <link rel="canonical" href="{{ canonical }}">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <meta name="theme-color" content="#0E0E10">
+
+    {# Open Graph #}
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Dual Motors">
+    <meta property="og:locale" content="ro_RO">
+    <meta property="og:title" content="{{ block('title') }}">
+    <meta property="og:description" content="{{ block('description') }}">
+    <meta property="og:url" content="{{ canonical }}">
+    <meta property="og:image" content="{{ og_image_url }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+
+    {# Twitter #}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ block('title') }}">
+    <meta name="twitter:description" content="{{ block('description') }}">
+    <meta name="twitter:image" content="{{ og_image_url }}">
+
+    {# Structured data — local dealer + site search (classic SEO + GEO) #}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "MotorcycleDealer",
+      "name": "Dual Motors",
+      "image": "{{ og_image }}",
+      "url": "{{ app.url }}",
+      "description": "Dealer autorizat Yamaha și CFMOTO și importator oficial de echipament moto (Arai, Dainese, AGV, TCX, MOMO, Putoline, Twin Air) în România.",
+      "address": { "@type": "PostalAddress", "streetAddress": "Șos. Pipera 48", "addressLocality": "București", "addressCountry": "RO" },
+      "brand": ["Yamaha", "CFMOTO", "Arai", "Dainese", "AGV", "TCX", "MOMO", "Putoline", "Twin Air"],
+      "openingHours": ["Mo-Fr 09:00-18:00", "Sa 10:00-14:00"]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Dual Motors — motociclete.com.ro",
+      "url": "{{ app.url }}",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": { "@type": "EntryPoint", "urlTemplate": "{{ app.url }}/cauta?q={search_term_string}" },
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Archivo+Expanded:wght@700;800;900&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ base }}/assets/css/app.css?v=4">
+    <link rel="icon" href="{{ base }}/assets/img/logo.png" type="image/png">
+</head>
+<body>
+    <a class="skip-link" href="#main">Sari la conținut</a>
+    {% include 'partials/header.twig' %}
+
+    <main id="main">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% include 'partials/footer.twig' %}
+
+    <script src="{{ base }}/assets/js/app.js?v=4" defer></script>
+</body>
+</html>
