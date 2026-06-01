@@ -1,0 +1,188 @@
+{% extends 'layout.twig' %}
+
+{% block title %}{{ p.name }}{% if p.year %} {{ p.year }}{% endif %} — {{ brandLabel }} | Dual Motors{% endblock %}
+{% block description %}{{ p.excerpt ? (p.excerpt|striptags|trim|slice(0, 155)) : (p.name ~ ' ' ~ brandLabel ~ ' la Dual Motors — preț, dotări, culori și test ride.') }}{% endblock %}
+
+{% block content %}
+
+{% include 'partials/breadcrumb.twig' %}
+
+{% set mainImage = p.cover ?: (gallery|length ? gallery[0].src : (colors|length ? colors[0].src : null)) %}
+
+<article class="product">
+    <div class="container product__grid">
+
+        {# ---------------- Media ---------------- #}
+        <div class="product__media">
+            <div class="gallery">
+                <div class="gallery__stage{{ mainImage ? '' : ' media-ph' }}" data-gallery>
+                    {% if mainImage %}
+                        <img class="gallery__main" data-gallery-main src="{{ base }}{{ mainImage }}" alt="{{ p.name }}"
+                             width="1280" height="853" fetchpriority="high"
+                             onerror="this.closest('.gallery__stage').classList.add('media-ph');this.remove()">
+                    {% else %}
+                        <span class="media-ph__label">{{ p.name }}</span>
+                    {% endif %}
+                </div>
+
+                {% set thumbs = (colors|merge(gallery)) %}
+                {% if thumbs|length > 1 %}
+                    <ul class="gallery__thumbs">
+                        {% for t in thumbs %}
+                            <li>
+                                <button type="button" class="gallery__thumb{{ loop.first ? ' is-active' : '' }}"
+                                        data-gallery-thumb data-src="{{ base }}{{ t.src }}" aria-label="Imagine {{ loop.index }}">
+                                    <img src="{{ base }}{{ t.src }}" alt="" loading="lazy" width="120" height="80"
+                                         onerror="this.closest('li').remove()">
+                                </button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+
+        {# ---------------- Summary ---------------- #}
+        <div class="product__summary">
+            {% if p.subtitle %}<span class="kicker">{{ p.subtitle }}</span>{% endif %}
+            <h1 class="product__title">{{ p.name }}</h1>
+
+            <div class="product__meta">
+                <span class="chip">{{ brandLabel }}</span>
+                {% if p.cat_name %}<span class="chip">{{ p.cat_name }}</span>{% endif %}
+                {% if p.year %}<span class="chip chip--ghost">{{ p.year }}</span>{% endif %}
+                {% if p.licence %}<span class="chip chip--permis">Permis {{ p.licence }}</span>{% endif %}
+            </div>
+
+            {% if p.price %}
+                {% set now = prices(p.price) %}
+                <div class="product__price">
+                    {% if p.old_price %}<span class="badge badge--sale">−{{ p.discount_pct|round }}%</span>{% endif %}
+                    <div class="price__main">
+                        <span class="price__now">{{ now.eur }}</span>
+                        <span class="price__now-ron">{{ now.ron }}</span>
+                    </div>
+                    {% if p.old_price %}
+                        {% set old = prices(p.old_price) %}
+                        <s class="price__old">{{ old.eur }} · {{ old.ron }}</s>
+                    {% endif %}
+                    <span class="product__price-note">preț cu TVA {{ currency.vat }}% · curs {{ currency.rate }} lei/€</span>
+                </div>
+            {% endif %}
+
+            {% if p.excerpt %}<div class="product__excerpt">{{ p.excerpt|raw }}</div>{% endif %}
+
+            <div class="product__cta">
+                <a class="btn btn--primary btn--lg" href="{{ testride_url }}">Programează test ride <span aria-hidden="true">→</span></a>
+                <a class="btn btn--ghost" href="{{ base }}/contact?model={{ p.slug }}">Cere ofertă</a>
+            </div>
+
+            {% if colors|length %}
+                <p class="product__colors-note">{{ colors|length }} {{ colors|length == 1 ? 'variantă de culoare' : 'variante de culoare' }} disponibile</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {# ---------------- Description ---------------- #}
+    {% if p.description %}
+        <section class="section product-section">
+            <div class="container product-prose">
+                <h2 class="section__title">Despre {{ p.name }}</h2>
+                {{ p.description|raw }}
+            </div>
+        </section>
+    {% endif %}
+
+    {# ---------------- Specs ---------------- #}
+    {% set specs = [
+        { id: 'motor', label: 'Motor',              html: p.specs_engine },
+        { id: 'sasiu', label: 'Șasiu & suspensii',  html: p.specs_chassis },
+        { id: 'dim',   label: 'Dimensiuni',         html: p.specs_dimensions },
+        { id: 'conn',  label: 'Conectivitate',      html: p.specs_connectivity }
+    ]|filter(s => s.html|trim is not empty) %}
+
+    {% if specs|length %}
+        <section class="section product-section product-specs" id="specificatii">
+            <div class="container">
+                <h2 class="section__title">Specificații tehnice</h2>
+                <div class="tabs" data-tabs>
+                    <div class="tabs__nav" role="tablist">
+                        {% for s in specs %}
+                            <button class="tabs__btn{{ loop.first ? ' is-active' : '' }}" data-tab="{{ s.id }}" type="button" role="tab">{{ s.label }}</button>
+                        {% endfor %}
+                    </div>
+                    {% for s in specs %}
+                        <div class="tabs__panel spec-panel{{ loop.first ? ' is-active' : '' }}" data-panel="{{ s.id }}" role="tabpanel">
+                            <div class="spec-table">{{ s.html|raw }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    {% endif %}
+
+    {# ---------------- Video ---------------- #}
+    {% if p.video %}
+        <section class="section product-section">
+            <div class="container">
+                <h2 class="section__title">Video</h2>
+                <div class="product-video" data-video data-video-id="{{ p.video }}">
+                    <button class="product-video__play" type="button" data-video-play aria-label="Pornește videoclipul">
+                        <span aria-hidden="true">▶</span> Pornește videoclipul
+                    </button>
+                </div>
+            </div>
+        </section>
+    {% endif %}
+
+    {# ---------------- Detail gallery ---------------- #}
+    {% if details|length %}
+        <section class="section product-section">
+            <div class="container">
+                <h2 class="section__title">Detalii</h2>
+                <div class="grid grid--details">
+                    {% for d in details %}
+                        <figure class="detail-shot media-ph">
+                            <img src="{{ base }}{{ d.src }}" alt="{{ p.name }} — detaliu {{ loop.index }}" loading="lazy" width="600" height="400"
+                                 onerror="this.closest('figure').remove()">
+                        </figure>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    {% endif %}
+
+    {# ---------------- Related ---------------- #}
+    {% if related|length %}
+        <section class="section product-section">
+            <div class="container">
+                <header class="section__head">
+                    <div><span class="kicker">Vezi și</span><h2 class="section__title">Modele similare</h2></div>
+                </header>
+                <div class="grid grid--models">
+                    {% for m in related %}
+                        <a class="card-moto" href="{{ base }}{{ m.url }}">
+                            <div class="card-moto__media{{ m.image ? '' : ' media-ph' }}">
+                                {% if m.year %}<span class="badge">{{ m.year }}</span>{% endif %}
+                                {% if m.image %}
+                                    <img src="{{ base }}{{ m.image }}" alt="{{ m.name }}" loading="lazy" width="900" height="600"
+                                         onerror="this.closest('.card-moto__media').classList.add('media-ph');this.remove()">
+                                {% else %}<span class="media-ph__label">{{ m.name }}</span>{% endif %}
+                            </div>
+                            <div class="card-moto__body">
+                                <h3 class="card-moto__name">{{ m.name }}</h3>
+                                <div class="card-moto__foot">
+                                    {% set rp = prices(m.price) %}
+                                    <span class="price"><small>de la</small> {{ rp.eur }}<span class="price__ron">{{ rp.ron }}</span></span>
+                                    <span class="link-arrow link-arrow--sm">Detalii <span aria-hidden="true">→</span></span>
+                                </div>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    {% endif %}
+</article>
+
+{% endblock %}

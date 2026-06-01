@@ -23,6 +23,35 @@ if (!function_exists('money_ron')) {
     }
 }
 
+if (!function_exists('money_lei')) {
+    /** Format an amount as Romanian RON price, e.g. 90000 -> "90.000 lei". */
+    function money_lei(float|int $amount): string
+    {
+        return number_format((float) $amount, 0, ',', '.') . ' lei';
+    }
+}
+
+if (!function_exists('price_dual')) {
+    /**
+     * Turn a stored EUR amount into VAT-inclusive EUR + RON display strings.
+     *
+     * @param array{rate:float,vat:int,incl:bool} $cur currency config
+     * @return array{eur:string,ron:string,eur_raw:int,ron_raw:int}
+     */
+    function price_dual(float|int $eur, array $cur): array
+    {
+        $gross = $cur['incl'] ? (float) $eur : (float) $eur * (1 + $cur['vat'] / 100);
+        $grossEur = (int) round($gross);
+        $grossRon = (int) round($gross * $cur['rate']);
+        return [
+            'eur'     => money_ron($grossEur, '€'),
+            'ron'     => money_lei($grossRon),
+            'eur_raw' => $grossEur,
+            'ron_raw' => $grossRon,
+        ];
+    }
+}
+
 if (!function_exists('slugify')) {
     /** Make a URL-safe slug from a string (diacritics-aware). */
     function slugify(string $text): string

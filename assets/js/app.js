@@ -208,4 +208,53 @@
     } else {
         reveals.forEach(function (el) { el.classList.add('is-in'); });
     }
+
+    /* ---- Product gallery: thumbs swap the main image ---- */
+    var gallery = document.querySelector('[data-gallery]');
+    if (gallery) {
+        var mainImg = gallery.querySelector('[data-gallery-main]');
+        var thumbs = Array.prototype.slice.call(document.querySelectorAll('[data-gallery-thumb]'));
+        thumbs.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var src = btn.getAttribute('data-src');
+                if (!src || !mainImg) return;
+                mainImg.src = src;
+                thumbs.forEach(function (b) { b.classList.remove('is-active'); });
+                btn.classList.add('is-active');
+            });
+        });
+    }
+
+    /* ---- Spec tabs ---- */
+    var tabsRoot = document.querySelector('[data-tabs]');
+    if (tabsRoot) {
+        var btns = Array.prototype.slice.call(tabsRoot.querySelectorAll('[data-tab]'));
+        var panels = Array.prototype.slice.call(tabsRoot.querySelectorAll('[data-panel]'));
+        btns.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = btn.getAttribute('data-tab');
+                btns.forEach(function (b) { b.classList.toggle('is-active', b === btn); });
+                panels.forEach(function (p) { p.classList.toggle('is-active', p.getAttribute('data-panel') === id); });
+            });
+        });
+    }
+
+    /* ---- Lazy YouTube embed ---- */
+    var video = document.querySelector('[data-video]');
+    if (video) {
+        var play = video.querySelector('[data-video-play]');
+        if (play) {
+            play.addEventListener('click', function () {
+                var id = video.getAttribute('data-video-id');
+                if (!id) return;
+                var iframe = document.createElement('iframe');
+                iframe.src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0';
+                iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+                iframe.allowFullscreen = true;
+                iframe.title = 'Video';
+                video.innerHTML = '';
+                video.appendChild(iframe);
+            });
+        }
+    }
 })();

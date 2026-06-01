@@ -40,20 +40,31 @@ final class Bootstrap
             'cache'       => $settings['twig']['cache'],
             'auto_reload' => true,
         ]);
+        // --- Shared services available to controllers ---
+        $db = new Database($settings['db']);
+        $appSettings = new Support\Settings($db);
+        $currency = $appSettings->currency();
+
         $twig->getEnvironment()->addGlobal('app', $settings['app']);
         $twig->getEnvironment()->addGlobal('base', $settings['app']['base_path']);
         $twig->getEnvironment()->addGlobal('testride_url', $settings['app']['testride_url']);
+        $twig->getEnvironment()->addGlobal('nav', Support\Navigation::menu());
+        $twig->getEnvironment()->addGlobal('currency', $currency);
         $twig->getEnvironment()->addFilter(
             new \Twig\TwigFilter('money', fn ($v) => money_ron((float) $v))
         );
+        // EUR amount -> {eur, ron} VAT-inclusive display strings.
+        $twig->getEnvironment()->addFunction(
+            new \Twig\TwigFunction('prices', fn ($eur) => price_dual((float) $eur, $currency))
+        );
         $app->add(TwigMiddleware::create($app, $twig));
 
-        // --- Shared services available to controllers ---
-        $db = new Database($settings['db']);
         $container = [
             'settings'  => $settings,
             'db'        => $db,
+            'app_settings' => $appSettings,
             'bikershop' => new BikerShop\Client($db, $settings['db']['bikershop']),
+            'catalog'   => new Catalog\Repository($db),
         ];
 
         // --- Error handling ---

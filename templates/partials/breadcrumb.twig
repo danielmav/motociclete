@@ -1,0 +1,13 @@
+<nav class="breadcrumb" aria-label="Breadcrumb">
+    <div class="container">
+        <ol class="breadcrumb__list">
+            <li><a href="{{ base }}/">Acasă</a></li>
+            {% for c in crumbs %}
+                <li>
+                    {% if c.url %}<a href="{{ base }}{{ c.url }}">{{ c.label }}</a>
+                    {% else %}<span aria-current="page">{{ c.label }}</span>{% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+    </div>
+</nav>

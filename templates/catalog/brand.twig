@@ -1,0 +1,33 @@
+{% extends 'layout.twig' %}
+
+{% block title %}{{ brandLabel }} — gama completă de modele | Dual Motors{% endblock %}
+{% block description %}Gama {{ brandLabel }} la Dual Motors: motociclete, scutere, ATV și mai mult. Dealer autorizat, showroom Pipera București.{% endblock %}
+
+{% block content %}
+
+{% set crumbs = [{ label: brandLabel, url: null }] %}
+{% include 'partials/breadcrumb.twig' %}
+
+<section class="section catalog-head">
+    <div class="container">
+        <span class="kicker">Dealer autorizat</span>
+        <h1 class="catalog-head__title">Gama {{ brandLabel }}</h1>
+        <p class="catalog-head__lead">Alege o categorie pentru a vedea modelele disponibile.</p>
+    </div>
+</section>
+
+<section class="section section--tight">
+    <div class="container">
+        <div class="grid grid--cats">
+            {% for c in categories %}
+                <a class="card-cat" href="{{ base }}/{{ brand }}/{{ c.slug }}">
+                    <span class="card-cat__name">{{ c.name }}</span>
+                    <span class="card-cat__count">{{ c.product_count }} {{ c.product_count == 1 ? 'model' : 'modele' }}</span>
+                    <span class="link-arrow link-arrow--sm" aria-hidden="true">→</span>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{% endblock %}

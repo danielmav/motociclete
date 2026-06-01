@@ -1,7 +1,9 @@
 /vendor/
 /.env
+/media/
 /storage/cache/*
 /storage/logs/*
+/storage/shots/
 !/storage/cache/.gitkeep
 !/storage/logs/.gitkeep
 .DS_Store

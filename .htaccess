@@ -2,9 +2,6 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Local only: let the /2026 demo build be served by its own .htaccess
-    RewriteRule ^2026/ - [L]
-
     # Block direct access to application internals
     RewriteRule ^(src|templates|config|storage|vendor|documente|node_modules)/ - [F,L]
     RewriteRule ^(composer\.(json|lock)|\.env.*|CLAUDE\.md|.*\.md)$ - [F,L]

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Controllers\ApiController;
+use App\Controllers\CatalogController;
 use App\Controllers\HomeController;
 use Slim\App;
 use Slim\Views\Twig;
@@ -33,7 +34,32 @@ return function (App $app, Twig $twig, array $container): void {
         $response->getBody()->write(json_encode([
             'ok'        => true,
             'bikershop' => $container['bikershop']->isAvailable(),
+            'catalog'   => $container['catalog']->isAvailable(),
         ], JSON_PRETTY_PRINT));
         return $response->withHeader('Content-Type', 'application/json');
     });
+
+    // --- Admin (HTTP Basic protected) ---
+    $admin = function (string $method) use ($twig, $container) {
+        return function ($request, $response, $args) use ($twig, $container, $method) {
+            return (new \App\Controllers\AdminController($twig, $container))->{$method}($request, $response, $args);
+        };
+    };
+    $app->get('/admin',        $admin('settings'));
+    $app->post('/admin/setari', $admin('save'));
+
+    // --- Catalog (Yamaha + CFMOTO), backed by the local DB ---
+    // Static routes above (/, /api/*, /health) take priority in FastRoute.
+    $catalog = function (string $method) use ($twig, $container) {
+        return function ($request, $response, $args) use ($twig, $container, $method) {
+            return (new CatalogController($twig, $container))->{$method}($request, $response, $args);
+        };
+    };
+    $app->get('/{brand:yamaha|cfmoto}',                    $catalog('brand'));
+    $app->get('/{brand:yamaha|cfmoto}/{cat}',              $catalog('category'));
+    $app->get('/{brand:yamaha|cfmoto}/{cat}/{seg}',        $catalog('categoryOrProduct'));
+    $app->get('/{brand:yamaha|cfmoto}/{cat}/{sub}/{slug}', $catalog('product'));
+
+    // Legacy SEO URLs (e.g. /scutere-yamaha/sport/...-2026.html) -> 301 canonical.
+    $app->get('/{legacy:.+\.html}', $catalog('legacyRedirect'));
 };

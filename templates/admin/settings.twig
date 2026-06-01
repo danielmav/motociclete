@@ -1,0 +1,42 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Setări prețuri — Admin | Dual Motors{% endblock %}
+{% block description %}Administrare setări prețuri.{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container admin">
+        <span class="kicker">Admin</span>
+        <h1 class="catalog-head__title">Setări prețuri</h1>
+        <p class="catalog-head__lead">Prețurile produselor sunt stocate în <strong>EUR</strong>. Public se afișează în EUR și RON (cu TVA). Actualizează cursul valutar de câte ori e nevoie.</p>
+
+        {% if saved %}<p class="admin__flash">✓ Setările au fost salvate.</p>{% endif %}
+
+        <form class="admin__form" method="post" action="{{ base }}/admin/setari">
+            <label class="admin__field">
+                <span>Curs valutar EUR → RON</span>
+                <input type="text" name="eur_ron_rate" value="{{ cur.rate }}" inputmode="decimal" required>
+                <small>Ex: 5.06 (un euro = 5,06 lei)</small>
+            </label>
+
+            <label class="admin__field">
+                <span>TVA (%)</span>
+                <input type="number" name="vat_pct" value="{{ cur.vat }}" min="0" max="100" step="1" required>
+            </label>
+
+            <label class="admin__check">
+                <input type="checkbox" name="price_includes_vat" value="1" {{ cur.incl ? 'checked' }}>
+                <span>Prețurile EUR din baza de date includ deja TVA</span>
+            </label>
+            <p class="admin__hint">Bifează doar dacă prețurile salvate sunt deja cu TVA. Altfel, TVA-ul se adaugă automat la afișare.</p>
+
+            <div class="admin__example">
+                {% set ex = prices(10000) %}
+                <span>Exemplu: 10.000 € stocat →</span> <strong>{{ ex.eur }}</strong> · <strong>{{ ex.ron }}</strong>
+            </div>
+
+            <button class="btn btn--primary" type="submit">Salvează</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

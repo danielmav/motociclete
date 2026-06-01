@@ -16,6 +16,12 @@ return [
         'testride_url' => $_ENV['TESTRIDE_URL'] ?? 'http://drivetest.test',
     ],
 
+    // Minimal admin (HTTP Basic). Leave pass empty to disable protection (dev).
+    'admin' => [
+        'user' => $_ENV['ADMIN_USER'] ?? 'admin',
+        'pass' => $_ENV['ADMIN_PASS'] ?? '',
+    ],
+
     'twig' => [
         'templates' => dirname(__DIR__) . '/templates',
         // File cache only when explicitly enabled (avoids write-permission issues on shared hosting).
@@ -41,6 +47,16 @@ return [
             'prefix'   => $_ENV['BIKERSHOP_PREFIX'] ?? 'ps_',
             'lang_id'  => (int) ($_ENV['BIKERSHOP_LANG_ID'] ?? 1),
             'base_url' => $_ENV['BIKERSHOP_BASE_URL'] ?? 'https://bikershop.ro',
+        ],
+        // Legacy source DBs (existing site content). Used ONLY by the one-off
+        // catalog migration script (database/migrate_catalog.php), not at runtime.
+        'dm' => [
+            'host'      => $_ENV['DM_HOST'] ?? '',
+            'port'      => $_ENV['DM_PORT'] ?? '3306',
+            'user'      => $_ENV['DM_USER'] ?? '',
+            'pass'      => $_ENV['DM_PASS'] ?? '',
+            'db_moto'   => $_ENV['DM_DB_MOTO'] ?? 'dualmotors_motociclete',
+            'db_cfmoto' => $_ENV['DM_DB_CFMOTO'] ?? 'dualmotors_cfmoto',
         ],
     ],
 ];

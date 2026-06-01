@@ -1,0 +1,74 @@
+{% extends 'layout.twig' %}
+
+{% block title %}{{ category.name }} {{ brandLabel }} — modele și prețuri | Dual Motors{% endblock %}
+{% block description %}{{ category.description ? (category.description|striptags|trim|slice(0, 155)) : ('Descoperă modelele ' ~ category.name ~ ' ' ~ brandLabel ~ ' la Dual Motors — prețuri, dotări și test ride.') }}{% endblock %}
+
+{% block content %}
+
+{% include 'partials/breadcrumb.twig' %}
+
+<section class="section catalog-head">
+    <div class="container">
+        <span class="kicker">{{ brandLabel }}{% if not isTop %} · {{ crumbs[1].label }}{% endif %}</span>
+        <h1 class="catalog-head__title">{{ category.name }}</h1>
+        {% if category.description %}
+            <div class="catalog-head__lead">{{ category.description|raw }}</div>
+        {% endif %}
+
+        {% if isTop and subcategories|length %}
+            <ul class="subcat-chips">
+                <li><span class="chip chip--active">Toate</span></li>
+                {% for s in subcategories %}
+                    <li><a class="chip" href="{{ base }}/{{ brand }}/{{ category.slug }}/{{ s.slug }}">{{ s.name }} <small>{{ s.product_count }}</small></a></li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+</section>
+
+<section class="section section--tight">
+    <div class="container">
+        {% if products|length %}
+            <p class="catalog-count">{{ products|length }} {{ products|length == 1 ? 'model' : 'modele' }}</p>
+            <div class="grid grid--models">
+                {% for m in products %}
+                    <a class="card-moto" href="{{ base }}{{ m.url }}">
+                        <div class="card-moto__media{{ m.image ? '' : ' media-ph' }}">
+                            {% if m.year %}<span class="badge">{{ m.year }}</span>{% endif %}
+                            {% if m.old_price %}<span class="badge badge--sale badge--tr">−{{ m.discount }}%</span>{% endif %}
+                            {% if m.image %}
+                                <img src="{{ base }}{{ m.image }}" alt="{{ m.name }}" loading="lazy" width="900" height="600"
+                                     onerror="this.closest('.card-moto__media').classList.add('media-ph');this.remove()">
+                            {% else %}
+                                <span class="media-ph__label">{{ m.name }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="card-moto__body">
+                            <div class="card-moto__meta">
+                                <span class="chip">{{ m.cat }}</span>
+                                {% if m.licence %}<span class="chip chip--permis">Permis {{ m.licence }}</span>{% endif %}
+                            </div>
+                            <h2 class="card-moto__name">{{ m.name }}</h2>
+                            <div class="card-moto__foot">
+                                {% set pr = prices(m.price) %}
+                                <span class="price">
+                                    <small>de la</small>
+                                    {{ pr.eur }}
+                                    <span class="price__ron">{{ pr.ron }}{% if m.old_price %} · <s>{{ prices(m.old_price).eur }}</s>{% endif %}</span>
+                                </span>
+                                <span class="link-arrow link-arrow--sm">Detalii <span aria-hidden="true">→</span></span>
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>Momentan nu sunt modele în această categorie.</p>
+                <a class="btn btn--ghost" href="{{ base }}/{{ brand }}">Vezi toate modelele {{ brandLabel }} <span aria-hidden="true">→</span></a>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}
