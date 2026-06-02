@@ -4,13 +4,13 @@
 # vendor/ e gitignored, deci composer install e obligatoriu la primul deploy
 # și la orice schimbare de dependențe (e idempotent: no-op dacă nimic nu s-a schimbat).
 #
+# Cont cPanel: dualmotors; docroot domeniu: public_html/motociclete.com.ro; staging în /2026.
 # DE CONFIRMAT pe server:
-#   - CPANELUSER          -> userul contului cPanel (vezi calea din File Manager: /home/<user>/...)
 #   - versiunea PHP (ea-php81) -> trebuie să fie 8.1+ (MultiPHP Manager)
 #   - calea composer      -> /opt/cpanel/composer/bin/composer e standardul cPanel
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/CPANELUSER/public_html/2026
+    - export DEPLOYPATH=/home/dualmotors/public_html/motociclete.com.ro/2026
     - /bin/mkdir -p $DEPLOYPATH/storage/cache/twig $DEPLOYPATH/storage/logs
     - export PATH="/opt/cpanel/ea-php81/root/usr/bin:$PATH"
     - cd $DEPLOYPATH && /opt/cpanel/composer/bin/composer install --no-dev --optimize-autoloader --no-interaction
