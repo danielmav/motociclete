@@ -18,6 +18,8 @@ Construit pe milestone-uri (vezi planul aprobat). **Milestone 1 livrat = home pa
   pinează `platform.php = 8.1.10`).
 - **Scripturi CLI cu DB/curl** (migrare, prune, orice PDO): rulează cu binarul Laragon
   `C:/laragon/bin/php/php-8.1.10-Win32-vs16-x64/php.exe` — `php` din PATH (8.2) NU are `pdo_mysql`/`curl`.
+- **mysqldump / mysql client** (dump/import DB): `C:/laragon/bin/mysql/mysql-8.0.30-winx64/bin/`.
+  Conectare la DB remote: pasează parola via env `MYSQL_PWD` (parolele au caractere speciale → evită `-p`). Dev IP whitelisted în Remote MySQL pe serverele remote.
 - **Slim 4** (routing), **Twig** (templating), **PDO** (MySQL/MariaDB), **phpdotenv**.
 - Frontend: **CSS + JS vanilla**, fără build step. Fonturi Google (Archivo Expanded / Archivo / Hanken Grotesk).
 - **Laragon**, `http://motociclete.test`. Document root = rădăcina proiectului; `.htaccess` rutează tot prin `index.php` și protejează `src/`, `templates/`, `vendor/`, `.env`.
@@ -89,6 +91,14 @@ Rulează direct cu Laragon — fără build step. `composer install`, apoi vizit
 `http://motociclete.test`. `/health` raportează disponibilitatea BikerShop.
 Screenshot: `chrome --headless=new --screenshot=<CALE-ABSOLUTĂ>.png --window-size=1440,2600 <url>`
 (calea relativă dă „cannot find path"; cale absolută obligatorie).
+
+## Deploy (staging `/2026/`)
+
+Vezi `DEPLOY.md`. **Repo GitHub `danielmav/motociclete` e PUBLIC** → nu comite niciodată secrete;
+`.env` (în orice folder) + `documente/` sunt gitignored. Clonat prin cPanel Git **direct în docroot**
+`public_html/motociclete.com.ro/2026` → „Update from Remote" = `git pull` pe loc (suficient pentru cod).
+`vendor/` (gitignored) se pune via `vendor.zip` + FTP + Extract. `.env` creat manual pe server (`BASE_PATH=/2026`).
+Permisiuni post-clone: `.htaccess`=644, foldere=755.
 
 ## Module conexe
 
