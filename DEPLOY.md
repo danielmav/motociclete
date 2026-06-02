@@ -81,12 +81,28 @@ Git Version Control → repo → tab **Pull or Deploy** → **Update from Remote
    git commit -m "descriere"
    git push origin main
    ```
-2. **cPanel:** Git Version Control → repo → **Pull or Deploy** →
-   **Update from Remote**, apoi **Deploy HEAD Commit**.
+2. **cPanel:** Git Version Control → repo → **Pull or Deploy** → **Update from Remote**.
 
-`composer install` rulează doar la nevoie (idempotent). `.env` / `media/` / `vendor/`
-rămân neatinse. **Nu edita fișiere direct pe server** — altfel `git pull` dă conflict
-(se rezolvă cu reset la `origin/main` din cPanel).
+Atât. Fiindcă repo-ul e clonat **direct în docroot**, „Update from Remote" (= `git pull`)
+actualizează fișierele pe loc. `.env` / `media/` / `vendor/` rămân neatinse (gitignored).
+**Nu edita fișiere direct pe server** — altfel `git pull` dă conflict.
+
+**`vendor/` (dependențe)** se reface DOAR când se schimbă `composer.lock` (rar):
+- ori „Deploy HEAD Commit" (rulează `composer install` din `.cpanel.yml`) — dacă composer
+  e disponibil pe server;
+- ori, ca metodă sigură: local `Compress-Archive -Path vendor -DestinationPath vendor.zip`,
+  urci `vendor.zip` prin FTP în `/2026/`, îl extragi din File Manager, apoi îl ștergi.
+
+---
+
+## Probleme întâlnite (troubleshooting)
+
+- **„Server unable to read htaccess file, denying access" (403):** permisiuni greșite după
+  clone. Setează în File Manager: `.htaccess` = **0644**, folderele (`2026`, părinte) = **0755**.
+- **`Failed to open ... vendor/autoload.php`:** lipsește `vendor/`. „Update from Remote" NU
+  rulează composer — vezi metoda `vendor.zip` de mai sus (sau „Deploy HEAD Commit").
+- **PHP greșit:** confirmă PHP 8.1+ în MultiPHP Manager (logul de eroare arată calea, ex.
+  `/opt/cpanel/ea-php81/...`).
 
 ---
 
