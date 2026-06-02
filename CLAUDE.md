@@ -100,6 +100,9 @@ Vezi `DEPLOY.md`. **Repo GitHub `danielmav/motociclete` e PUBLIC** → nu comite
 `vendor/` (gitignored) se pune via `vendor.zip` + FTP + Extract. `.env` creat manual pe server (`BASE_PATH=/2026`).
 Permisiuni post-clone: `.htaccess`=644, foldere=755.
 
+**Hook pre-commit anti-secrete** (`.githooks/pre-commit`, gitleaks): blochează commit-urile cu secrete.
+Activare după un clone nou: `git config core.hooksPath .githooks` + `scoop install gitleaks`.
+
 ## Module conexe
 
 - **drivetest** (`c:\laragon\www\drivetest`, `drivetest.test`) — sistem test-ride

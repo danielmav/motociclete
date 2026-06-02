@@ -1,0 +1,23 @@
+#!/bin/sh
+# Pre-commit: scaneaza fisierele STAGED dupa secrete (gitleaks).
+# Repo-ul GitHub e PUBLIC -> blocheaza commitul daca gaseste un posibil secret.
+# Bypass intentionat (DOAR daca esti sigur ca e fals pozitiv): git commit --no-verify
+#
+# Activare dupa un clone nou:  git config core.hooksPath .githooks
+# Necesita gitleaks:           scoop install gitleaks
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "⚠  gitleaks nu e instalat - scanarea de secrete e SARITA."
+  echo "   Instaleaza-l:  scoop install gitleaks"
+  exit 0
+fi
+
+gitleaks git --staged --redact --no-banner
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Posibil SECRET detectat in fisierele staged. Commit OPRIT."
+  echo "   Scoate secretul (muta-l in .env, care e gitignored), apoi reincearca."
+  echo "   Daca e sigur fals pozitiv: git commit --no-verify"
+  exit 1
+fi
+exit 0
