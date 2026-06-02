@@ -1,6 +1,7 @@
 /vendor/
 /.env
 /media/
+/documente/
 /storage/cache/*
 /storage/logs/*
 /storage/shots/
