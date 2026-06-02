@@ -1,0 +1,16 @@
+---
+# cPanel Git™ Version Control — deployment tasks.
+# Rulate la „Deploy HEAD Commit" (repo clonat DIRECT în docroot-ul subfolderului).
+# vendor/ e gitignored, deci composer install e obligatoriu la primul deploy
+# și la orice schimbare de dependențe (e idempotent: no-op dacă nimic nu s-a schimbat).
+#
+# DE CONFIRMAT pe server:
+#   - CPANELUSER          -> userul contului cPanel (vezi calea din File Manager: /home/<user>/...)
+#   - versiunea PHP (ea-php81) -> trebuie să fie 8.1+ (MultiPHP Manager)
+#   - calea composer      -> /opt/cpanel/composer/bin/composer e standardul cPanel
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/CPANELUSER/public_html/2026
+    - /bin/mkdir -p $DEPLOYPATH/storage/cache/twig $DEPLOYPATH/storage/logs
+    - export PATH="/opt/cpanel/ea-php81/root/usr/bin:$PATH"
+    - cd $DEPLOYPATH && /opt/cpanel/composer/bin/composer install --no-dev --optimize-autoloader --no-interaction

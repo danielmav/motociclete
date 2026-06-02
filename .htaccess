@@ -3,8 +3,9 @@
     RewriteEngine On
 
     # Block direct access to application internals
-    RewriteRule ^(src|templates|config|storage|vendor|documente|node_modules)/ - [F,L]
-    RewriteRule ^(composer\.(json|lock)|\.env.*|CLAUDE\.md|.*\.md)$ - [F,L]
+    # (.git + database adăugate: la deploy prin cPanel Git, .git ajunge în docroot)
+    RewriteRule ^(src|templates|config|storage|vendor|documente|node_modules|database|\.git)/ - [F,L]
+    RewriteRule ^(composer\.(json|lock)|\.env.*|\.cpanel\.yml|CLAUDE\.md|.*\.md)$ - [F,L]
 
     # Serve real existing files / directories directly (assets, etc.)
     RewriteCond %{REQUEST_FILENAME} -f [OR]
