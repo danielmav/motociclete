@@ -65,6 +65,9 @@ CREATE TABLE `products` (
     `position`           INT NOT NULL DEFAULT 0,
     `legacy_id`          INT UNSIGNED NULL,              -- original id_product
     `legacy_url`         VARCHAR(255) NULL,              -- url_string_full (301 map)
+    `lp_make_id`         INT UNSIGNED NULL,              -- BikerShop id_leopartsfilter_make
+    `lp_model_id`        INT UNSIGNED NULL,              -- BikerShop id_leopartsfilter_model
+    `lp_year_id`         INT UNSIGNED NULL,              -- BikerShop id_leopartsfilter_year
     `created_at`         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
@@ -72,6 +75,7 @@ CREATE TABLE `products` (
     KEY `idx_prod_category` (`category_id`),
     KEY `idx_prod_brand_active` (`brand`, `is_active`),
     KEY `idx_prod_legacy_url` (`legacy_url`),
+    KEY `idx_prod_lp_model` (`lp_model_id`),
     CONSTRAINT `fk_prod_category` FOREIGN KEY (`category_id`)
         REFERENCES `categories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

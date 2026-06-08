@@ -45,8 +45,10 @@ return function (App $app, Twig $twig, array $container): void {
             return (new \App\Controllers\AdminController($twig, $container))->{$method}($request, $response, $args);
         };
     };
-    $app->get('/admin',        $admin('settings'));
-    $app->post('/admin/setari', $admin('save'));
+    $app->get('/admin',              $admin('settings'));
+    $app->post('/admin/setari',      $admin('save'));
+    $app->get('/admin/fitment',      $admin('fitment'));
+    $app->post('/admin/fitment/save', $admin('saveFitment'));
 
     // --- Catalog (Yamaha + CFMOTO), backed by the local DB ---
     // Static routes above (/, /api/*, /health) take priority in FastRoute.

@@ -174,6 +174,123 @@ final class Client
     }
 
     /**
+     * Look up BikerShop LeoPartsFilter IDs for a local product.
+     * Used by database/migrate_fitment.php to populate lp_* columns.
+     *
+     * Returns ['make_id', 'model_id', 'year_id', 'ambiguous', 'candidates']
+     * or null if BikerShop is unavailable or nothing matches.
+     *
+     * @return array{make_id:int,model_id:int,year_id:int|null,ambiguous:bool,candidates:list<string>}|null
+     */
+    public function lookupFitment(string $brand, string $modelName, int $year): ?array
+    {
+        if (!$this->isAvailable()) {
+            return null;
+        }
+        $p = $this->prefix;
+        // Normalize brand to expected display name
+        $brandDisplay = self::BRAND_DISPLAY[$brand] ?? ucfirst($brand);
+        try {
+            // 1. Find make_id by brand display name
+            $stmt = $this->pdo->prepare(
+                "SELECT m.id_leopartsfilter_make AS id
+                 FROM {$p}leopartsfilter_make m
+                 JOIN {$p}leopartsfilter_make_lang ml
+                   ON ml.id_leopartsfilter_make = m.id_leopartsfilter_make AND ml.id_lang = :lang
+                 WHERE m.active = 1 AND ml.name LIKE :brand
+                 LIMIT 1"
+            );
+            $stmt->bindValue(':lang', $this->langId, PDO::PARAM_INT);
+            $stmt->bindValue(':brand', '%' . $brandDisplay . '%');
+            $stmt->execute();
+            $makeRow = $stmt->fetch();
+            if (!$makeRow) {
+                return null;
+            }
+            $makeId = (int) $makeRow['id'];
+
+            // 2. Find model_id — try full name, then strip trailing year/variant suffix
+            $modelId   = null;
+            $ambiguous = false;
+            $candidates = [];
+            foreach ($this->modelCandidates($modelName) as $pattern) {
+                $stmt = $this->pdo->prepare(
+                    "SELECT mo.id_leopartsfilter_model AS id, mol.name
+                     FROM {$p}leopartsfilter_model mo
+                     JOIN {$p}leopartsfilter_model_lang mol
+                       ON mol.id_leopartsfilter_model = mo.id_leopartsfilter_model AND mol.id_lang = :lang
+                     WHERE mo.active = 1 AND mo.id_leopartsfilter_make = :make
+                       AND mol.name LIKE :model
+                     ORDER BY mol.name
+                     LIMIT 5"
+                );
+                $stmt->bindValue(':lang', $this->langId, PDO::PARAM_INT);
+                $stmt->bindValue(':make', $makeId, PDO::PARAM_INT);
+                $stmt->bindValue(':model', '%' . $pattern . '%');
+                $stmt->execute();
+                $rows = $stmt->fetchAll();
+                if ($rows) {
+                    $modelId    = (int) $rows[0]['id'];
+                    $ambiguous  = count($rows) > 1;
+                    $candidates = array_column($rows, 'name');
+                    break;
+                }
+            }
+            if ($modelId === null) {
+                return null;
+            }
+
+            // 3. Find year_id by year string within this model
+            $stmt = $this->pdo->prepare(
+                "SELECT y.id_leopartsfilter_year AS id
+                 FROM {$p}leopartsfilter_year y
+                 JOIN {$p}leopartsfilter_year_lang yl
+                   ON yl.id_leopartsfilter_year = y.id_leopartsfilter_year AND yl.id_lang = :lang
+                 WHERE y.active = 1 AND y.id_leopartsfilter_make = :make AND y.id_leopartsfilter_model = :model
+                   AND yl.name = :year
+                 LIMIT 1"
+            );
+            $stmt->bindValue(':lang', $this->langId, PDO::PARAM_INT);
+            $stmt->bindValue(':make', $makeId, PDO::PARAM_INT);
+            $stmt->bindValue(':model', $modelId, PDO::PARAM_INT);
+            $stmt->bindValue(':year', (string) $year);
+            $stmt->execute();
+            $yearRow = $stmt->fetch();
+
+            return [
+                'make_id'    => $makeId,
+                'model_id'   => $modelId,
+                'year_id'    => $yearRow ? (int) $yearRow['id'] : null,
+                'ambiguous'  => $ambiguous,
+                'candidates' => $candidates,
+            ];
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /** Brand display names for lookupFitment(). BikerShop uses "CF MOTO" (with space). */
+    private const BRAND_DISPLAY = ['yamaha' => 'Yamaha', 'cfmoto' => 'CF MOTO'];
+
+    /**
+     * Progressively shorter LIKE patterns for model name matching.
+     * "MT-09 Y AMT 2025" -> ["MT-09 Y AMT 2025", "MT-09 Y AMT", "MT-09 Y", "MT-09"]
+     * @return list<string>
+     */
+    private function modelCandidates(string $name): array
+    {
+        // Strip trailing 4-digit year first
+        $stripped = trim(preg_replace('/\s+\d{4}$/', '', $name) ?? $name);
+        $parts = preg_split('/\s+/', $stripped) ?: [$stripped];
+        $candidates = [];
+        // From most specific (full) to least specific (first word only)
+        for ($i = count($parts); $i >= 1; $i--) {
+            $candidates[] = implode(' ', array_slice($parts, 0, $i));
+        }
+        return array_unique($candidates);
+    }
+
+    /**
      * Run a *_lang options query (binds :lang). Returns id/name option rows.
      * @param array<string,int> $params
      * @return array<int,array{id:int,name:string}>

@@ -71,7 +71,7 @@ Construit pe milestone-uri (vezi planul aprobat). **Milestone 1 livrat = home pa
 - Toate query-urile = prepared statements. BikerShop NU se scrie niciodată (read-only).
 - **PDO native prepares (emulate=false): un placeholder numit NU se poate repeta.** `id_shop`/`id_lang` (int-uri din config, de încredere) sunt inline în SQL; doar inputul user rămâne bound.
 - Cumpărarea rămâne pe BikerShop: produsele fac link la `bikershop.ro/{id}-{slug}.html`; imagini `bikershop.ro/{id_image}-large_default/{slug}.jpg` (servite public, 200).
-- Prețuri BikerShop: stocate fără TVA în PrestaShop; afișate `*1.19` (orientativ) — de revizuit.
+- Prețuri BikerShop: stocate fără TVA în PrestaShop; afișate `*1.21` (orientativ) — de revizuit.
 - Reveal animations: gated pe `.js` (setat inline în `<head>`) → conținut vizibil fără JS.
 - Roșu brand: logo e `#FF0000`; pe fundal alb folosim `--red:#E10600` (rafinat). `--red-dark` la hover.
 

@@ -225,6 +225,126 @@
         });
     }
 
+    /* ---- Lightbox: zoom + prev/next navigation (gallery + detail images) ---- */
+    (function () {
+        var lbMain    = document.querySelector('[data-gallery-main]');
+        var thumbBtns = Array.prototype.slice.call(document.querySelectorAll('[data-gallery-thumb]'));
+        var detailImgs = Array.prototype.slice.call(document.querySelectorAll('[data-lightbox]'));
+        if (!lbMain && !detailImgs.length) return;
+
+        // Build unified image list: [gallery thumbs …, detail images …]
+        var images = [];
+        if (thumbBtns.length) {
+            thumbBtns.forEach(function (btn) {
+                images.push({ src: btn.getAttribute('data-src'), alt: '' });
+            });
+        } else if (lbMain) {
+            images.push({ src: lbMain.src, alt: lbMain.alt });
+        }
+        var galleryCount = images.length;
+        detailImgs.forEach(function (img) {
+            images.push({ src: img.src, alt: img.alt });
+        });
+        if (!images.length) return;
+
+        var currentIdx = 0;
+
+        // Build DOM
+        var lb = document.createElement('div');
+        lb.className = 'lightbox';
+        lb.setAttribute('role', 'dialog');
+        lb.setAttribute('aria-modal', 'true');
+        lb.setAttribute('aria-label', 'Imagine mărită');
+
+        var lbImg = document.createElement('img');
+        lbImg.className = 'lightbox__img';
+
+        var lbClose = document.createElement('button');
+        lbClose.className = 'lightbox__close';
+        lbClose.setAttribute('aria-label', 'Închide');
+        lbClose.innerHTML = '&times;';
+
+        var lbPrev = document.createElement('button');
+        lbPrev.className = 'lightbox__nav lightbox__nav--prev';
+        lbPrev.setAttribute('aria-label', 'Imaginea anterioară');
+        lbPrev.innerHTML = '&#8592;';
+
+        var lbNext = document.createElement('button');
+        lbNext.className = 'lightbox__nav lightbox__nav--next';
+        lbNext.setAttribute('aria-label', 'Imaginea următoare');
+        lbNext.innerHTML = '&#8594;';
+
+        var lbCounter = document.createElement('span');
+        lbCounter.className = 'lightbox__counter';
+
+        lb.appendChild(lbPrev);
+        lb.appendChild(lbImg);
+        lb.appendChild(lbNext);
+        lb.appendChild(lbClose);
+        lb.appendChild(lbCounter);
+        document.body.appendChild(lb);
+
+        var multi = images.length > 1;
+        lbPrev.style.display = multi ? '' : 'none';
+        lbNext.style.display = multi ? '' : 'none';
+        lbCounter.style.display = multi ? '' : 'none';
+
+        function show(idx) {
+            currentIdx = (idx + images.length) % images.length;
+            lbImg.src = images[currentIdx].src;
+            lbImg.alt = images[currentIdx].alt || '';
+            if (multi) lbCounter.textContent = (currentIdx + 1) + ' / ' + images.length;
+        }
+        function open(idx) {
+            show(idx);
+            lb.classList.add('is-open');
+            document.body.style.overflow = 'hidden';
+            lbClose.focus();
+        }
+        function close() {
+            lb.classList.remove('is-open');
+            document.body.style.overflow = '';
+        }
+
+        // Main gallery image click — open at currently active thumb
+        if (lbMain) {
+            lbMain.addEventListener('click', function () {
+                var active = document.querySelector('[data-gallery-thumb].is-active');
+                var idx = active ? Math.max(0, thumbBtns.indexOf(active)) : 0;
+                open(idx);
+            });
+        }
+
+        // Detail image clicks
+        detailImgs.forEach(function (img, i) {
+            img.addEventListener('click', function () { open(galleryCount + i); });
+        });
+
+        // Nav buttons
+        lbPrev.addEventListener('click', function (e) { e.stopPropagation(); show(currentIdx - 1); });
+        lbNext.addEventListener('click', function (e) { e.stopPropagation(); show(currentIdx + 1); });
+
+        // Close
+        lbClose.addEventListener('click', close);
+        lb.addEventListener('click', function (e) { if (e.target === lb) close(); });
+
+        // Keyboard
+        document.addEventListener('keydown', function (e) {
+            if (!lb.classList.contains('is-open')) return;
+            if (e.key === 'Escape')      close();
+            if (e.key === 'ArrowLeft')   show(currentIdx - 1);
+            if (e.key === 'ArrowRight')  show(currentIdx + 1);
+        });
+
+        // Touch swipe
+        var touchX = 0;
+        lb.addEventListener('touchstart', function (e) { touchX = e.changedTouches[0].clientX; }, { passive: true });
+        lb.addEventListener('touchend', function (e) {
+            var dx = e.changedTouches[0].clientX - touchX;
+            if (Math.abs(dx) > 50) { dx < 0 ? show(currentIdx + 1) : show(currentIdx - 1); }
+        });
+    })();
+
     /* ---- Spec tabs ---- */
     var tabsRoot = document.querySelector('[data-tabs]');
     if (tabsRoot) {

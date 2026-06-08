@@ -1,0 +1,220 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Fitment mapping — Admin | Dual Motors{% endblock %}
+{% block description %}Administrare mapping fitment produse↔BikerShop.{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container admin">
+        <span class="kicker">Admin</span>
+        <h1 class="catalog-head__title">Fitment mapping</h1>
+        <p class="catalog-head__lead">
+            Leagă fiecare motocicletă din catalog cu make/model/year-ul corespunzător din BikerShop,
+            astfel încât accesoriile compatibile să apară automat pe pagina produsului.
+            Sau rulează mai întâi <code>migrate_fitment.php</code> pentru potrivire automată.
+        </p>
+        <p class="admin__hint">
+            <a href="{{ base }}/admin">← Setări prețuri</a>
+        </p>
+
+        {% if saved %}<p class="admin__flash">✓ Mapping salvat.</p>{% endif %}
+
+        <div class="fitment-legend">
+            <span class="fitment-status fitment-status--ok">Mapat</span>
+            <span class="fitment-status fitment-status--miss">Nemapat</span>
+        </div>
+
+        <div class="fitment-table-wrap">
+            <table class="fitment-table">
+                <thead>
+                    <tr>
+                        <th>Produs</th>
+                        <th>An</th>
+                        <th>Brand</th>
+                        <th>Status</th>
+                        <th>Marcă</th>
+                        <th>Model</th>
+                        <th>An fitment</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in products %}
+                        {% set mapped = p.lp_model_id is not null %}
+                        <tr class="fitment-row{{ mapped ? ' fitment-row--ok' : ' fitment-row--miss' }}"
+                            data-product-id="{{ p.id }}"
+                            data-make-id="{{ p.lp_make_id ?? '' }}"
+                            data-model-id="{{ p.lp_model_id ?? '' }}"
+                            data-year-id="{{ p.lp_year_id ?? '' }}">
+                            <td class="fitment-row__name">{{ p.name }}</td>
+                            <td>{{ p.year }}</td>
+                            <td>{{ p.brand }}</td>
+                            <td>
+                                {% if mapped %}
+                                    <span class="fitment-status fitment-status--ok">Mapat</span>
+                                    <small class="fitment-ids">m={{ p.lp_model_id }}{% if p.lp_year_id %} y={{ p.lp_year_id }}{% endif %}</small>
+                                {% else %}
+                                    <span class="fitment-status fitment-status--miss">Nemapat</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <select class="fitment-make admin-sel" data-fit-make>
+                                    <option value="">Alege marca…</option>
+                                    {% for m in makes %}
+                                        <option value="{{ m.id }}"{{ p.lp_make_id == m.id ? ' selected' }}>{{ m.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <select class="fitment-model admin-sel" data-fit-model disabled>
+                                    <option value="">—</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select class="fitment-year admin-sel" data-fit-year disabled>
+                                    <option value="">Toți anii</option>
+                                </select>
+                            </td>
+                            <td>
+                                <form method="post" action="{{ base }}/admin/fitment/save" class="fitment-form">
+                                    <input type="hidden" name="product_id" value="{{ p.id }}">
+                                    <input type="hidden" name="make_id" class="h-make" value="{{ p.lp_make_id ?? '' }}">
+                                    <input type="hidden" name="model_id" class="h-model" value="{{ p.lp_model_id ?? '' }}">
+                                    <input type="hidden" name="year_id" class="h-year" value="{{ p.lp_year_id ?? '' }}">
+                                    <button class="btn btn--primary btn--sm" type="submit">Salvează</button>
+                                    {% if mapped %}
+                                        <button class="btn btn--ghost btn--sm fitment-clear" type="button" title="Șterge mapping">✕</button>
+                                    {% endif %}
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<style>
+.fitment-table-wrap { overflow-x: auto; margin-top: 1.5rem; }
+.fitment-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.fitment-table th, .fitment-table td { padding: .5rem .75rem; border-bottom: 1px solid var(--border, #e5e5e5); text-align: left; white-space: nowrap; }
+.fitment-table th { background: #f8f8f8; font-weight: 600; }
+.fitment-row__name { white-space: normal; min-width: 14rem; }
+.fitment-row--ok { background: #f0fdf4; }
+.fitment-row--miss { background: #fff; }
+.fitment-status { display: inline-block; font-size: .75rem; font-weight: 600; padding: .15rem .45rem; border-radius: 3px; }
+.fitment-status--ok   { background: #dcfce7; color: #166534; }
+.fitment-status--miss { background: #fee2e2; color: #991b1b; }
+.fitment-ids { color: #6b7280; font-size: .7rem; margin-left: .35rem; }
+.fitment-legend { display: flex; gap: 1rem; margin-bottom: 1rem; }
+.admin-sel { font-size: .8rem; padding: .25rem .35rem; max-width: 12rem; }
+.fitment-form { display: flex; gap: .35rem; align-items: center; }
+.btn--sm { font-size: .8rem; padding: .3rem .7rem; }
+.fitment-clear { color: #991b1b; }
+</style>
+
+<script>
+(function () {
+    var base = {{ base|json_encode|raw }};
+
+    function setOptions(sel, options, placeholder) {
+        sel.innerHTML = '<option value="">' + placeholder + '</option>';
+        options.forEach(function (o) {
+            var opt = document.createElement('option');
+            opt.value = o.id;
+            opt.textContent = o.name;
+            sel.appendChild(opt);
+        });
+    }
+
+    function fetchJson(url) {
+        return fetch(base + url).then(function (r) { return r.json(); });
+    }
+
+    function initRow(row) {
+        var makeSel  = row.querySelector('[data-fit-make]');
+        var modelSel = row.querySelector('[data-fit-model]');
+        var yearSel  = row.querySelector('[data-fit-year]');
+        var hMake    = row.querySelector('.h-make');
+        var hModel   = row.querySelector('.h-model');
+        var hYear    = row.querySelector('.h-year');
+        var clearBtn = row.querySelector('.fitment-clear');
+
+        function syncHidden() {
+            hMake.value  = makeSel.value;
+            hModel.value = modelSel.value;
+            hYear.value  = yearSel.value;
+        }
+
+        // Load models for a make; resolves with the options array
+        function loadModels(makeId) {
+            modelSel.disabled = true;
+            yearSel.disabled  = true;
+            setOptions(modelSel, [], '…');
+            setOptions(yearSel,  [], 'Toți anii');
+            if (!makeId) { setOptions(modelSel, [], '—'); return Promise.resolve([]); }
+            return fetchJson('/api/fit/models?make=' + makeId).then(function (d) {
+                var opts = d.options || [];
+                setOptions(modelSel, opts, 'Alege modelul…');
+                modelSel.disabled = false;
+                return opts;
+            });
+        }
+
+        // Load years for a make+model; resolves with the options array
+        function loadYears(makeId, modelId) {
+            yearSel.disabled = true;
+            setOptions(yearSel, [], '…');
+            if (!modelId) { setOptions(yearSel, [], 'Toți anii'); return Promise.resolve([]); }
+            return fetchJson('/api/fit/years?make=' + makeId + '&model=' + modelId).then(function (d) {
+                var opts = d.options || [];
+                setOptions(yearSel, opts, 'Toți anii');
+                yearSel.disabled = false;
+                return opts;
+            });
+        }
+
+        makeSel.addEventListener('change', function () {
+            loadModels(makeSel.value).then(function () { syncHidden(); });
+        });
+
+        modelSel.addEventListener('change', function () {
+            loadYears(makeSel.value, modelSel.value).then(function () { syncHidden(); });
+        });
+
+        yearSel.addEventListener('change', syncHidden);
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function () {
+                makeSel.value = '';
+                setOptions(modelSel, [], '—');
+                modelSel.disabled = true;
+                setOptions(yearSel, [], 'Toți ani');
+                yearSel.disabled = true;
+                hMake.value = ''; hModel.value = ''; hYear.value = '';
+            });
+        }
+
+        // Pre-populate existing mapping via promise chain (no setTimeout hacks)
+        var makeId  = row.dataset.makeId;
+        var modelId = row.dataset.modelId;
+        var yearId  = row.dataset.yearId;
+        if (makeId) {
+            loadModels(makeId).then(function () {
+                if (modelId) {
+                    modelSel.value = modelId;
+                    return loadYears(makeId, modelId).then(function () {
+                        if (yearId) { yearSel.value = yearId; }
+                        syncHidden();
+                    });
+                }
+                syncHidden();
+            });
+        }
+    }
+
+    document.querySelectorAll('.fitment-row').forEach(initRow);
+})();
+</script>
+{% endblock %}

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\BikerShop\Client as BikerShopClient;
+use App\Catalog\Repository;
 use App\Support\Settings;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -17,6 +19,8 @@ use Slim\Views\Twig;
 final class AdminController
 {
     private Settings $settings;
+    private Repository $repo;
+    private BikerShopClient $bikershop;
     /** @var array{user:string,pass:string} */
     private array $auth;
     private string $base;
@@ -24,9 +28,11 @@ final class AdminController
     /** @param array<string,mixed> $container */
     public function __construct(private Twig $twig, array $container)
     {
-        $this->settings = $container['app_settings'];
-        $this->auth = $container['settings']['admin'];
-        $this->base = (string) ($container['settings']['app']['base_path'] ?? '');
+        $this->settings  = $container['app_settings'];
+        $this->repo      = $container['catalog'];
+        $this->bikershop = $container['bikershop'];
+        $this->auth      = $container['settings']['admin'];
+        $this->base      = (string) ($container['settings']['app']['base_path'] ?? '');
     }
 
     /** GET /admin — price settings form. */
@@ -60,6 +66,39 @@ final class AdminController
 
         return $response
             ->withHeader('Location', $this->base . '/admin?saved=1')
+            ->withStatus(303);
+    }
+
+    /** GET /admin/fitment — fitment mapping table. */
+    public function fitment(Request $request, Response $response): Response
+    {
+        if ($denied = $this->guard($request, $response)) {
+            return $denied;
+        }
+        return $this->twig->render($response, 'admin/fitment.twig', [
+            'products' => $this->repo->allProductsForFitmentAdmin(),
+            'makes'    => $this->bikershop->makes(),
+            'saved'    => ($request->getQueryParams()['saved'] ?? null) !== null,
+        ]);
+    }
+
+    /** POST /admin/fitment/save — persist fitment IDs for one product. */
+    public function saveFitment(Request $request, Response $response): Response
+    {
+        if ($denied = $this->guard($request, $response)) {
+            return $denied;
+        }
+        $body      = (array) $request->getParsedBody();
+        $productId = (int) ($body['product_id'] ?? 0);
+        $makeId    = ($body['make_id'] ?? '') !== '' ? (int) $body['make_id'] : null;
+        $modelId   = ($body['model_id'] ?? '') !== '' ? (int) $body['model_id'] : null;
+        $yearId    = ($body['year_id'] ?? '') !== '' ? (int) $body['year_id'] : null;
+
+        if ($productId > 0) {
+            $this->repo->updateFitment($productId, $makeId, $modelId, $yearId);
+        }
+        return $response
+            ->withHeader('Location', $this->base . '/admin/fitment?saved=1')
             ->withStatus(303);
     }
 

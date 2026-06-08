@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\BikerShop\Client as BikerShopClient;
 use App\Catalog\Repository;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -18,14 +19,16 @@ use Slim\Views\Twig;
 final class CatalogController
 {
     private Repository $repo;
+    private BikerShopClient $bikershop;
     private string $base;
     private array $brandLabels = ['yamaha' => 'Yamaha', 'cfmoto' => 'CFMOTO'];
 
     /** @param array<string,mixed> $container */
     public function __construct(private Twig $twig, array $container)
     {
-        $this->repo = $container['catalog'];
-        $this->base = (string) ($container['settings']['app']['base_path'] ?? '');
+        $this->repo      = $container['catalog'];
+        $this->bikershop = $container['bikershop'];
+        $this->base      = (string) ($container['settings']['app']['base_path'] ?? '');
     }
 
     /** /{brand} — brand landing: list of top categories. */
@@ -136,16 +139,24 @@ final class CatalogController
         }
         $crumbs[] = ['label' => $product['name'], 'url' => null];
 
+        $accessories = [];
+        $modelId = isset($product['lp_model_id']) ? (int) $product['lp_model_id'] : 0;
+        if ($modelId && $this->bikershop->isAvailable()) {
+            $yearId = isset($product['lp_year_id']) ? (int) $product['lp_year_id'] : null;
+            $accessories = $this->bikershop->compatibleProducts($modelId, $yearId ?: null, 12);
+        }
+
         return $this->twig->render($response, 'catalog/product.twig', [
-            'brand'      => $brand,
-            'brandLabel' => $this->brandLabels[$brand] ?? ucfirst($brand),
-            'p'          => $product,
-            'og_image'   => $product['cover'],
-            'colors'     => $this->repo->images($brand, $id, 'color'),
-            'gallery'    => $this->repo->images($brand, $id, 'gallery'),
-            'details'    => $this->repo->images($brand, $id, 'detail'),
-            'related'    => $this->repo->related($product, 4),
-            'crumbs'     => $crumbs,
+            'brand'        => $brand,
+            'brandLabel'   => $this->brandLabels[$brand] ?? ucfirst($brand),
+            'p'            => $product,
+            'og_image'     => $product['cover'],
+            'colors'       => $this->repo->images($brand, $id, 'color'),
+            'gallery'      => $this->repo->images($brand, $id, 'gallery'),
+            'details'      => $this->repo->images($brand, $id, 'detail'),
+            'related'      => $this->repo->related($product, 4),
+            'accessories'  => $accessories,
+            'crumbs'       => $crumbs,
         ]);
     }
 }

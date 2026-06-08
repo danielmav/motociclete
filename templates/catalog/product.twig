@@ -140,12 +140,50 @@
         <section class="section product-section">
             <div class="container">
                 <h2 class="section__title">Detalii</h2>
-                <div class="grid grid--details">
+                <div class="detail-gallery">
                     {% for d in details %}
-                        <figure class="detail-shot media-ph">
+                        <div class="detail-item media-ph">
                             <img src="{{ base }}{{ d.src }}" alt="{{ p.name }} — detaliu {{ loop.index }}" loading="lazy" width="600" height="400"
-                                 onerror="this.closest('figure').remove()">
-                        </figure>
+                                 data-lightbox
+                                 onerror="this.closest('.detail-item').remove()">
+                            <span class="detail-item__zoom" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m17 17 4 4"/><path d="M11 8v6M8 11h6"/></svg>
+                            </span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    {% endif %}
+
+    {# ---------------- Compatible accessories (BikerShop fitment) ---------------- #}
+    {% if accessories is defined and accessories|length %}
+        <section class="section product-section" id="accesorii">
+            <div class="container">
+                <header class="section__head">
+                    <div>
+                        <span class="kicker">BikerShop</span>
+                        <h2 class="section__title">Accesorii compatibile</h2>
+                    </div>
+                    <a class="link-arrow"
+                       href="https://bikershop.ro{% if p.lp_model_id %}/accesorii-moto?id_leopartsfilter_model={{ p.lp_model_id }}{% if p.lp_year_id %}&id_leopartsfilter_year={{ p.lp_year_id }}{% endif %}{% endif %}"
+                       target="_blank" rel="noopener">
+                        Vezi toate pe BikerShop <span aria-hidden="true">→</span>
+                    </a>
+                </header>
+                <div class="grid grid--acc">
+                    {% for a in accessories %}
+                        <a class="card-acc" href="{{ a.url }}" target="_blank" rel="noopener">
+                            <div class="card-acc__media media-ph media-ph--sm">
+                                {% if a.image %}
+                                    <img loading="lazy" src="{{ a.image }}" alt="{{ a.name }}" width="300" height="300"
+                                         onerror="this.closest('.card-acc__media').classList.add('media-ph');this.remove()">
+                                {% endif %}
+                            </div>
+                            {% if a.manufacturer %}<span class="card-acc__brand">{{ a.manufacturer }}</span>{% endif %}
+                            <span class="card-acc__name">{{ a.name }}</span>
+                            <span class="card-acc__price">{{ a.price }} €</span>
+                        </a>
                     {% endfor %}
                 </div>
             </div>

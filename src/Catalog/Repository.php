@@ -189,6 +189,39 @@ final class Repository
         return $out;
     }
 
+    // -- Fitment admin --------------------------------------------------------
+
+    /**
+     * All products (id, brand, name, year, lp_*) for the /admin/fitment page.
+     * @return array<int,array<string,mixed>>
+     */
+    public function allProductsForFitmentAdmin(): array
+    {
+        return $this->all(
+            "SELECT id, brand, name, year, lp_make_id, lp_model_id, lp_year_id
+             FROM products
+             WHERE is_active = 1
+             ORDER BY brand, name"
+        );
+    }
+
+    /** Update fitment mapping for a single product. Returns true on success. */
+    public function updateFitment(int $id, ?int $makeId, ?int $modelId, ?int $yearId): bool
+    {
+        if (!$this->isAvailable()) {
+            return false;
+        }
+        try {
+            $stmt = $this->pdo->prepare(
+                "UPDATE products SET lp_make_id = :make, lp_model_id = :model, lp_year_id = :year WHERE id = :id"
+            );
+            $stmt->execute([':make' => $makeId, ':model' => $modelId, ':year' => $yearId, ':id' => $id]);
+            return true;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
     /** For legacy 301 redirects: canonical URL for an old `*.html` path, or null. */
     public function canonicalForLegacy(string $legacyUrl): ?string
     {
