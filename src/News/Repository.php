@@ -9,23 +9,20 @@ use PDO;
 use Throwable;
 
 /**
- * Reads the blog/news from the legacy `dualmotors_motociclete` DB (`noutati` +
- * `imagini_noutati`). Read-only, graceful degradation (returns []/null) like the
- * other repositories. Images are still served by the legacy site.
+ * Reads the blog/news from the portal's OWN DB (`news` table), populated from the
+ * legacy `noutati` tables by database/migrate_news.php. Read-only here, graceful
+ * degradation (returns []/null). Images are absolute URLs (served by the live site).
  */
 final class Repository
 {
     private ?PDO $pdo;
-
-    /** Legacy site still hosts the news images. */
-    private const IMG_BASE = 'https://www.motociclete.com.ro/images/noutati/';
 
     private const MONTHS = [1 => 'ian', 'feb', 'mar', 'apr', 'mai', 'iun', 'iul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
     public function __construct(Database $db)
     {
         try {
-            $this->pdo = $db->news();
+            $this->pdo = $db->local();
         } catch (Throwable) {
             $this->pdo = null;
         }
@@ -40,13 +37,10 @@ final class Repository
     public function latest(int $limit = 3): array
     {
         $rows = $this->all(
-            "SELECT n.id_noutate, n.titlu, n.noutate_text, n.noutate_datetime,
-                    (SELECT i.imagine FROM imagini_noutati i
-                      WHERE i.id_noutate = n.id_noutate
-                      ORDER BY i.imagine_principala DESC, i.id_imagine ASC LIMIT 1) AS imagine
-             FROM noutati n
-             WHERE n.active = 1
-             ORDER BY n.noutate_datetime DESC
+            "SELECT id, title, slug, excerpt, image_url, published_at
+             FROM news
+             WHERE is_active = 1
+             ORDER BY published_at DESC, id DESC
              LIMIT " . (int) $limit
         );
         return array_map([$this, 'shapeCard'], $rows);
@@ -56,44 +50,38 @@ final class Repository
     public function find(int $id): ?array
     {
         $row = $this->one(
-            "SELECT n.id_noutate, n.titlu, n.noutate_text, n.noutate_datetime,
-                    (SELECT i.imagine FROM imagini_noutati i
-                      WHERE i.id_noutate = n.id_noutate
-                      ORDER BY i.imagine_principala DESC, i.id_imagine ASC LIMIT 1) AS imagine
-             FROM noutati n
-             WHERE n.active = 1 AND n.id_noutate = :id",
+            "SELECT id, title, slug, excerpt, body, image_url, published_at
+             FROM news
+             WHERE is_active = 1 AND id = :id",
             [':id' => $id]
         );
         if (!$row) {
             return null;
         }
         $card = $this->shapeCard($row);
-        $card['body'] = (string) $row['noutate_text'];
+        $card['body'] = (string) $row['body'];
         return $card;
     }
 
     /** @return array<string,mixed> */
     private function shapeCard(array $r): array
     {
-        $title = trim((string) preg_replace('/\s+/u', ' ', strip_tags((string) $r['titlu'])));
-        $plain = trim((string) preg_replace('/\s+/u', ' ', strip_tags((string) $r['noutate_text'])));
-        $slug  = slugify($title);
-        $id    = (int) $r['id_noutate'];
-
+        $id = (int) $r['id'];
         return [
             'id'      => $id,
-            'title'   => $title,
-            'excerpt' => mb_strlen($plain) > 160 ? mb_substr($plain, 0, 160) . '…' : $plain,
-            'date'    => $this->roDate((int) $r['noutate_datetime']),
-            'image'   => $r['imagine'] ? self::IMG_BASE . rawurlencode((string) $r['imagine']) : null,
-            'url'     => '/blog/' . $id . '-' . $slug,
+            'title'   => (string) $r['title'],
+            'excerpt' => (string) $r['excerpt'],
+            'date'    => $this->roDate((string) ($r['published_at'] ?? '')),
+            'image'   => $r['image_url'] ?: null,
+            'url'     => '/blog/' . $id . '-' . ($r['slug'] ?: 'articol'),
         ];
     }
 
-    /** Unix timestamp -> "3 iun 2026". */
-    private function roDate(int $ts): string
+    /** DATETIME string -> "3 iun 2026". */
+    private function roDate(string $dt): string
     {
-        if ($ts <= 0) {
+        $ts = $dt !== '' ? strtotime($dt) : false;
+        if ($ts === false) {
             return '';
         }
         return (int) date('j', $ts) . ' ' . (self::MONTHS[(int) date('n', $ts)] ?? '') . ' ' . date('Y', $ts);

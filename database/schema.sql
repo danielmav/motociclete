@@ -109,3 +109,25 @@ INSERT IGNORE INTO `settings` (`skey`, `svalue`) VALUES
     ('eur_ron_rate', '5.00'),       -- curs EUR->RON, actualizat din admin
     ('vat_pct', '21'),              -- TVA %
     ('price_includes_vat', '1');    -- 1 = prețurile EUR din DB includ deja TVA (confirmat cu clientul)
+
+-- ---------------------------------------------------------------------------
+-- news (blog "Pe Două Roți") — migrat din legacy `noutati` (moto + cfmoto) prin
+-- database/migrate_news.php. NOT dropped on catalog re-migration (CREATE IF NOT
+-- EXISTS); migrate_news face TRUNCATE + re-import. Imaginile rămân pe site-ul live.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `news` (
+    `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `brand`        VARCHAR(16)  NOT NULL DEFAULT '',     -- sursa: 'yamaha' | 'cfmoto'
+    `title`        VARCHAR(512) NOT NULL,
+    `slug`         VARCHAR(255) NOT NULL,
+    `excerpt`      TEXT NULL,
+    `body`         MEDIUMTEXT NULL,                       -- HTML articol
+    `image_url`    VARCHAR(512) NULL,                     -- URL absolut (site live)
+    `published_at` DATETIME NULL,
+    `is_active`    TINYINT(1) NOT NULL DEFAULT 1,
+    `legacy_id`    INT UNSIGNED NULL,                     -- id_noutate original
+    PRIMARY KEY (`id`),
+    KEY `idx_news_active_date` (`is_active`, `published_at`),
+    KEY `idx_news_slug` (`slug`),
+    KEY `idx_news_legacy` (`brand`, `legacy_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
