@@ -28,14 +28,53 @@
 
 <section class="section section--tight">
     <div class="container">
+        {% if facets.licences|length or facets.years|length %}
+            <form class="catalog-filters" method="get">
+                {% if facets.licences|length %}
+                    <label class="catalog-filters__field">
+                        <span>Permis</span>
+                        <select name="permis" onchange="this.form.submit()">
+                            <option value="">Toate</option>
+                            {% for l in facets.licences %}
+                                <option value="{{ l }}"{{ filters.permis == l ? ' selected' : '' }}>{{ l }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                {% endif %}
+                {% if facets.years|length %}
+                    <label class="catalog-filters__field">
+                        <span>An</span>
+                        <select name="an" onchange="this.form.submit()">
+                            <option value="">Toți anii</option>
+                            {% for y in facets.years %}
+                                <option value="{{ y }}"{{ filters.an == y ? ' selected' : '' }}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                {% endif %}
+                <noscript><button class="btn btn--ghost" type="submit">Filtrează</button></noscript>
+                {% if filters.permis or filters.an %}
+                    {% set resetUrl = isTop ? crumbs[1].url : (crumbs[1].url ~ '/' ~ category.slug) %}
+                    <a class="catalog-filters__reset" href="{{ base }}{{ resetUrl }}">Resetează ✕</a>
+                {% endif %}
+            </form>
+        {% endif %}
+
         {% if products|length %}
-            <p class="catalog-count">{{ products|length }} {{ products|length == 1 ? 'model' : 'modele' }}</p>
-            <div class="grid grid--models">
+            <p class="catalog-count">
+                {{ products|length }} {{ products|length == 1 ? 'model' : 'modele' }}
+                {% if products|length != total %}<span class="catalog-count__total">din {{ total }}</span>{% endif %}
+            </p>
+            <div class="grid grid--models" data-cmp-grid data-brand="{{ brand }}">
                 {% for m in products %}
                     <a class="card-moto" href="{{ base }}{{ m.url }}">
                         <div class="card-moto__media{{ m.image ? '' : ' media-ph' }}">
                             {% if m.year %}<span class="badge">{{ m.year }}</span>{% endif %}
                             {% if m.old_price %}<span class="badge badge--sale badge--tr">−{{ m.discount }}%</span>{% endif %}
+                            <label class="card-compare" data-cmp title="Adaugă la comparație">
+                                <input type="checkbox" data-cmp-cb value="{{ m.slug }}" data-name="{{ m.name }}">
+                                <span class="card-compare__txt">Compară</span>
+                            </label>
                             {% if m.image %}
                                 <img src="{{ base }}{{ m.image }}" alt="{{ m.name }}" loading="lazy" width="900" height="600"
                                      onerror="this.closest('.card-moto__media').classList.add('media-ph');this.remove()">
@@ -64,10 +103,28 @@
             </div>
         {% else %}
             <div class="empty-state">
-                <p>Momentan nu sunt modele în această categorie.</p>
-                <a class="btn btn--ghost" href="{{ base }}/{{ brand }}">Vezi toate modelele {{ brandLabel }} <span aria-hidden="true">→</span></a>
+                {% if filters.permis or filters.an %}
+                    {% set resetUrl = isTop ? crumbs[1].url : (crumbs[1].url ~ '/' ~ category.slug) %}
+                    <p>Niciun model nu corespunde filtrelor alese.</p>
+                    <a class="btn btn--ghost" href="{{ base }}{{ resetUrl }}">Resetează filtrele <span aria-hidden="true">✕</span></a>
+                {% else %}
+                    <p>Momentan nu sunt modele în această categorie.</p>
+                    <a class="btn btn--ghost" href="{{ base }}/{{ brand }}">Vezi toate modelele {{ brandLabel }} <span aria-hidden="true">→</span></a>
+                {% endif %}
             </div>
         {% endif %}
+    </div>
+
+    {# Compare tray — populated by JS when models are selected #}
+    <div class="cmp-tray" data-cmp-tray hidden>
+        <div class="container cmp-tray__inner">
+            <span class="cmp-tray__count"><strong data-cmp-count>0</strong> selectate <small>(același brand și categorie)</small></span>
+            <div class="cmp-tray__items" data-cmp-items></div>
+            <div class="cmp-tray__actions">
+                <button type="button" class="btn btn--ghost btn--sm" data-cmp-clear>Golește</button>
+                <a class="btn btn--primary btn--sm" data-cmp-go href="#">Compară <span data-cmp-go-n></span></a>
+            </div>
+        </div>
     </div>
 </section>
 

@@ -60,11 +60,13 @@
 
         <div class="grid grid--models">
             {% for m in models %}
-                <article class="card-moto">
-                    <div class="card-moto__media{{ m.img ? '' : ' media-ph' }}">
-                        <span class="badge">{{ m.tag }}</span>
-                        {% if m.img %}
-                            <img src="{{ base }}{{ m.img }}" alt="{{ m.name }}" loading="lazy" width="900" height="600">
+                <a class="card-moto" href="{{ base }}{{ m.url }}">
+                    <div class="card-moto__media{{ m.image ? '' : ' media-ph' }}">
+                        {% if m.year %}<span class="badge">{{ m.year }}</span>{% endif %}
+                        {% if m.old_price %}<span class="badge badge--sale badge--tr">−{{ m.discount }}%</span>{% endif %}
+                        {% if m.image %}
+                            <img src="{{ base }}{{ m.image }}" alt="{{ m.name }}" loading="lazy" width="900" height="600"
+                                 onerror="this.closest('.card-moto__media').classList.add('media-ph');this.remove()">
                         {% else %}
                             <span class="media-ph__label">{{ m.name }}</span>
                         {% endif %}
@@ -72,16 +74,16 @@
                     <div class="card-moto__body">
                         <div class="card-moto__meta">
                             <span class="chip">{{ m.cat }}</span>
-                            <span class="chip chip--ghost">{{ m.cc }} cc</span>
-                            <span class="chip chip--permis">Permis {{ m.permis }}</span>
+                            {% if m.licence %}<span class="chip chip--permis">Permis {{ m.licence }}</span>{% endif %}
                         </div>
                         <h3 class="card-moto__name">{{ m.name }}</h3>
                         <div class="card-moto__foot">
-                            <span class="price"><small>de la</small> {{ m.price|money }}</span>
+                            {% set pr = prices(m.price) %}
+                            <span class="price"><small>de la</small> {{ pr.eur }}<span class="price__ron">{{ pr.ron }}</span></span>
                             <span class="link-arrow link-arrow--sm">Detalii <span aria-hidden="true">→</span></span>
                         </div>
                     </div>
-                </article>
+                </a>
             {% endfor %}
         </div>
     </div>
@@ -192,15 +194,24 @@
             <a class="link-arrow" href="{{ base }}/blog">Tot blogul <span aria-hidden="true">→</span></a>
         </header>
 
-        <div class="grid grid--articles">
-            {% for art in articles %}
-                <article class="card-art">
-                    <div class="card-art__media media-ph"><span class="media-ph__label">{{ art.cat }}</span></div>
-                    <span class="card-art__cat">{{ art.cat }} · {{ art.read }}</span>
-                    <h3 class="card-art__title">{{ art.title }}</h3>
-                </article>
-            {% endfor %}
-        </div>
+        {% if articles|length %}
+            <div class="grid grid--articles">
+                {% for art in articles %}
+                    <a class="card-art" href="{{ base }}{{ art.url }}">
+                        <div class="card-art__media{{ art.image ? '' : ' media-ph' }}">
+                            {% if art.image %}
+                                <img src="{{ art.image }}" alt="{{ art.title }}" loading="lazy" width="640" height="400"
+                                     onerror="this.closest('.card-art__media').classList.add('media-ph');this.remove()">
+                            {% else %}<span class="media-ph__label">Pe Două Roți</span>{% endif %}
+                        </div>
+                        <span class="card-art__cat">Noutăți{% if art.date %} · {{ art.date }}{% endif %}</span>
+                        <h3 class="card-art__title">{{ art.title }}</h3>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state"><p>Momentan nu sunt articole de afișat.</p></div>
+        {% endif %}
     </div>
 </section>
 

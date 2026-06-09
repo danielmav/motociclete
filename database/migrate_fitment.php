@@ -6,12 +6,13 @@ declare(strict_types=1);
  * Fitment sync: populates lp_make_id / lp_model_id / lp_year_id on local
  * `products` by fuzzy-matching each product against BikerShop LeoPartsFilter.
  *
- * Run with:
- *   & "C:/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe" database/migrate_fitment.php
- *   & "C:/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe" database/migrate_fitment.php --dry-run
+ * Run with (binarul Laragon 8.1.10 — `php` din PATH n-are pdo_mysql/curl):
+ *   & "C:/laragon/bin/php/php-8.1.10-Win32-vs16-x64/php.exe" database/migrate_fitment.php
+ *   & "C:/laragon/bin/php/php-8.1.10-Win32-vs16-x64/php.exe" database/migrate_fitment.php --dry-run
  *
- * Reports: ✓ potrivit / ⚠ ambiguu / ✗ nepotrivit / - fără an
- * Idempotent: rulat din nou suprascrie cu noile valori.
+ * Reports: ✓ potrivit / ⚠ ambiguu (model ales prin scoring) / ? de verificat
+ *          (scor mic → lăsat NULL) / ✗ nepotrivit / - fără an
+ * Idempotent: rulat din nou suprascrie cu noile valori (inclusiv NULL pe cele nesigure).
  */
 
 use App\BikerShop\Client;
@@ -51,7 +52,7 @@ $upd = $local->prepare(
     "UPDATE products SET lp_make_id = :make, lp_model_id = :model, lp_year_id = :year WHERE id = :id"
 );
 
-$stats = ['ok' => 0, 'amb' => 0, 'miss' => 0, 'no_year' => 0];
+$stats = ['ok' => 0, 'amb' => 0, 'review' => 0, 'miss' => 0, 'no_year' => 0];
 
 foreach ($products as $p) {
     $label = sprintf('%-30s %4s  [%s]', $p['name'], $p['year'] ?? '—', $p['brand']);
@@ -67,19 +68,21 @@ foreach ($products as $p) {
     if ($result === null) {
         echo "  ✗  {$label}  NEPOTRIVIT\n";
         $stats['miss']++;
-        continue;
-    }
-
-    $yearNote = $result['year_id'] ? "year_id={$result['year_id']}" : 'fără year_id';
-    $icon = $result['ambiguous'] ? '⚠' : '✓';
-
-    if ($result['ambiguous']) {
-        echo "  ⚠  {$label}  AMBIGUU: " . implode(' | ', $result['candidates']) . "\n";
-        echo "      → ales primul (model_id={$result['model_id']}, {$yearNote})\n";
-        $stats['amb']++;
+        $result = ['make_id' => null, 'model_id' => null, 'year_id' => null];
+    } elseif (!$result['confident']) {
+        // Scor sub prag → nu scriem o ghicire; lăsăm NULL pentru /admin/fitment.
+        echo "  ?  {$label}  DE VERIFICAT — " . implode(' | ', $result['candidates']) . "\n";
+        $stats['review']++;
+        $result = ['make_id' => null, 'model_id' => null, 'year_id' => null];
     } else {
-        echo "  ✓  {$label}  model_id={$result['model_id']}, {$yearNote}\n";
-        $result['year_id'] ? $stats['ok']++ : $stats['no_year']++;
+        $yearNote = $result['year_id'] ? "year_id={$result['year_id']}" : 'fără year_id';
+        if ($result['ambiguous']) {
+            echo "  ⚠  {$label}  model_id={$result['model_id']}, {$yearNote}  (ambiguu, ales cel mai bun)\n";
+            $stats['amb']++;
+        } else {
+            echo "  ✓  {$label}  model_id={$result['model_id']}, {$yearNote}\n";
+            $result['year_id'] ? $stats['ok']++ : $stats['no_year']++;
+        }
     }
 
     if (!$dryRun) {
@@ -97,11 +100,12 @@ echo "────────────────────────�
 echo sprintf("  ✓  Potrivite complet : %d\n", $stats['ok']);
 echo sprintf("  ✓  Fără year_id      : %d\n", $stats['no_year']);
 echo sprintf("  ⚠  Ambigue (ales 1st): %d\n", $stats['amb']);
+echo sprintf("  ?  De verificat      : %d\n", $stats['review']);
 echo sprintf("  ✗  Nepotrivite       : %d\n", $stats['miss']);
 echo "─────────────────────────────────────────\n";
 
-if ($stats['miss'] > 0) {
-    echo "\nPentru produsele nepotrivite, setează manual make/model/year din /admin/fitment.\n";
+if ($stats['review'] + $stats['miss'] > 0) {
+    echo "\nPentru produsele de verificat / nepotrivite, setează manual make/model/year din /admin/fitment.\n";
 }
 if ($dryRun) {
     echo "\n[DRY-RUN] Nicio scriere nu a fost efectuată.\n";

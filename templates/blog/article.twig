@@ -1,0 +1,51 @@
+{% extends 'layout.twig' %}
+
+{% block title %}{{ a.title }} | Blog Dual Motors{% endblock %}
+{% block description %}{{ a.excerpt }}{% endblock %}
+
+{% block content %}
+
+<article class="section product-section">
+    <div class="container article">
+        <nav class="article__crumbs"><a href="{{ base }}/blog">← Blog</a></nav>
+        <span class="card-art__cat">Noutăți{% if a.date %} · {{ a.date }}{% endif %}</span>
+        <h1 class="article__title">{{ a.title }}</h1>
+
+        {% if a.image %}
+            <div class="article__cover">
+                <img src="{{ a.image }}" alt="{{ a.title }}" width="1280" height="720" fetchpriority="high"
+                     onerror="this.closest('.article__cover').remove()">
+            </div>
+        {% endif %}
+
+        <div class="article__body product-prose">{{ a.body|raw }}</div>
+    </div>
+</article>
+
+{% if more|length %}
+    <section class="section product-section">
+        <div class="container">
+            <header class="section__head"><div><span class="kicker">Pe Două Roți</span><h2 class="section__title">Mai citește</h2></div>
+                <a class="link-arrow" href="{{ base }}/blog">Tot blogul <span aria-hidden="true">→</span></a>
+            </header>
+            <div class="grid grid--articles">
+                {% for art in more %}
+                    {% if art.id != a.id %}
+                        <a class="card-art" href="{{ base }}{{ art.url }}">
+                            <div class="card-art__media{{ art.image ? '' : ' media-ph' }}">
+                                {% if art.image %}
+                                    <img src="{{ art.image }}" alt="{{ art.title }}" loading="lazy" width="640" height="400"
+                                         onerror="this.closest('.card-art__media').classList.add('media-ph');this.remove()">
+                                {% else %}<span class="media-ph__label">Pe Două Roți</span>{% endif %}
+                            </div>
+                            <span class="card-art__cat">Noutăți{% if art.date %} · {{ art.date }}{% endif %}</span>
+                            <h3 class="card-art__title">{{ art.title }}</h3>
+                        </a>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+{% endif %}
+
+{% endblock %}

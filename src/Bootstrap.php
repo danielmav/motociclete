@@ -65,6 +65,7 @@ final class Bootstrap
             'app_settings' => $appSettings,
             'bikershop' => new BikerShop\Client($db, $settings['db']['bikershop']),
             'catalog'   => new Catalog\Repository($db),
+            'news'      => new News\Repository($db),
         ];
 
         // --- Error handling ---

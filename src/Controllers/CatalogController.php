@@ -54,7 +54,7 @@ final class CatalogController
         if (!$top) {
             throw new HttpNotFoundException($request);
         }
-        return $this->renderCategory($response, $brand, $top, $top, null);
+        return $this->renderCategory($request, $response, $brand, $top, $top, null);
     }
 
     /**
@@ -71,7 +71,7 @@ final class CatalogController
         // Subcategory listing wins if {seg} is a child of {cat}.
         $sub = $this->repo->subCategory((int) $top['id'], $args['seg']);
         if ($sub) {
-            return $this->renderCategory($response, $brand, $top, $sub, $top);
+            return $this->renderCategory($request, $response, $brand, $top, $sub, $top);
         }
         // Otherwise treat {seg} as a product slug under this brand.
         return $this->renderProduct($request, $response, $brand, $args['seg']);
@@ -101,11 +101,41 @@ final class CatalogController
      * @param array<string,mixed> $current category whose products we list
      * @param array<string,mixed>|null $parentForSub the top category when listing a sub
      */
-    private function renderCategory(Response $response, string $brand, array $top, array $current, ?array $parentForSub): Response
+    private function renderCategory(Request $request, Response $response, string $brand, array $top, array $current, ?array $parentForSub): Response
     {
         $isTop = $parentForSub === null;
-        $products = $this->repo->productsInCategory($current);
+        $all = $this->repo->productsInCategory($current);
         $subs = $isTop ? $this->repo->subcategories((int) $top['id']) : [];
+
+        // Facets from the full set; filters applied in PHP (categories are small).
+        $licences = [];
+        $years = [];
+        foreach ($all as $c) {
+            if ($c['licence'] !== '' && $c['licence'] !== null) {
+                $licences[$c['licence']] = true;
+            }
+            if ($c['year']) {
+                $years[$c['year']] = true;
+            }
+        }
+        $licences = array_keys($licences);
+        sort($licences);
+        $years = array_keys($years);
+        rsort($years);
+
+        $q = $request->getQueryParams();
+        $selPermis = trim((string) ($q['permis'] ?? ''));
+        $selAn = (int) ($q['an'] ?? 0);
+        if (!in_array($selPermis, $licences, true)) {
+            $selPermis = '';
+        }
+        if (!in_array($selAn, $years, true)) {
+            $selAn = 0;
+        }
+
+        $products = array_values(array_filter($all, fn ($c) =>
+            ($selPermis === '' || $c['licence'] === $selPermis)
+            && ($selAn === 0 || $c['year'] === $selAn)));
 
         $crumbs = [['label' => $this->brandLabels[$brand] ?? ucfirst($brand), 'url' => '/' . $brand]];
         $crumbs[] = ['label' => $top['name'], 'url' => '/' . $brand . '/' . $top['slug']];
@@ -120,6 +150,9 @@ final class CatalogController
             'isTop'         => $isTop,
             'subcategories' => $subs,
             'products'      => $products,
+            'total'         => count($all),
+            'facets'        => ['licences' => $licences, 'years' => $years],
+            'filters'       => ['permis' => $selPermis, 'an' => $selAn],
             'crumbs'        => $crumbs,
         ]);
     }

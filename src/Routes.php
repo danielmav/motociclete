@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 use App\Controllers\ApiController;
 use App\Controllers\CatalogController;
+use App\Controllers\CompareController;
 use App\Controllers\HomeController;
+use App\Controllers\NewsController;
 use Slim\App;
 use Slim\Views\Twig;
 
@@ -49,6 +51,20 @@ return function (App $app, Twig $twig, array $container): void {
     $app->post('/admin/setari',      $admin('save'));
     $app->get('/admin/fitment',      $admin('fitment'));
     $app->post('/admin/fitment/save', $admin('saveFitment'));
+
+    // --- Blog (Pe Două Roți), backed by the legacy `noutati` table ---
+    $blog = function (string $method) use ($twig, $container) {
+        return function ($request, $response, $args) use ($twig, $container, $method) {
+            return (new NewsController($twig, $container))->{$method}($request, $response, $args);
+        };
+    };
+    $app->get('/blog', $blog('index'));
+    $app->get('/blog/{slug}', $blog('article'));
+
+    // --- Compare models (same brand + same main category) ---
+    $app->get('/compara', function ($request, $response, $args) use ($twig, $container) {
+        return (new CompareController($twig, $container))->index($request, $response, $args);
+    });
 
     // --- Catalog (Yamaha + CFMOTO), backed by the local DB ---
     // Static routes above (/, /api/*, /health) take priority in FastRoute.

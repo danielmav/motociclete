@@ -1,0 +1,38 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Blog — Pe Două Roți | Dual Motors{% endblock %}
+{% block description %}Ghiduri, review-uri și noutăți din lumea motocicletelor Yamaha și CFMOTO, echipament și drumuri — de la Dual Motors.{% endblock %}
+
+{% block content %}
+
+<section class="section catalog-head">
+    <div class="container">
+        <span class="kicker">Pe Două Roți</span>
+        <h1 class="catalog-head__title">Blog</h1>
+    </div>
+</section>
+
+<section class="section section--tight">
+    <div class="container">
+        {% if articles|length %}
+            <div class="grid grid--articles">
+                {% for art in articles %}
+                    <a class="card-art" href="{{ base }}{{ art.url }}">
+                        <div class="card-art__media{{ art.image ? '' : ' media-ph' }}">
+                            {% if art.image %}
+                                <img src="{{ art.image }}" alt="{{ art.title }}" loading="lazy" width="640" height="400"
+                                     onerror="this.closest('.card-art__media').classList.add('media-ph');this.remove()">
+                            {% else %}<span class="media-ph__label">Pe Două Roți</span>{% endif %}
+                        </div>
+                        <span class="card-art__cat">Noutăți{% if art.date %} · {{ art.date }}{% endif %}</span>
+                        <h2 class="card-art__title">{{ art.title }}</h2>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state"><p>Momentan nu sunt articole de afișat.</p></div>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}

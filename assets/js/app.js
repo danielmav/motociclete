@@ -179,6 +179,53 @@
         });
     }
 
+    /* ---- Compare models (category page) ---- */
+    var cmpGrid = document.querySelector('[data-cmp-grid]');
+    var cmpTray = document.querySelector('[data-cmp-tray]');
+    if (cmpGrid && cmpTray) {
+        var cmpBrand = cmpGrid.getAttribute('data-brand') || '';
+        var cmpCount = cmpTray.querySelector('[data-cmp-count]');
+        var cmpItems = cmpTray.querySelector('[data-cmp-items]');
+        var cmpGo = cmpTray.querySelector('[data-cmp-go]');
+        var cmpGoN = cmpTray.querySelector('[data-cmp-go-n]');
+        var cmpClear = cmpTray.querySelector('[data-cmp-clear]');
+        var CMP_MAX = 4;
+        var cmpCbs = Array.prototype.slice.call(cmpGrid.querySelectorAll('[data-cmp-cb]'));
+
+        var cmpSelected = function () { return cmpCbs.filter(function (c) { return c.checked; }); };
+        var cmpUpdate = function () {
+            var sel = cmpSelected();
+            cmpCount.textContent = sel.length;
+            cmpItems.innerHTML = '';
+            sel.forEach(function (c) {
+                var chip = document.createElement('span');
+                chip.className = 'cmp-tray__chip';
+                chip.textContent = c.getAttribute('data-name');
+                cmpItems.appendChild(chip);
+            });
+            cmpGoN.textContent = sel.length >= 2 ? '(' + sel.length + ')' : '';
+            cmpGo.href = BASE + '/compara?brand=' + encodeURIComponent(cmpBrand) +
+                '&models=' + sel.map(function (c) { return encodeURIComponent(c.value); }).join(',');
+            cmpGo.classList.toggle('is-disabled', sel.length < 2);
+            cmpCbs.forEach(function (c) { if (!c.checked) c.disabled = sel.length >= CMP_MAX; });
+            cmpTray.hidden = sel.length === 0;
+        };
+
+        // Toggling the compare control must not navigate the card link.
+        cmpGrid.querySelectorAll('.card-moto').forEach(function (card) {
+            card.addEventListener('click', function (e) {
+                if (e.target.closest('[data-cmp]')) e.preventDefault();
+            });
+        });
+        cmpCbs.forEach(function (c) { c.addEventListener('change', cmpUpdate); });
+        cmpGo.addEventListener('click', function (e) { if (cmpSelected().length < 2) e.preventDefault(); });
+        cmpClear.addEventListener('click', function () {
+            cmpCbs.forEach(function (c) { c.checked = false; c.disabled = false; });
+            cmpUpdate();
+        });
+        cmpUpdate();
+    }
+
     /* ---- Virtual tour: click-to-load iframe (keeps page light) ---- */
     var tour = document.querySelector('[data-tour]');
     var tourBtn = tour ? tour.querySelector('[data-tour-play]') : null;

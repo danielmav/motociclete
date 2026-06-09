@@ -1,0 +1,91 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Comparație modele {{ brandLabel }} | Dual Motors{% endblock %}
+{% block description %}Compară modelele {{ brandLabel }} lângă lângă — preț, an, permis și specificații tehnice.{% endblock %}
+
+{% block content %}
+
+<section class="section catalog-head">
+    <div class="container">
+        <span class="kicker">{{ brandLabel }}</span>
+        <h1 class="catalog-head__title">Comparație modele</h1>
+    </div>
+</section>
+
+<section class="section section--tight">
+    <div class="container">
+        {% if products|length < 2 %}
+            <div class="empty-state">
+                <p>Alege cel puțin două modele din aceeași categorie pentru a le compara.</p>
+                <a class="btn btn--ghost" href="{{ base }}/{{ brand }}">Vezi modelele {{ brandLabel }} <span aria-hidden="true">→</span></a>
+            </div>
+        {% else %}
+            {% set specRows = [
+                { label: 'Motor',          key: 'specs_engine' },
+                { label: 'Șasiu & suspensii', key: 'specs_chassis' },
+                { label: 'Dimensiuni',     key: 'specs_dimensions' },
+                { label: 'Conectivitate',  key: 'specs_connectivity' }
+            ] %}
+            <div class="compare-wrap">
+                <table class="compare">
+                    <thead>
+                        <tr>
+                            <th class="compare__rowhead"></th>
+                            {% for p in products %}
+                                <th class="compare__col">
+                                    <a class="compare__card" href="{{ base }}{{ p.url }}">
+                                        <span class="compare__media{{ p.cover ? '' : ' media-ph' }}">
+                                            {% if p.cover %}<img src="{{ base }}{{ p.cover }}" alt="{{ p.name }}" loading="lazy" width="320" height="214"
+                                                 onerror="this.closest('.compare__media').classList.add('media-ph');this.remove()">{% else %}<span class="media-ph__label">{{ p.name }}</span>{% endif %}
+                                        </span>
+                                        <span class="compare__name">{{ p.name }}</span>
+                                    </a>
+                                </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th class="compare__rowhead">Preț</th>
+                            {% for p in products %}
+                                <td>{% set pr = prices(p.price) %}<strong>{{ pr.eur }}</strong><br><span class="price__ron">{{ pr.ron }}</span></td>
+                            {% endfor %}
+                        </tr>
+                        <tr>
+                            <th class="compare__rowhead">An</th>
+                            {% for p in products %}<td>{{ p.year ?: '—' }}</td>{% endfor %}
+                        </tr>
+                        <tr>
+                            <th class="compare__rowhead">Permis</th>
+                            {% for p in products %}<td>{{ p.licence ?: '—' }}</td>{% endfor %}
+                        </tr>
+                        <tr>
+                            <th class="compare__rowhead">Categorie</th>
+                            {% for p in products %}<td>{{ p.cat_name ?: p.top_name }}</td>{% endfor %}
+                        </tr>
+                        {% for row in specRows %}
+                            {% set hasAny = false %}
+                            {% for p in products %}{% if p[row.key]|trim is not empty %}{% set hasAny = true %}{% endif %}{% endfor %}
+                            {% if hasAny %}
+                                <tr class="compare__spec">
+                                    <th class="compare__rowhead">{{ row.label }}</th>
+                                    {% for p in products %}
+                                        <td>{% if p[row.key]|trim is not empty %}<div class="spec-table">{{ p[row.key]|raw }}</div>{% else %}—{% endif %}</td>
+                                    {% endfor %}
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                        <tr>
+                            <th class="compare__rowhead"></th>
+                            {% for p in products %}
+                                <td><a class="btn btn--ghost btn--sm" href="{{ base }}{{ p.url }}">Detalii <span aria-hidden="true">→</span></a></td>
+                            {% endfor %}
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}

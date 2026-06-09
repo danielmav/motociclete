@@ -91,13 +91,14 @@ final class Client
      */
     public function makes(): array
     {
+        // Momentan expunem doar mărcile pe care le reprezintă Dual Motors.
         return $this->options(
             "SELECT m.id_leopartsfilter_make AS id, ml.name
              FROM {$this->prefix}leopartsfilter_make m
              JOIN {$this->prefix}leopartsfilter_make_lang ml
                ON ml.id_leopartsfilter_make = m.id_leopartsfilter_make AND ml.id_lang = :lang
-             WHERE m.active = 1
-             ORDER BY ml.name",
+             WHERE m.active = 1 AND ml.name IN ('YAMAHA', 'CF MOTO')
+             ORDER BY FIELD(ml.name, 'YAMAHA', 'CF MOTO')",
             []
         );
     }
@@ -209,10 +210,14 @@ final class Client
             }
             $makeId = (int) $makeRow['id'];
 
-            // 2. Find model_id — try full name, then strip trailing year/variant suffix
-            $modelId   = null;
-            $ambiguous = false;
-            $candidates = [];
+            // 2. Gather candidate models (LIKE, progressively shorter). When the
+            //    product has a displacement, surface candidates that share it so
+            //    the right one survives the LIMIT before ranking.
+            $disp  = FitmentMatcher::displacementOf($modelName);
+            $order = $disp !== null
+                ? "ORDER BY (mol.name LIKE :disp) DESC, mol.name"
+                : "ORDER BY mol.name";
+            $rows = [];
             foreach ($this->modelCandidates($modelName) as $pattern) {
                 $stmt = $this->pdo->prepare(
                     "SELECT mo.id_leopartsfilter_model AS id, mol.name
@@ -221,52 +226,84 @@ final class Client
                        ON mol.id_leopartsfilter_model = mo.id_leopartsfilter_model AND mol.id_lang = :lang
                      WHERE mo.active = 1 AND mo.id_leopartsfilter_make = :make
                        AND mol.name LIKE :model
-                     ORDER BY mol.name
-                     LIMIT 5"
+                     {$order}
+                     LIMIT 50"
                 );
                 $stmt->bindValue(':lang', $this->langId, PDO::PARAM_INT);
                 $stmt->bindValue(':make', $makeId, PDO::PARAM_INT);
                 $stmt->bindValue(':model', '%' . $pattern . '%');
+                if ($disp !== null) {
+                    $stmt->bindValue(':disp', '%' . $disp . '%');
+                }
                 $stmt->execute();
                 $rows = $stmt->fetchAll();
                 if ($rows) {
-                    $modelId    = (int) $rows[0]['id'];
-                    $ambiguous  = count($rows) > 1;
-                    $candidates = array_column($rows, 'name');
                     break;
                 }
             }
-            if ($modelId === null) {
+            if (!$rows) {
                 return null;
             }
 
-            // 3. Find year_id by year string within this model
-            $stmt = $this->pdo->prepare(
-                "SELECT y.id_leopartsfilter_year AS id
-                 FROM {$p}leopartsfilter_year y
-                 JOIN {$p}leopartsfilter_year_lang yl
-                   ON yl.id_leopartsfilter_year = y.id_leopartsfilter_year AND yl.id_lang = :lang
-                 WHERE y.active = 1 AND y.id_leopartsfilter_make = :make AND y.id_leopartsfilter_model = :model
-                   AND yl.name = :year
-                 LIMIT 1"
+            // 3. Attach the available years per candidate model, then rank.
+            $modelIds = array_map(static fn ($r) => (int) $r['id'], $rows);
+            $years    = $this->yearsForModels($makeId, $modelIds);
+            $candidates = array_map(
+                static fn ($r) => [
+                    'id'    => (int) $r['id'],
+                    'name'  => (string) $r['name'],
+                    'years' => $years[(int) $r['id']] ?? [],
+                ],
+                $rows
             );
-            $stmt->bindValue(':lang', $this->langId, PDO::PARAM_INT);
-            $stmt->bindValue(':make', $makeId, PDO::PARAM_INT);
-            $stmt->bindValue(':model', $modelId, PDO::PARAM_INT);
-            $stmt->bindValue(':year', (string) $year);
-            $stmt->execute();
-            $yearRow = $stmt->fetch();
+
+            $best = FitmentMatcher::pickBest($modelName, $year, $candidates);
+            if ($best['model_id'] === null) {
+                return null;
+            }
 
             return [
                 'make_id'    => $makeId,
-                'model_id'   => $modelId,
-                'year_id'    => $yearRow ? (int) $yearRow['id'] : null,
-                'ambiguous'  => $ambiguous,
-                'candidates' => $candidates,
+                'model_id'   => $best['model_id'],
+                'year_id'    => $best['year_id'],
+                'ambiguous'  => $best['ambiguous'],
+                'confident'  => $best['confident'],
+                'candidates' => $best['candidates'],
             ];
         } catch (Throwable) {
             return null;
         }
+    }
+
+    /**
+     * Available years (year string => year_id) for a set of candidate models.
+     *
+     * @param list<int> $modelIds
+     * @return array<int,array<string,int>>
+     */
+    private function yearsForModels(int $makeId, array $modelIds): array
+    {
+        if ($modelIds === []) {
+            return [];
+        }
+        $p   = $this->prefix;
+        $ids = implode(',', array_map('intval', $modelIds)); // trusted ints, inlined
+        $stmt = $this->pdo->prepare(
+            "SELECT y.id_leopartsfilter_model AS model, y.id_leopartsfilter_year AS id, yl.name
+             FROM {$p}leopartsfilter_year y
+             JOIN {$p}leopartsfilter_year_lang yl
+               ON yl.id_leopartsfilter_year = y.id_leopartsfilter_year AND yl.id_lang = :lang
+             WHERE y.active = 1 AND y.id_leopartsfilter_make = :make
+               AND y.id_leopartsfilter_model IN ({$ids})"
+        );
+        $stmt->bindValue(':lang', $this->langId, PDO::PARAM_INT);
+        $stmt->bindValue(':make', $makeId, PDO::PARAM_INT);
+        $stmt->execute();
+        $out = [];
+        foreach ($stmt->fetchAll() as $r) {
+            $out[(int) $r['model']][(string) $r['name']] = (int) $r['id'];
+        }
+        return $out;
     }
 
     /** Brand display names for lookupFitment(). BikerShop uses "CF MOTO" (with space). */

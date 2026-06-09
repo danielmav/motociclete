@@ -21,6 +21,8 @@ final class Database
     private static ?PDO $local = null;
     private static ?PDO $bikershop = null;
     private static bool $bikershopTried = false;
+    private static ?PDO $news = null;
+    private static bool $newsTried = false;
 
     /** @param array<string,mixed> $config the 'db' settings array */
     public function __construct(private array $config) {}
@@ -52,6 +54,36 @@ final class Database
             self::$bikershop = null; // never let BikerShop downtime break the portal
         }
         return self::$bikershop;
+    }
+
+    /**
+     * Read-only PDO to the legacy `dualmotors_motociclete` DB (reuses DM_* creds),
+     * used at runtime for the blog/news section. Null when unavailable.
+     */
+    public function news(): ?PDO
+    {
+        if (self::$newsTried) {
+            return self::$news;
+        }
+        self::$newsTried = true;
+
+        $cfg = $this->config['dm'] ?? [];
+        if (empty($cfg['host']) || empty($cfg['db_moto']) || empty($cfg['user'])) {
+            return self::$news = null;
+        }
+
+        try {
+            self::$news = $this->connect([
+                'host' => $cfg['host'],
+                'port' => $cfg['port'] ?? '3306',
+                'name' => $cfg['db_moto'],
+                'user' => $cfg['user'],
+                'pass' => $cfg['pass'] ?? '',
+            ]);
+        } catch (PDOException) {
+            self::$news = null; // blog never breaks the portal
+        }
+        return self::$news;
     }
 
     /** @param array<string,mixed> $cfg */

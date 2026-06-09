@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\BikerShop\Client;
+use App\Catalog\Repository as Catalog;
+use App\News\Repository as News;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Views\Twig;
@@ -18,11 +20,15 @@ use Slim\Views\Twig;
 final class HomeController
 {
     private Client $bikershop;
+    private Catalog $catalog;
+    private News $news;
 
     /** @param array<string,mixed> $container */
     public function __construct(private Twig $twig, array $container)
     {
         $this->bikershop = $container['bikershop'];
+        $this->catalog   = $container['catalog'];
+        $this->news      = $container['news'];
     }
 
     public function index(Request $request, Response $response): Response
@@ -32,12 +38,12 @@ final class HomeController
         return $this->twig->render($response, 'home.twig', [
             'hero'            => $this->hero(),
             'brands'          => $this->brands(),
-            'models'          => $this->featuredModels(),
+            'models'          => $this->catalog->latestProducts(8),
             'makes'           => $this->bikershop->makes(),
             'accessories'     => $accessories,
             'accessoriesLive' => $this->bikershop->isAvailable(),
             'tour'            => $this->virtualTour(),
-            'articles'        => $this->articles(),
+            'articles'        => $this->news->latest(3),
         ]);
     }
 
@@ -67,20 +73,6 @@ final class HomeController
         ];
     }
 
-    /**
-     * SEED data — replaced by db_local (Milestone 2). `img` null => placeholder.
-     * @return array<int,array<string,mixed>>
-     */
-    private function featuredModels(): array
-    {
-        return [
-            ['name' => 'Yamaha MT-09',      'cat' => 'Naked',     'cc' => 890, 'permis' => 'A', 'price' => 11990, 'tag' => 'Nou 2026',   'img' => '/assets/img/models/mt09-card.webp'],
-            ['name' => 'Yamaha YZF-R9',     'cat' => 'Sport',     'cc' => 890, 'permis' => 'A', 'price' => 13490, 'tag' => 'Nou 2026',   'img' => '/assets/img/models/r9-card.webp'],
-            ['name' => 'Yamaha Ténéré 700', 'cat' => 'Adventure', 'cc' => 689, 'permis' => 'A', 'price' => 12490, 'tag' => 'Best seller','img' => null],
-            ['name' => 'CFMOTO 800NK',      'cat' => 'Naked',     'cc' => 799, 'permis' => 'A', 'price' => 8290,  'tag' => 'În stoc',    'img' => null],
-        ];
-    }
-
     /** @return array<string,string> */
     private function virtualTour(): array
     {
@@ -90,13 +82,4 @@ final class HomeController
         ];
     }
 
-    /** @return array<int,array<string,string>> */
-    private function articles(): array
-    {
-        return [
-            ['cat' => 'Ghid', 'title' => 'Permis A2 vs A: ce poți conduce și cum faci upgrade', 'read' => '6 min'],
-            ['cat' => 'Review', 'title' => 'Am testat Yamaha Ténéré 700 pe Transalpina', 'read' => '9 min'],
-            ['cat' => 'Echipament', 'title' => 'Cum alegi o cască Arai: forme, mărimi, ECE 22.06', 'read' => '7 min'],
-        ];
-    }
 }

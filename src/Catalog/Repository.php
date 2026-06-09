@@ -157,6 +157,47 @@ final class Repository
         return $this->shapeProduct($row);
     }
 
+    /**
+     * Newest products across both brands, by insertion order (id DESC).
+     * Used by the homepage "Modele" strip. @return array<int,array<string,mixed>>
+     */
+    public function latestProducts(int $limit = 8): array
+    {
+        $rows = $this->all(
+            "SELECT p.id, p.brand, p.name, p.subtitle, p.slug, p.year, p.price, p.discount_pct,
+                    p.licence, p.cover_image, c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
+             " . self::PROD_JOIN . "
+             WHERE p.is_active = 1
+             ORDER BY p.id DESC
+             LIMIT " . (int) $limit
+        );
+        return array_map([$this, 'shapeCard'], $rows);
+    }
+
+    /**
+     * Full product details for several slugs of one brand, in the given order.
+     * Used by the comparison page. @return array<int,array<string,mixed>>
+     */
+    public function productsBySlugs(string $brand, array $slugs): array
+    {
+        $slugs = array_values(array_filter(array_unique($slugs)));
+        if (!$slugs || !$this->isAvailable()) {
+            return [];
+        }
+        $in = implode(',', array_fill(0, count($slugs), '?'));
+        $rows = $this->all(
+            "SELECT p.*, c.name AS cat_name, c.slug AS cat_slug, c.parent_id AS cat_parent,
+                    t.name AS top_name, t.slug AS top_slug
+             " . self::PROD_JOIN . "
+             WHERE p.brand = ? AND p.slug IN ({$in})",
+            array_merge([$brand], $slugs)
+        );
+        $shaped = array_map([$this, 'shapeProduct'], $rows);
+        // Preserve the order the user selected them in.
+        usort($shaped, fn ($a, $b) => array_search($a['slug'], $slugs) <=> array_search($b['slug'], $slugs));
+        return $shaped;
+    }
+
     /** Related products (same category, excluding self). @return array<int,array<string,mixed>> */
     public function related(array $product, int $limit = 4): array
     {
@@ -260,6 +301,8 @@ final class Repository
         $r = $this->breadcrumbSlugs($r);
         return [
             'name'         => $r['name'],
+            'slug'         => $r['slug'],
+            'brand'        => $r['brand'],
             'subtitle'     => $r['subtitle'],
             'year'         => (int) $r['year'],
             'price'        => (int) $r['price'],

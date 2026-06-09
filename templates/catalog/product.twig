@@ -171,9 +171,9 @@
                         Vezi toate pe BikerShop <span aria-hidden="true">→</span>
                     </a>
                 </header>
-                <div class="grid grid--acc">
+                <div class="grid grid--acc grid--acc--4">
                     {% for a in accessories %}
-                        <a class="card-acc" href="{{ a.url }}" target="_blank" rel="noopener">
+                        <a class="card-acc card-acc--sm" href="{{ a.url }}" target="_blank" rel="noopener">
                             <div class="card-acc__media media-ph media-ph--sm">
                                 {% if a.image %}
                                     <img loading="lazy" src="{{ a.image }}" alt="{{ a.name }}" width="300" height="300"

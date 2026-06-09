@@ -601,7 +601,7 @@ a.card-moto { display: block; color: inherit; }
 .product-video__play:hover { background: var(--red); }
 
 /* detail shots gallery */
-.detail-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); }
+.detail-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
 .detail-item {
     position: relative;
     aspect-ratio: 3 / 2;
@@ -761,3 +761,97 @@ a.card-moto, .card-moto, .card-moto__body, .card-cat { min-width: 0; }
 @media (max-width: 1100px) { .grid--models { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 820px)  { .grid--models, .grid--cats { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 600px)  { .grid--models { grid-template-columns: 1fr; } .grid--cats { grid-template-columns: 1fr; } }
+
+/* ============================================================
+   BLOG cards — real images in the editorial cards
+   ============================================================ */
+.card-art__media { position: relative; overflow: hidden; }
+.card-art__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .35s var(--ease); }
+.card-art:hover .card-art__media img { transform: scale(1.04); }
+a.card-art { display: block; color: inherit; }
+
+.article { max-width: 820px; margin-inline: auto; }
+.article__crumbs { font-size: .85rem; margin-bottom: 1rem; }
+.article__crumbs a { color: var(--muted); }
+.article__crumbs a:hover { color: var(--red); }
+.article__title { font-family: var(--head); font-weight: 800; font-size: clamp(1.7rem, 4vw, 2.6rem); line-height: 1.1; margin: .4rem 0 1.4rem; }
+.article__cover { border-radius: var(--radius); overflow: hidden; margin-bottom: 1.8rem; }
+.article__cover img { width: 100%; height: auto; display: block; }
+.article__body { font-size: 1.02rem; }
+.article__body img { max-width: 100%; height: auto; border-radius: var(--radius-sm, 10px); }
+
+/* ============================================================
+   CATALOG FILTERS (permis / an)
+   ============================================================ */
+.catalog-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; margin-bottom: 1.4rem; }
+.catalog-filters__field { display: grid; gap: .35rem; }
+.catalog-filters__field > span { font-family: var(--head); font-weight: 700; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.catalog-filters__field select {
+    appearance: none; -webkit-appearance: none;
+    font: inherit; font-weight: 600; color: var(--ink);
+    background: #fff; border: 1px solid var(--line); border-radius: 10px;
+    padding: .6rem 2.2rem .6rem .9rem; min-width: 8rem; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%236B6B72' stroke-width='2'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right .8rem center;
+}
+.catalog-filters__field select:focus { outline: none; border-color: var(--red); }
+.catalog-filters__reset { align-self: end; padding-block: .6rem; font-size: .85rem; color: var(--red); font-weight: 600; }
+.catalog-count__total { color: var(--muted); }
+
+/* ============================================================
+   COMPARE — per-card toggle + sticky tray + table
+   ============================================================ */
+.card-compare {
+    position: absolute; right: .6rem; bottom: .6rem; z-index: 3;
+    display: inline-flex; align-items: center; gap: .4rem;
+    background: rgba(255,255,255,.92); border: 1px solid var(--line); border-radius: 999px;
+    padding: .32rem .6rem .32rem .5rem; cursor: pointer;
+    font-family: var(--head); font-weight: 700; font-size: .68rem; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--ink); backdrop-filter: blur(4px);
+    transition: background .2s var(--ease), border-color .2s var(--ease);
+}
+.card-compare:hover { border-color: var(--red); }
+.card-compare input { accent-color: var(--red); width: 15px; height: 15px; cursor: pointer; margin: 0; }
+.card-compare input:disabled { cursor: not-allowed; }
+
+.cmp-tray {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+    background: var(--ink); color: #fff; box-shadow: 0 -8px 30px rgba(0,0,0,.2);
+}
+.cmp-tray[hidden] { display: none; }
+.cmp-tray__inner { display: flex; align-items: center; gap: 1rem; padding-block: .85rem; flex-wrap: wrap; }
+.cmp-tray__count { font-size: .9rem; opacity: .9; }
+.cmp-tray__count small { opacity: .6; }
+.cmp-tray__items { display: flex; flex-wrap: wrap; gap: .4rem; flex: 1; min-width: 0; }
+.cmp-tray__chip { background: rgba(255,255,255,.12); border-radius: 999px; padding: .3rem .7rem; font-size: .8rem; white-space: nowrap; }
+.cmp-tray__actions { display: flex; gap: .6rem; margin-left: auto; }
+.cmp-tray .btn.is-disabled { opacity: .45; pointer-events: none; }
+
+.compare-wrap { overflow-x: auto; }
+.compare { width: 100%; border-collapse: collapse; min-width: 640px; }
+.compare th, .compare td { border: 1px solid var(--line); padding: 1rem; vertical-align: top; text-align: left; }
+.compare__rowhead { width: 9rem; background: var(--surface); font-family: var(--head); font-weight: 700; font-size: .85rem; color: var(--muted); white-space: nowrap; }
+.compare__col { width: auto; }
+.compare__card { display: block; color: inherit; }
+.compare__media { position: relative; display: block; aspect-ratio: 3 / 2; border-radius: var(--radius-sm, 10px); overflow: hidden; margin-bottom: .6rem; background: var(--surface); }
+.compare__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.compare__name { font-family: var(--head); font-weight: 700; line-height: 1.2; }
+.compare__card:hover .compare__name { color: var(--red); }
+.compare__spec .spec-table { font-size: .85rem; }
+.compare__spec td { font-size: .9rem; }
+
+/* ============================================================
+   ACCESSORY GRID — 4-up compact variant (product page)
+   ============================================================ */
+.grid--acc--4 { grid-template-columns: repeat(4, 1fr); gap: .9rem; }
+.card-acc--sm .card-acc__name { font-size: .82rem; min-height: 2.4em; }
+.card-acc--sm .card-acc__brand { font-size: .62rem; }
+.card-acc--sm .card-acc__price { font-size: .9rem; }
+@media (max-width: 1000px) { .grid--acc--4 { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 640px)  { .grid--acc--4 { grid-template-columns: repeat(2, 1fr); } }
+
+@media (max-width: 600px) {
+    .cmp-tray__actions { width: 100%; }
+    .cmp-tray__actions .btn { flex: 1; text-align: center; }
+    .compare__rowhead { width: 6rem; }
+}
