@@ -37,6 +37,7 @@ return function (App $app, Twig $twig, array $container): void {
             'ok'        => true,
             'bikershop' => $container['bikershop']->isAvailable(),
             'catalog'   => $container['catalog']->isAvailable(),
+            'news'      => $container['news']->isAvailable(),
         ], JSON_PRETTY_PRINT));
         return $response->withHeader('Content-Type', 'application/json');
     });
