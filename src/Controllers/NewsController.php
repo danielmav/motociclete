@@ -23,11 +23,20 @@ final class NewsController
         $this->news = $container['news'];
     }
 
-    /** /blog — listing. */
+    /** /blog — listing, paginat. */
     public function index(Request $request, Response $response): Response
     {
+        $perPage = 12;
+        $total   = $this->news->count();
+        $pages   = max(1, (int) ceil($total / $perPage));
+        $page    = max(1, (int) ($request->getQueryParams()['page'] ?? 1));
+        $page    = min($page, $pages);
+
         return $this->twig->render($response, 'blog/index.twig', [
-            'articles' => $this->news->latest(120),
+            'articles' => $this->news->page($page, $perPage),
+            'page'     => $page,
+            'pages'    => $pages,
+            'total'    => $total,
         ]);
     }
 
@@ -42,7 +51,7 @@ final class NewsController
         return $this->twig->render($response, 'blog/article.twig', [
             'a'        => $article,
             'og_image' => $article['image'],
-            'more'     => $this->news->latest(3),
+            'more'     => $this->news->latest(6),
         ]);
     }
 }

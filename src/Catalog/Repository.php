@@ -84,6 +84,25 @@ final class Repository
         );
     }
 
+    /**
+     * A random product card (with a cover image) from a top category (incl. its
+     * subcategories), for the brand landing teaser. Null if none has an image.
+     * @return array<string,mixed>|null
+     */
+    public function sampleTopCategoryProduct(int $topCatId): ?array
+    {
+        $row = $this->one(
+            "SELECT p.id, p.brand, p.name, p.subtitle, p.slug, p.year, p.price, p.discount_pct,
+                    p.licence, p.cover_image, c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
+             " . self::PROD_JOIN . "
+             WHERE (c.id = :a OR c.parent_id = :b)
+               AND p.is_active = 1 AND p.cover_image IS NOT NULL AND p.cover_image <> ''
+             ORDER BY RAND() LIMIT 1",
+            [':a' => $topCatId, ':b' => $topCatId]
+        );
+        return $row ? $this->shapeCard($row) : null;
+    }
+
     /** @return array<int,array<string,mixed>> children of a top category */
     public function subcategories(int $parentId): array
     {

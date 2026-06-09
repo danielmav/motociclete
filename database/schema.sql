@@ -122,7 +122,6 @@ CREATE TABLE IF NOT EXISTS `news` (
     `slug`         VARCHAR(255) NOT NULL,
     `excerpt`      TEXT NULL,
     `body`         MEDIUMTEXT NULL,                       -- HTML articol
-    `image_url`    VARCHAR(512) NULL,                     -- URL absolut (site live)
     `published_at` DATETIME NULL,
     `is_active`    TINYINT(1) NOT NULL DEFAULT 1,
     `legacy_id`    INT UNSIGNED NULL,                     -- id_noutate original
@@ -130,4 +129,20 @@ CREATE TABLE IF NOT EXISTS `news` (
     KEY `idx_news_active_date` (`is_active`, `published_at`),
     KEY `idx_news_slug` (`slug`),
     KEY `idx_news_legacy` (`brand`, `legacy_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------------
+-- news_images — imaginile fiecărui articol (din legacy `imagini_noutati`).
+-- `is_cover` = imagine_principala. Fișierele sunt în /media/noutati-moto/ (gitignored).
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `news_images` (
+    `id`        INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `news_id`   INT UNSIGNED NOT NULL,
+    `filename`  VARCHAR(255) NOT NULL,                    -- nume fișier (verbatim; url-encodat la afișare)
+    `is_cover`  TINYINT(1) NOT NULL DEFAULT 0,
+    `position`  INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (`id`),
+    KEY `idx_newsimg_news` (`news_id`, `is_cover`),
+    CONSTRAINT `fk_newsimg_news` FOREIGN KEY (`news_id`)
+        REFERENCES `news` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

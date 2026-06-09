@@ -18,8 +18,10 @@ Construit pe milestone-uri (vezi planul aprobat). **Milestone 1 livrat = home pa
   pinează `platform.php = 8.1.10`).
 - **Scripturi CLI cu DB/curl** (migrare, prune, orice PDO): rulează cu binarul Laragon
   `C:/laragon/bin/php/php-8.1.10-Win32-vs16-x64/php.exe` — `php` din PATH (8.2) NU are `pdo_mysql`/`curl`.
+- **Probe/diagnostic DB rapid:** scrie un `tmp_*.php` și rulează-l cu binarul Laragon (apoi șterge-l) — `php -r` inline crapă pe quoting (`$`, `"`, paranteze) în Bash/PowerShell. `database/diagnose_db.php` testează cele 3 conexiuni.
 - **mysqldump / mysql client** (dump/import DB): `C:/laragon/bin/mysql/mysql-8.0.30-winx64/bin/`.
   Conectare la DB remote: pasează parola via env `MYSQL_PWD` (parolele au caractere speciale → evită `-p`). Dev IP whitelisted în Remote MySQL pe serverele remote.
+  PowerShell `>` scrie UTF-16 (strică importul) → `mysqldump --result-file=…` + `mysql -e "source …"`. Bash tool NU are cmdleturi PowerShell (`Select-Object`/`-String`).
 - **Slim 4** (routing), **Twig** (templating), **PDO** (MySQL/MariaDB), **phpdotenv**.
 - Frontend: **CSS + JS vanilla**, fără build step. Fonturi Google (Archivo Expanded / Archivo / Hanken Grotesk).
 - **Laragon**, `http://motociclete.test`. Document root = rădăcina proiectului; `.htaccess` rutează tot prin `index.php` și protejează `src/`, `templates/`, `vendor/`, `.env`.
@@ -53,7 +55,7 @@ Construit pe milestone-uri (vezi planul aprobat). **Milestone 1 livrat = home pa
 - **URL curat, brand-first:** `/{brand}/{cat}` (categorie), `/{brand}/{cat}/{sub}` (subcategorie), produs `/{brand}/{cat}/{sub}/{slug}` (Yamaha, cat 2 niveluri) sau `/{brand}/{cat}/{slug}` (CFMOTO, cat plate). Ruta de 3 segmente rezolvă dinamic subcategorie-vs-produs.
 - **Filtre categorie:** pagina categorie acceptă `?permis=` + `?an=` (facete calculate din setul complet, filtrare în PHP în `CatalogController::renderCategory`; UI = `<select>`-uri care auto-submit GET).
 - **Comparație modele:** doar același brand + aceeași categorie principală (top). Toggle „Compară" pe carduri (JS în `app.js`, tava sticky) → `/compara?brand=&models=slug,slug` (`CompareController` + `catalog/compare.twig`); backstop server-side păstrează doar produsele cu același `top_slug` ca primul. `Repository::productsBySlugs()`.
-- **Blog „Pe Două Roți":** `src/News/Repository.php` citește din tabela proprie `news` (DB-ul portalului), populată de `database/migrate_news.php` din legacy `noutati`. Rute `/blog` + `/blog/{id}-{slug}` (`NewsController`). Imaginile = URL-uri absolute pe site-ul live.
+- **Blog „Pe Două Roți":** `src/News/Repository.php` citește din tabelele proprii `news` + `news_images` (DB-ul portalului), populate de `database/migrate_news.php` din legacy `noutati`/`imagini_noutati`. Rute `/blog` + `/blog/{id}-{slug}` (`NewsController`). Imaginile în `/media/noutati-moto/` (gitignored); `news_images.is_cover` = cover. Curățare orfane: `database/prune_news_media.php` (`--apply`).
 - **SEO:** URL-urile vechi `*.html` fac **301** către canonic (match pe `products.legacy_url`). Rute statice (`/`, `/api/*`, `/health`, `/blog`, `/compara`) au prioritate în FastRoute.
 - **Imagini:** în `/media/{brand}/{culori|motociclete|detalii}/` (gitignored). Galeria legacy `imagini` e servită din folderul `.../motociclete/`. Numele fișierelor sunt url-encodate la afișare. Vezi `database/README.md` pentru maparea de copiere de pe server.
 - Meniul mega e în `src/Support/Navigation.php` (Twig global `nav`), nu în HomeController.
@@ -74,7 +76,7 @@ Construit pe milestone-uri (vezi planul aprobat). **Milestone 1 livrat = home pa
 - Toate query-urile = prepared statements. BikerShop NU se scrie niciodată (read-only).
 - **PDO native prepares (emulate=false): un placeholder numit NU se poate repeta.** `id_shop`/`id_lang` (int-uri din config, de încredere) sunt inline în SQL; doar inputul user rămâne bound.
 - Cumpărarea rămâne pe BikerShop: produsele fac link la `bikershop.ro/{id}-{slug}.html`; imagini `bikershop.ro/{id_image}-large_default/{slug}.jpg` (servite public, 200).
-- Prețuri BikerShop: stocate fără TVA în PrestaShop; afișate `*1.21` (orientativ) — de revizuit.
+- Prețuri BikerShop = **RON (Lei)** (moneda default a shopului, `PS_CURRENCY_DEFAULT=1`; EUR secundar la rate ~0.19). `ps_product_shop.price` e **fără TVA**; `Client::shapeProduct` aplică cota reală din `tax_rules_group` (de regulă 21%) → brut, afișat „Lei" cu 2 zecimale. Prețurile **motocicletelor** sunt în EUR (alt flux). Reducerile `specific_price` NU sunt citite (preț standard).
 - Reveal animations: gated pe `.js` (setat inline în `<head>`) → conținut vizibil fără JS.
 - Roșu brand: logo e `#FF0000`; pe fundal alb folosim `--red:#E10600` (rafinat). `--red-dark` la hover.
 
@@ -91,9 +93,11 @@ elegant pentru fotografii (până vin imaginile reale).
 ## Local development
 
 Rulează direct cu Laragon — fără build step. `composer install`, apoi vizitează
-`http://motociclete.test`. `/health` raportează disponibilitatea BikerShop.
-Screenshot: `chrome --headless=new --screenshot=<CALE-ABSOLUTĂ>.png --window-size=1440,2600 <url>`
-(calea relativă dă „cannot find path"; cale absolută obligatorie).
+`http://motociclete.test`. `/health` raportează `bikershop` + `catalog` + `news`.
+După editări `app.css`/`app.js`: bump `?v=N` în `layout.twig` (cache-bust).
+Screenshot: Chrome NU e pe PATH în Bash → cale completă
+`"/c/Program Files/Google/Chrome/Application/chrome.exe" --headless=new --screenshot=<CALE-ABSOLUTĂ>.png --window-size=1440,2600 <url>`
+(calea relativă a fișierului dă „cannot find path"; cale absolută obligatorie).
 
 ## Deploy (staging `/2026/`)
 

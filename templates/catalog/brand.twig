@@ -21,9 +21,19 @@
         <div class="grid grid--cats">
             {% for c in categories %}
                 <a class="card-cat" href="{{ base }}/{{ brand }}/{{ c.slug }}">
-                    <span class="card-cat__name">{{ c.name }}</span>
-                    <span class="card-cat__count">{{ c.product_count }} {{ c.product_count == 1 ? 'model' : 'modele' }}</span>
-                    <span class="link-arrow link-arrow--sm" aria-hidden="true">→</span>
+                    <div class="card-cat__media{{ c.sample and c.sample.image ? '' : ' media-ph' }}">
+                        {% if c.sample and c.sample.image %}
+                            <img src="{{ base }}{{ c.sample.image }}" alt="{{ c.name }} {{ brandLabel }}" loading="lazy" width="600" height="375"
+                                 onerror="this.closest('.card-cat__media').classList.add('media-ph');this.remove()">
+                        {% else %}
+                            <span class="media-ph__label">{{ c.name }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-cat__body">
+                        <span class="card-cat__name">{{ c.name }}</span>
+                        <span class="card-cat__count">{{ c.product_count }} {{ c.product_count == 1 ? 'model' : 'modele' }}</span>
+                        <span class="link-arrow link-arrow--sm" aria-hidden="true">→</span>
+                    </div>
                 </a>
             {% endfor %}
         </div>

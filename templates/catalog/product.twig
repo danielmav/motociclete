@@ -182,7 +182,7 @@
                             </div>
                             {% if a.manufacturer %}<span class="card-acc__brand">{{ a.manufacturer }}</span>{% endif %}
                             <span class="card-acc__name">{{ a.name }}</span>
-                            <span class="card-acc__price">{{ a.price }} €</span>
+                            <span class="card-acc__price">{{ a.price|number_format(2, ',', '.') }} Lei</span>
                         </a>
                     {% endfor %}
                 </div>

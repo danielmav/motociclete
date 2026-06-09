@@ -39,6 +39,13 @@ final class CatalogController
         if (!$cats) {
             throw new HttpNotFoundException($request);
         }
+        // Doar categoriile cu produse; fiecare primește un produs aleator (teaser).
+        $cats = array_values(array_filter($cats, fn ($c) => (int) $c['product_count'] > 0));
+        foreach ($cats as &$c) {
+            $c['sample'] = $this->repo->sampleTopCategoryProduct((int) $c['id']);
+        }
+        unset($c);
+
         return $this->twig->render($response, 'catalog/brand.twig', [
             'brand'      => $brand,
             'brandLabel' => $this->brandLabels[$brand] ?? ucfirst($brand),

@@ -20,7 +20,7 @@
                     <a class="card-art" href="{{ base }}{{ art.url }}">
                         <div class="card-art__media{{ art.image ? '' : ' media-ph' }}">
                             {% if art.image %}
-                                <img src="{{ art.image }}" alt="{{ art.title }}" loading="lazy" width="640" height="400"
+                                <img src="{{ base }}{{ art.image }}" alt="{{ art.title }}" loading="lazy" width="640" height="400"
                                      onerror="this.closest('.card-art__media').classList.add('media-ph');this.remove()">
                             {% else %}<span class="media-ph__label">Pe Două Roți</span>{% endif %}
                         </div>
@@ -29,6 +29,26 @@
                     </a>
                 {% endfor %}
             </div>
+
+            {% if pages > 1 %}
+                <nav class="pager" aria-label="Paginare blog">
+                    {% if page > 1 %}
+                        <a class="pager__link pager__nav" href="{{ base }}/blog?page={{ page - 1 }}" rel="prev"><span aria-hidden="true">←</span> Anterior</a>
+                    {% endif %}
+                    {% for p in 1..pages %}
+                        {% if p == page %}
+                            <span class="pager__link is-current" aria-current="page">{{ p }}</span>
+                        {% elseif p == 1 or p == pages or (p >= page - 2 and p <= page + 2) %}
+                            <a class="pager__link" href="{{ base }}/blog?page={{ p }}">{{ p }}</a>
+                        {% elseif p == page - 3 or p == page + 3 %}
+                            <span class="pager__gap">…</span>
+                        {% endif %}
+                    {% endfor %}
+                    {% if page < pages %}
+                        <a class="pager__link pager__nav" href="{{ base }}/blog?page={{ page + 1 }}" rel="next">Următor <span aria-hidden="true">→</span></a>
+                    {% endif %}
+                </nav>
+            {% endif %}
         {% else %}
             <div class="empty-state"><p>Momentan nu sunt articole de afișat.</p></div>
         {% endif %}

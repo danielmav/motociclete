@@ -9,15 +9,21 @@ use PDO;
 use Throwable;
 
 /**
- * Reads the blog/news from the portal's OWN DB (`news` table), populated from the
- * legacy `noutati` tables by database/migrate_news.php. Read-only here, graceful
- * degradation (returns []/null). Images are absolute URLs (served by the live site).
+ * Reads the blog/news from the portal's OWN DB (`news` + `news_images`), populated
+ * from the legacy tables by database/migrate_news.php. Read-only, graceful
+ * degradation. Imaginile sunt servite local din /media/noutati-moto/.
  */
 final class Repository
 {
     private ?PDO $pdo;
 
+    private const IMG_BASE = '/media/noutati-moto/';
     private const MONTHS = [1 => 'ian', 'feb', 'mar', 'apr', 'mai', 'iun', 'iul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+    /** Subquery: cover filename (is_cover first, then position). */
+    private const COVER_SUBQUERY =
+        "(SELECT i.filename FROM news_images i WHERE i.news_id = n.id
+          ORDER BY i.is_cover DESC, i.position ASC, i.id ASC LIMIT 1)";
 
     public function __construct(Database $db)
     {
@@ -37,30 +43,68 @@ final class Repository
     public function latest(int $limit = 3): array
     {
         $rows = $this->all(
-            "SELECT id, title, slug, excerpt, image_url, published_at
-             FROM news
-             WHERE is_active = 1
-             ORDER BY published_at DESC, id DESC
+            "SELECT n.id, n.title, n.slug, n.excerpt, n.published_at,
+                    " . self::COVER_SUBQUERY . " AS cover
+             FROM news n
+             WHERE n.is_active = 1
+             ORDER BY n.published_at DESC, n.id DESC
              LIMIT " . (int) $limit
         );
         return array_map([$this, 'shapeCard'], $rows);
     }
 
-    /** A single article by id (with full HTML body), or null. @return array<string,mixed>|null */
+    /** Total active articles (for pagination). */
+    public function count(): int
+    {
+        $r = $this->one("SELECT COUNT(*) AS c FROM news WHERE is_active = 1");
+        return $r ? (int) $r['c'] : 0;
+    }
+
+    /** One page of articles (newest first), shaped as cards. @return array<int,array<string,mixed>> */
+    public function page(int $page, int $perPage): array
+    {
+        $perPage = max(1, $perPage);
+        $offset  = max(0, ($page - 1) * $perPage);
+        $rows = $this->all(
+            "SELECT n.id, n.title, n.slug, n.excerpt, n.published_at,
+                    " . self::COVER_SUBQUERY . " AS cover
+             FROM news n
+             WHERE n.is_active = 1
+             ORDER BY n.published_at DESC, n.id DESC
+             LIMIT " . (int) $perPage . " OFFSET " . (int) $offset
+        );
+        return array_map([$this, 'shapeCard'], $rows);
+    }
+
+    /** A single article by id (with body + gallery), or null. @return array<string,mixed>|null */
     public function find(int $id): ?array
     {
         $row = $this->one(
-            "SELECT id, title, slug, excerpt, body, image_url, published_at
-             FROM news
-             WHERE is_active = 1 AND id = :id",
+            "SELECT n.id, n.title, n.slug, n.excerpt, n.body, n.published_at,
+                    " . self::COVER_SUBQUERY . " AS cover
+             FROM news n
+             WHERE n.is_active = 1 AND n.id = :id",
             [':id' => $id]
         );
         if (!$row) {
             return null;
         }
         $card = $this->shapeCard($row);
-        $card['body'] = (string) $row['body'];
+        $card['body']   = (string) $row['body'];
+        $card['images'] = $this->galleryImages($id);
         return $card;
+    }
+
+    /** Non-cover images for the article gallery. @return array<int,string> web paths */
+    private function galleryImages(int $id): array
+    {
+        $rows = $this->all(
+            "SELECT filename FROM news_images
+             WHERE news_id = :id AND is_cover = 0
+             ORDER BY position ASC, id ASC",
+            [':id' => $id]
+        );
+        return array_values(array_filter(array_map(fn ($r) => $this->imgPath($r['filename']), $rows)));
     }
 
     /** @return array<string,mixed> */
@@ -72,9 +116,15 @@ final class Repository
             'title'   => (string) $r['title'],
             'excerpt' => (string) $r['excerpt'],
             'date'    => $this->roDate((string) ($r['published_at'] ?? '')),
-            'image'   => $r['image_url'] ?: null,
+            'image'   => $this->imgPath($r['cover'] ?? null),
             'url'     => '/blog/' . $id . '-' . ($r['slug'] ?: 'articol'),
         ];
+    }
+
+    /** Web-relative image path (templates prepend {{ base }}). Null if no file. */
+    private function imgPath(?string $filename): ?string
+    {
+        return $filename ? self::IMG_BASE . rawurlencode($filename) : null;
     }
 
     /** DATETIME string -> "3 iun 2026". */

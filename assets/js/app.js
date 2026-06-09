@@ -82,7 +82,7 @@
         var statusEl = document.querySelector('[data-fit-status]');
 
         var fmtPrice = function (n) {
-            return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' €';
+            return Number(n).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Lei';
         };
         var setOptions = function (sel, items, placeholder) {
             sel.innerHTML = '';

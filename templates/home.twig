@@ -137,7 +137,7 @@
                             </div>
                             <span class="card-acc__brand">{{ a.manufacturer }}</span>
                             <span class="card-acc__name">{{ a.name }}</span>
-                            <span class="card-acc__price">{{ a.price|money }}</span>
+                            <span class="card-acc__price">{{ a.price|number_format(2, ',', '.') }} Lei</span>
                         </a>
                     {% endfor %}
                 {% else %}
@@ -200,7 +200,7 @@
                     <a class="card-art" href="{{ base }}{{ art.url }}">
                         <div class="card-art__media{{ art.image ? '' : ' media-ph' }}">
                             {% if art.image %}
-                                <img src="{{ art.image }}" alt="{{ art.title }}" loading="lazy" width="640" height="400"
+                                <img src="{{ base }}{{ art.image }}" alt="{{ art.title }}" loading="lazy" width="640" height="400"
                                      onerror="this.closest('.card-art__media').classList.add('media-ph');this.remove()">
                             {% else %}<span class="media-ph__label">Pe Două Roți</span>{% endif %}
                         </div>

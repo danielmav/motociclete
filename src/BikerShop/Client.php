@@ -60,6 +60,8 @@ final class Client
                     pl.name,
                     pl.link_rewrite,
                     COALESCE(ps.price, pr.price) AS price,
+                    (SELECT t.rate FROM {$p}tax_rule trl JOIN {$p}tax t ON t.id_tax = trl.id_tax
+                      WHERE trl.id_tax_rules_group = pr.id_tax_rules_group AND t.active = 1 LIMIT 1) AS tax_rate,
                     m.name AS manufacturer,
                     img.id_image
             FROM        {$p}product       pr
@@ -148,6 +150,8 @@ final class Client
         $sql = "
             SELECT  pr.id_product, pl.name, pl.link_rewrite,
                     COALESCE(ps.price, pr.price) AS price,
+                    (SELECT t.rate FROM {$p}tax_rule trl JOIN {$p}tax t ON t.id_tax = trl.id_tax
+                      WHERE trl.id_tax_rules_group = pr.id_tax_rules_group AND t.active = 1 LIMIT 1) AS tax_rate,
                     m.name AS manufacturer, img.id_image
             FROM        {$p}leopartsfilter_product lp
             JOIN        {$p}product       pr  ON pr.id_product = lp.id_product
@@ -356,11 +360,15 @@ final class Client
     /** @param array<string,mixed> $r @return array<string,mixed> */
     private function shapeProduct(array $r): array
     {
+        // Prețurile BikerShop sunt în RON (Lei), stocate FĂRĂ TVA în product_shop.price.
+        // Aplicăm cota reală de TVA a produsului (de regulă 21%) pentru prețul brut.
+        $excl = (float) $r['price'];
+        $rate = isset($r['tax_rate']) ? (float) $r['tax_rate'] : 0.0;
         return [
             'id'           => (int) $r['id_product'],
             'name'         => (string) $r['name'],
             'manufacturer' => $r['manufacturer'] ?? '',
-            'price'        => round(((float) $r['price']) * 1.19), // approx. gross (VAT)
+            'price'        => round($excl * (1 + $rate / 100), 2), // brut RON, cu TVA
             'image'        => $this->imageUrl($r['id_image'] ?? null, $r['link_rewrite']),
             'url'          => $this->productUrl((int) $r['id_product'], (string) $r['link_rewrite']),
         ];
