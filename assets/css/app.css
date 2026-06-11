@@ -605,6 +605,7 @@ a.card-moto { display: block; color: inherit; }
 .auth__code { letter-spacing: .5em; text-align: center; font-size: 1.4rem; font-weight: 700; }
 .auth__error { background: #fdecec; color: var(--red-dark, #b00); padding: .7rem 1rem; border-radius: 10px; margin-bottom: 1rem; font-size: .9rem; }
 .auth__note { color: var(--muted); font-size: .85rem; margin-top: 1.2rem; }
+.auth__dev { background: #eef7ee; border: 1px dashed #7bb37b; color: #2c662c; padding: .6rem 1rem; border-radius: 10px; margin-bottom: 1rem; font-size: .9rem; letter-spacing: .04em; }
 .garage-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .garage-head__actions { display: flex; gap: .6rem; }
 .moto-profile { display: grid; grid-template-columns: 1.1fr 1fr; gap: clamp(1.5rem, 4vw, 3rem); align-items: start; }

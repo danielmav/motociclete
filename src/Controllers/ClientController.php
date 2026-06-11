@@ -30,6 +30,7 @@ final class ClientController
     private BikerShop $bikershop;
     private Mailer $mailer;
     private string $base;
+    private bool $isDev;
     /** @var array<string,mixed> */
     private array $mail;
 
@@ -41,6 +42,7 @@ final class ClientController
         $this->bikershop = $container['bikershop'];
         $this->mailer    = $container['mailer'];
         $this->base      = (string) ($container['settings']['app']['base_path'] ?? '');
+        $this->isDev     = ($container['settings']['app']['env'] ?? 'prod') === 'dev';
         $this->mail      = $container['settings']['mail'];
     }
 
@@ -71,6 +73,10 @@ final class ClientController
             if ($this->repo->recentOtpCount($email, self::OTP_RATE_WINDOW) < self::OTP_RATE_MAX) {
                 $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
                 $this->repo->createOtp($email, $code, self::OTP_TTL, $this->clientIp($request));
+                // Dev convenience: surface the code on the verify page (no SMTP in dev).
+                if ($this->isDev) {
+                    $_SESSION['garage_dev_code'] = $code;
+                }
                 $this->mailer->send(
                     $email,
                     'Codul tău Dual Motors Garage: ' . $code,
@@ -95,8 +101,9 @@ final class ClientController
             return $this->redirect($response, '/garage/login');
         }
         return $this->twig->render($response, 'client/verify.twig', [
-            'masked' => $this->maskEmail((string) $pending),
-            'error'  => $request->getQueryParams()['e'] ?? null,
+            'masked'   => $this->maskEmail((string) $pending),
+            'error'    => $request->getQueryParams()['e'] ?? null,
+            'dev_code' => $this->isDev ? ($_SESSION['garage_dev_code'] ?? null) : null,
         ]);
     }
 
@@ -110,7 +117,7 @@ final class ClientController
         if ($code !== '' && $this->repo->verifyOtp((string) $pending, $code)) {
             session_regenerate_id(true); // anti session-fixation
             $_SESSION['garage_email'] = (string) $pending;
-            unset($_SESSION['garage_pending']);
+            unset($_SESSION['garage_pending'], $_SESSION['garage_dev_code']);
             return $this->redirect($response, '/garage');
         }
         return $this->redirect($response, '/garage/verify?e=code');

@@ -14,6 +14,10 @@
             <p class="auth__error">Cod greșit sau expirat. Verifică emailul sau cere alt cod.</p>
         {% endif %}
 
+        {% if dev_code %}
+            <p class="auth__dev">DEV — cod: <strong>{{ dev_code }}</strong> (vizibil doar în mediul de dezvoltare)</p>
+        {% endif %}
+
         <form class="auth__form" method="post" action="{{ base }}/garage/verify">
             <label>Cod de acces
                 <input type="text" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" required autofocus
