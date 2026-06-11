@@ -1,0 +1,28 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Autentificare — Garajul meu | Dual Motors{% endblock %}
+{% block description %}Accesează-ți garajul Dual Motors cu emailul sau telefonul din evidențele noastre.{% endblock %}
+
+{% block content %}
+<section class="section auth">
+    <div class="container auth__box">
+        <span class="kicker">Garajul meu</span>
+        <h1 class="auth__title">Intră în garajul tău</h1>
+        <p class="auth__lead">Introdu emailul sau numărul de telefon cu care ai cumpărat motocicleta. Îți trimitem un cod de acces pe email.</p>
+
+        {% if error %}
+            <p class="auth__error">{% if error == 'empty' %}Introdu emailul sau telefonul.{% else %}A apărut o eroare. Încearcă din nou.{% endif %}</p>
+        {% endif %}
+
+        <form class="auth__form" method="post" action="{{ base }}/garage/login">
+            <label>Email sau telefon
+                <input type="text" name="identifier" required autofocus autocomplete="username"
+                       placeholder="email@exemplu.ro sau 07xx xxx xxx">
+            </label>
+            <button class="btn btn--primary btn--lg" type="submit">Trimite codul <span aria-hidden="true">→</span></button>
+        </form>
+
+        <p class="auth__note">Ai cumpărat de la noi dar nu primești codul? <a href="{{ base }}/contact">Contactează-ne</a> și îți actualizăm datele.</p>
+    </div>
+</section>
+{% endblock %}

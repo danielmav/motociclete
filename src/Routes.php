@@ -52,6 +52,12 @@ return function (App $app, Twig $twig, array $container): void {
     $app->post('/admin/setari',      $admin('save'));
     $app->get('/admin/fitment',      $admin('fitment'));
     $app->post('/admin/fitment/save', $admin('saveFitment'));
+    // My Garage back-office
+    $app->get('/admin/garage',                    $admin('garage'));
+    $app->get('/admin/garage/moto/{id:[0-9]+}',   $admin('garageBike'));
+    $app->post('/admin/garage/moto/{id:[0-9]+}',  $admin('garageBikeSave'));
+    $app->get('/admin/service-requests',          $admin('serviceRequests'));
+    $app->post('/admin/service-requests',         $admin('serviceRequestSave'));
 
     // --- Blog (Pe Două Roți), backed by the legacy `noutati` table ---
     $blog = function (string $method) use ($twig, $container) {
@@ -65,6 +71,26 @@ return function (App $app, Twig $twig, array $container): void {
     // --- Compare models (same brand + same main category) ---
     $app->get('/compara', function ($request, $response, $args) use ($twig, $container) {
         return (new CompareController($twig, $container))->index($request, $response, $args);
+    });
+
+    // --- My Garage (private client area, passwordless OTP login) ---
+    $garage = function (string $method) use ($twig, $container) {
+        return function ($request, $response, $args) use ($twig, $container, $method) {
+            return (new \App\Controllers\ClientController($twig, $container))->{$method}($request, $response, $args);
+        };
+    };
+    $app->get('/garage',          $garage('dashboard'));
+    $app->get('/garage/login',    $garage('loginForm'));
+    $app->post('/garage/login',   $garage('sendCode'));
+    $app->get('/garage/verify',   $garage('verifyForm'));
+    $app->post('/garage/verify',  $garage('verify'));
+    $app->get('/garage/logout',   $garage('logout'));
+    $app->get('/garage/service',  $garage('serviceForm'));
+    $app->post('/garage/service', $garage('serviceSubmit'));
+    $app->get('/garage/moto/{id:[0-9]+}', $garage('bike'));
+    // /cont alias -> garage
+    $app->get('/cont', function ($request, $response) use ($container) {
+        return $response->withHeader('Location', ($container['settings']['app']['base_path'] ?? '') . '/garage')->withStatus(302);
     });
 
     // --- Catalog (Yamaha + CFMOTO), backed by the local DB ---

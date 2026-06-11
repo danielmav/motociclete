@@ -1,0 +1,39 @@
+{% extends 'layout.twig' %}
+
+{% block title %}My Garage — Admin | Dual Motors{% endblock %}
+{% block description %}Administrare clienți și motociclete.{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container admin">
+        <span class="kicker">Admin · My Garage</span>
+        <h1 class="catalog-head__title">Clienți & motociclete</h1>
+        <p class="catalog-head__lead">Caută după nume, email, telefon, model, număr sau VIN. <a href="{{ base }}/admin/service-requests">Cereri de programare →</a></p>
+
+        <form class="admin__form" method="get" action="{{ base }}/admin/garage" style="flex-direction:row;gap:.6rem;">
+            <input type="text" name="q" value="{{ q }}" placeholder="Caută client / model / număr…" style="flex:1;">
+            <button class="btn btn--primary" type="submit">Caută</button>
+        </form>
+
+        <p class="catalog-head__lead">{{ bikes|length }} motociclete{% if q %} pentru „{{ q }}"{% endif %}.</p>
+        <table class="compare history">
+            <thead><tr><th>Client</th><th>Contact</th><th>Model</th><th>An</th><th>Număr</th><th>Km</th><th></th></tr></thead>
+            <tbody>
+                {% for b in bikes %}
+                    <tr>
+                        <td>{{ b.owner ?: '—' }}</td>
+                        <td>{{ b.email_norm ?: '' }}{% if b.telefon_norm %}<br><small>{{ b.telefon_norm }}</small>{% endif %}</td>
+                        <td>{{ b.product_name ?: b.model_label }}{% if not b.product_id %} <em>(nelegat)</em>{% endif %}</td>
+                        <td>{{ b.year ?: '—' }}</td>
+                        <td>{{ b.plate ?: '—' }}</td>
+                        <td>{{ b.mileage_km is not null ? (b.mileage_km|number_format(0, ',', '.')) : '—' }}</td>
+                        <td><a class="btn btn--ghost btn--sm" href="{{ base }}/admin/garage/moto/{{ b.id }}">Editează</a></td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="7">Nicio motocicletă găsită.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

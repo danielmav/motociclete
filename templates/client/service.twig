@@ -1,0 +1,44 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Programare service — Garajul meu | Dual Motors{% endblock %}
+{% block description %}Cere o programare la service pentru motocicleta ta.{% endblock %}
+
+{% block content %}
+<section class="section catalog-head">
+    <div class="container garage-head">
+        <div>
+            <a class="link-arrow link-arrow--sm" href="{{ base }}/garage">← Garajul meu</a>
+            <h1 class="catalog-head__title">Programare service</h1>
+        </div>
+    </div>
+</section>
+
+<section class="section section--tight">
+    <div class="container auth__box">
+        {% if sent %}
+            <div class="empty-state">
+                <p><strong>Mulțumim!</strong> Am primit cererea ta de programare. Te contactăm în curând pentru confirmare.</p>
+                <a class="btn btn--ghost" href="{{ base }}/garage">Înapoi la garaj</a>
+            </div>
+        {% elseif bikes|length %}
+            <p class="auth__lead">Alege motocicleta, data dorită și descrie pe scurt ce ai nevoie. Dealerul te contactează pentru confirmare.</p>
+            <form class="auth__form" method="post" action="{{ base }}/garage/service">
+                <label>Motocicleta
+                    <select name="bike_id" required>
+                        {% for b in bikes %}<option value="{{ b.id }}">{{ b.title }}{% if b.plate %} — {{ b.plate }}{% endif %}</option>{% endfor %}
+                    </select>
+                </label>
+                <label>Data preferată
+                    <input type="date" name="preferred_date">
+                </label>
+                <label>Ce ai nevoie?
+                    <textarea name="problem" rows="4" required placeholder="Ex: revizie la 10.000 km, zgomot la frână față…"></textarea>
+                </label>
+                <button class="btn btn--primary btn--lg" type="submit">Trimite cererea <span aria-hidden="true">→</span></button>
+            </form>
+        {% else %}
+            <div class="empty-state"><p>Nu găsim nicio motocicletă asociată contului tău.</p></div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

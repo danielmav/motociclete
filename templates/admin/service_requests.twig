@@ -1,0 +1,47 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Cereri programare — Admin | Dual Motors{% endblock %}
+{% block description %}Cereri de programare la service.{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container admin">
+        <a class="link-arrow link-arrow--sm" href="{{ base }}/admin/garage">← Clienți & motociclete</a>
+        <h1 class="catalog-head__title">Cereri de programare</h1>
+        <p class="catalog-head__lead">
+            Filtru:
+            <a href="{{ base }}/admin/service-requests">toate</a> ·
+            <a href="{{ base }}/admin/service-requests?status=nou">noi</a> ·
+            <a href="{{ base }}/admin/service-requests?status=confirmat">confirmate</a> ·
+            <a href="{{ base }}/admin/service-requests?status=inchis">închise</a>
+        </p>
+
+        <table class="compare history">
+            <thead><tr><th>Data cererii</th><th>Client</th><th>Model</th><th>Dată dorită</th><th>Problemă</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+                {% for r in requests %}
+                    <tr>
+                        <td>{{ r.created_at }}</td>
+                        <td>{{ r.owner }}<br><small>{{ r.email_norm }}{% if r.telefon_norm %} · {{ r.telefon_norm }}{% endif %}</small></td>
+                        <td>{{ r.model_label ?: '—' }}{% if r.plate %} ({{ r.plate }}){% endif %}</td>
+                        <td>{{ r.preferred_date ?: '—' }}</td>
+                        <td>{{ r.problem }}</td>
+                        <td><span class="chip">{{ r.status }}</span></td>
+                        <td>
+                            <form method="post" action="{{ base }}/admin/service-requests" style="display:flex;gap:.3rem;">
+                                <input type="hidden" name="id" value="{{ r.id }}">
+                                <select name="status">
+                                    {% for s in ['nou','confirmat','inchis'] %}<option value="{{ s }}" {{ r.status == s ? 'selected' }}>{{ s }}</option>{% endfor %}
+                                </select>
+                                <button class="btn btn--ghost btn--sm" type="submit">OK</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="7">Nicio cerere.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -52,6 +52,39 @@ if (!function_exists('price_dual')) {
     }
 }
 
+if (!function_exists('normalize_phone')) {
+    /**
+     * Canonicalize a Romanian phone number to "07XXXXXXXX" (10 digits) for
+     * lookup/matching. Handles spaces, +40 / 0040 / 40 country-code variants and
+     * a missing leading zero. Returns null if it isn't a plausible RO mobile.
+     */
+    function normalize_phone(?string $raw): ?string
+    {
+        $d = preg_replace('/\D+/', '', (string) $raw) ?? '';
+        if ($d === '') {
+            return null;
+        }
+        if (str_starts_with($d, '0040')) {
+            $d = '0' . substr($d, 4);
+        } elseif (str_starts_with($d, '40') && strlen($d) === 11) {
+            $d = '0' . substr($d, 2);
+        }
+        if (strlen($d) === 9 && $d[0] === '7') {
+            $d = '0' . $d; // missing leading zero
+        }
+        return (strlen($d) === 10 && str_starts_with($d, '07')) ? $d : null;
+    }
+}
+
+if (!function_exists('normalize_email')) {
+    /** Lowercase + trim an email for case-insensitive lookup. Null if empty/invalid-ish. */
+    function normalize_email(?string $raw): ?string
+    {
+        $e = strtolower(trim((string) $raw));
+        return ($e !== '' && str_contains($e, '@')) ? $e : null;
+    }
+}
+
 if (!function_exists('slugify')) {
     /** Make a URL-safe slug from a string (diacritics-aware). */
     function slugify(string $text): string

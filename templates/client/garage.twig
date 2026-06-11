@@ -1,0 +1,54 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Garajul meu | Dual Motors{% endblock %}
+{% block description %}Motocicletele tale, piesele potrivite și istoricul de service.{% endblock %}
+
+{% block content %}
+<section class="section catalog-head">
+    <div class="container garage-head">
+        <div>
+            <span class="kicker">Garajul meu</span>
+            <h1 class="catalog-head__title">Motocicletele mele</h1>
+        </div>
+        <div class="garage-head__actions">
+            <a class="btn btn--ghost btn--sm" href="{{ base }}/garage/service">Programare service</a>
+            <a class="btn btn--ghost btn--sm" href="{{ base }}/garage/logout">Ieși</a>
+        </div>
+    </div>
+</section>
+
+<section class="section section--tight">
+    <div class="container">
+        {% if bikes|length %}
+            <div class="grid grid--models">
+                {% for b in bikes %}
+                    <a class="card-moto" href="{{ base }}/garage/moto/{{ b.id }}">
+                        <div class="card-moto__media{{ b.cover ? '' : ' media-ph' }}">
+                            {% if b.year %}<span class="badge">{{ b.year }}</span>{% endif %}
+                            {% if b.cover %}
+                                <img src="{{ base }}{{ b.cover }}" alt="{{ b.title }}" loading="lazy" width="900" height="600"
+                                     onerror="this.closest('.card-moto__media').classList.add('media-ph');this.remove()">
+                            {% else %}<span class="media-ph__label">{{ b.model }}</span>{% endif %}
+                        </div>
+                        <div class="card-moto__body">
+                            <div class="card-moto__meta">
+                                {% if b.plate %}<span class="chip">{{ b.plate }}</span>{% endif %}
+                                {% if b.color %}<span class="chip">{{ b.color }}</span>{% endif %}
+                            </div>
+                            <h2 class="card-moto__name">{{ b.title }}</h2>
+                            <div class="card-moto__foot">
+                                <span class="price">{% if b.mileage_km is not null %}{{ b.mileage_km|number_format(0, ',', '.') }} km{% else %}<small>vezi detalii</small>{% endif %}</span>
+                                <span class="link-arrow link-arrow--sm">Detalii <span aria-hidden="true">→</span></span>
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>Nu găsim nicio motocicletă asociată contului tău. Dacă ai cumpărat de la noi, <a href="{{ base }}/contact">contactează-ne</a>.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

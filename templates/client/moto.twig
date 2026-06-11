@@ -1,0 +1,125 @@
+{% extends 'layout.twig' %}
+
+{% block title %}{{ bike.title }} — Garajul meu | Dual Motors{% endblock %}
+{% block description %}Detalii, istoric service și piese pentru {{ bike.model }}.{% endblock %}
+
+{% block content %}
+<section class="section catalog-head">
+    <div class="container garage-head">
+        <div>
+            <a class="link-arrow link-arrow--sm" href="{{ base }}/garage">← Garajul meu</a>
+            <h1 class="catalog-head__title">{{ bike.title }}</h1>
+        </div>
+        <a class="btn btn--primary btn--sm" href="{{ base }}/garage/service">Programare service</a>
+    </div>
+</section>
+
+<section class="section section--tight">
+    <div class="container moto-profile">
+        <div class="moto-profile__media{{ bike.cover ? '' : ' media-ph' }}">
+            {% if bike.cover %}
+                <img src="{{ base }}{{ bike.cover }}" alt="{{ bike.title }}" width="900" height="600"
+                     onerror="this.closest('.moto-profile__media').classList.add('media-ph');this.remove()">
+            {% else %}<span class="media-ph__label">{{ bike.model }}</span>{% endif %}
+        </div>
+        <div class="moto-profile__data">
+            <table class="spec-table">
+                <tr><th>Model</th><td>{{ bike.model }}</td></tr>
+                {% if bike.year %}<tr><th>An</th><td>{{ bike.year }}</td></tr>{% endif %}
+                {% if bike.vin %}<tr><th>Serie șasiu (VIN)</th><td>{{ bike.vin }}</td></tr>{% endif %}
+                {% if bike.plate %}<tr><th>Număr</th><td>{{ bike.plate }}</td></tr>{% endif %}
+                {% if bike.color %}<tr><th>Culoare</th><td>{{ bike.color }}</td></tr>{% endif %}
+                <tr><th>Kilometraj</th><td>{% if bike.mileage_km is not null %}{{ bike.mileage_km|number_format(0, ',', '.') }} km{% else %}—{% endif %}</td></tr>
+                {% if bike.purchase_date %}<tr><th>Achiziție</th><td>{{ bike.purchase_date }}</td></tr>{% endif %}
+            </table>
+            {% if bike.url %}
+                <a class="link-arrow link-arrow--sm" href="{{ base }}{{ bike.url }}">Vezi modelul în catalog <span aria-hidden="true">→</span></a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{# ---------------- Service history ---------------- #}
+<section class="section product-section">
+    <div class="container">
+        <header class="section__head"><div><span class="kicker">Istoric</span><h2 class="section__title">Revizii & service</h2></div></header>
+        {% if service|length %}
+            <table class="compare history">
+                <thead><tr><th>Data</th><th>Km</th><th>Tip</th><th>Detalii</th><th>Cost</th></tr></thead>
+                <tbody>
+                    {% for s in service %}
+                        <tr>
+                            <td>{{ s.service_date ?: '—' }}</td>
+                            <td>{{ s.mileage_km is not null ? (s.mileage_km|number_format(0, ',', '.')) : '—' }}</td>
+                            <td>{{ s.type ?: '—' }}</td>
+                            <td>{{ s.description ?: '—' }}</td>
+                            <td>{{ s.cost_ron is not null ? (s.cost_ron|number_format(2, ',', '.') ~ ' lei') : '—' }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="product-section__lead">Încă nu avem revizii înregistrate pentru această motocicletă.</p>
+        {% endif %}
+    </div>
+</section>
+
+{# ---------------- Incidents ---------------- #}
+{% if incidents|length %}
+    <section class="section product-section">
+        <div class="container">
+            <header class="section__head"><div><span class="kicker">Istoric</span><h2 class="section__title">Evenimente & accidente</h2></div></header>
+            <table class="compare history">
+                <thead><tr><th>Data</th><th>Gravitate</th><th>Descriere</th></tr></thead>
+                <tbody>
+                    {% for i in incidents %}
+                        <tr><td>{{ i.incident_date ?: '—' }}</td><td>{{ i.severity ?: '—' }}</td><td>{{ i.description ?: '—' }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endif %}
+
+{# ---------------- OEM parts ---------------- #}
+{% if oemParts|length %}
+    <section class="section product-section product-section--oem">
+        <div class="container">
+            <header class="section__head"><div><span class="kicker kicker--oem"><span class="tag-oem">OEM</span> Piese originale</span><h2 class="section__title">Piese originale pentru motocicleta ta</h2></div></header>
+            <div class="grid grid--acc grid--acc--4">
+                {% for a in oemParts %}
+                    <a class="card-acc card-acc--sm card-acc--oem" href="{{ a.url }}" target="_blank" rel="noopener">
+                        <div class="card-acc__media media-ph media-ph--sm">
+                            {% if a.image %}<img loading="lazy" src="{{ a.image }}" alt="{{ a.name }}" width="300" height="300" onerror="this.closest('.card-acc__media').classList.add('media-ph');this.remove()">{% endif %}
+                        </div>
+                        <span class="card-acc__brand"><span class="tag-oem">OEM</span> {{ a.manufacturer ?: bike.brand }}</span>
+                        <span class="card-acc__name">{{ a.name }}</span>
+                        <span class="card-acc__price">{{ a.price|number_format(2, ',', '.') }} Lei</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+{% endif %}
+
+{# ---------------- Aftermarket ---------------- #}
+{% if accessories|length %}
+    <section class="section product-section">
+        <div class="container">
+            <header class="section__head"><div><span class="kicker">Aftermarket · BikerShop</span><h2 class="section__title">Accesorii & echipament</h2></div></header>
+            <div class="grid grid--acc grid--acc--4">
+                {% for a in accessories %}
+                    <a class="card-acc card-acc--sm" href="{{ a.url }}" target="_blank" rel="noopener">
+                        <div class="card-acc__media media-ph media-ph--sm">
+                            {% if a.image %}<img loading="lazy" src="{{ a.image }}" alt="{{ a.name }}" width="300" height="300" onerror="this.closest('.card-acc__media').classList.add('media-ph');this.remove()">{% endif %}
+                        </div>
+                        {% if a.manufacturer %}<span class="card-acc__brand">{{ a.manufacturer }}</span>{% endif %}
+                        <span class="card-acc__name">{{ a.name }}</span>
+                        <span class="card-acc__price">{{ a.price|number_format(2, ',', '.') }} Lei</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+{% endif %}
+{% endblock %}

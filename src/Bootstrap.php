@@ -27,6 +27,21 @@ final class Bootstrap
         /** @var array<string,mixed> $settings */
         $settings = require $root . '/config/settings.php';
 
+        // --- Session (My Garage client login) ---
+        if (PHP_SAPI !== 'cli' && session_status() === PHP_SESSION_NONE) {
+            $https = (($_SERVER['HTTPS'] ?? '') !== '' && $_SERVER['HTTPS'] !== 'off')
+                || ($_SERVER['SERVER_PORT'] ?? '') === '443';
+            session_set_cookie_params([
+                'lifetime' => 0,
+                'path'     => ($settings['app']['base_path'] ?: '/'),
+                'httponly' => true,
+                'samesite' => 'Lax',
+                'secure'   => $https,
+            ]);
+            session_name('dm_garage');
+            session_start();
+        }
+
         // --- Slim app ---
         $app = AppFactory::create();
         if ($settings['app']['base_path'] !== '') {
@@ -66,6 +81,12 @@ final class Bootstrap
             'bikershop' => new BikerShop\Client($db, $settings['db']['bikershop']),
             'catalog'   => new Catalog\Repository($db),
             'news'      => new News\Repository($db),
+            'client'    => new Client\Repository($db),
+            'mailer'    => new Support\Mailer(
+                $settings['mail'],
+                $root . '/storage/logs',
+                ($settings['app']['env'] ?? 'prod') === 'dev'
+            ),
         ];
 
         // --- Error handling ---

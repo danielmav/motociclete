@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\BikerShop\Client as BikerShopClient;
 use App\Catalog\Repository;
+use App\Client\Repository as ClientRepo;
 use App\Support\Settings;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -21,6 +22,7 @@ final class AdminController
     private Settings $settings;
     private Repository $repo;
     private BikerShopClient $bikershop;
+    private ClientRepo $client;
     /** @var array{user:string,pass:string} */
     private array $auth;
     private string $base;
@@ -31,6 +33,7 @@ final class AdminController
         $this->settings  = $container['app_settings'];
         $this->repo      = $container['catalog'];
         $this->bikershop = $container['bikershop'];
+        $this->client    = $container['client'];
         $this->auth      = $container['settings']['admin'];
         $this->base      = (string) ($container['settings']['app']['base_path'] ?? '');
     }
@@ -99,6 +102,92 @@ final class AdminController
         }
         return $response
             ->withHeader('Location', $this->base . '/admin/fitment?saved=1')
+            ->withStatus(303);
+    }
+
+    // -- My Garage back-office ------------------------------------------------
+
+    /** GET /admin/garage — search clients & their bikes. */
+    public function garage(Request $request, Response $response): Response
+    {
+        if ($denied = $this->guard($request, $response)) {
+            return $denied;
+        }
+        $q = (string) ($request->getQueryParams()['q'] ?? '');
+        return $this->twig->render($response, 'admin/garage.twig', [
+            'q'     => $q,
+            'bikes' => $this->client->adminBikes($q !== '' ? $q : null),
+        ]);
+    }
+
+    /** GET /admin/garage/moto/{id} — edit a bike + add service/incident records. */
+    public function garageBike(Request $request, Response $response, array $args): Response
+    {
+        if ($denied = $this->guard($request, $response)) {
+            return $denied;
+        }
+        $bike = $this->client->adminBike((int) ($args['id'] ?? 0));
+        if (!$bike) {
+            $response->getBody()->write('Motocicletă inexistentă');
+            return $response->withStatus(404);
+        }
+        $bikeId = (int) $bike['id'];
+        return $this->twig->render($response, 'admin/garage_bike.twig', [
+            'bike'      => $bike,
+            'products'  => $this->repo->allProductsForFitmentAdmin(),
+            'service'   => $this->client->serviceRecords($bikeId),
+            'incidents' => $this->client->incidents($bikeId),
+            'saved'     => ($request->getQueryParams()['saved'] ?? null) !== null,
+        ]);
+    }
+
+    /** POST /admin/garage/moto/{id} — save bike fields / add a service / incident. */
+    public function garageBikeSave(Request $request, Response $response, array $args): Response
+    {
+        if ($denied = $this->guard($request, $response)) {
+            return $denied;
+        }
+        $id   = (int) ($args['id'] ?? 0);
+        $body = (array) $request->getParsedBody();
+        $action = (string) ($body['action'] ?? 'profile');
+
+        if ($id > 0) {
+            if ($action === 'service') {
+                $this->client->addServiceRecord($id, $body);
+            } elseif ($action === 'incident') {
+                $this->client->addIncident($id, $body);
+            } else {
+                $this->client->updateBike($id, $body);
+            }
+        }
+        return $response
+            ->withHeader('Location', $this->base . '/admin/garage/moto/' . $id . '?saved=1')
+            ->withStatus(303);
+    }
+
+    /** GET /admin/service-requests — inbox of client requests. */
+    public function serviceRequests(Request $request, Response $response): Response
+    {
+        if ($denied = $this->guard($request, $response)) {
+            return $denied;
+        }
+        $status = (string) ($request->getQueryParams()['status'] ?? '');
+        return $this->twig->render($response, 'admin/service_requests.twig', [
+            'status'   => $status,
+            'requests' => $this->client->serviceRequests($status !== '' ? $status : null),
+        ]);
+    }
+
+    /** POST /admin/service-requests — change a request's status. */
+    public function serviceRequestSave(Request $request, Response $response): Response
+    {
+        if ($denied = $this->guard($request, $response)) {
+            return $denied;
+        }
+        $body = (array) $request->getParsedBody();
+        $this->client->setRequestStatus((int) ($body['id'] ?? 0), (string) ($body['status'] ?? ''));
+        return $response
+            ->withHeader('Location', $this->base . '/admin/service-requests')
             ->withStatus(303);
     }
 

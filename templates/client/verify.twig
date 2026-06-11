@@ -1,0 +1,28 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Verificare cod — Garajul meu | Dual Motors{% endblock %}
+{% block description %}Introdu codul primit pe email.{% endblock %}
+
+{% block content %}
+<section class="section auth">
+    <div class="container auth__box">
+        <span class="kicker">Garajul meu</span>
+        <h1 class="auth__title">Verifică codul</h1>
+        <p class="auth__lead">Dacă ești în evidențele noastre, ți-am trimis un cod de 6 cifre la <strong>{{ masked }}</strong>. Introdu-l mai jos.</p>
+
+        {% if error == 'code' %}
+            <p class="auth__error">Cod greșit sau expirat. Verifică emailul sau cere alt cod.</p>
+        {% endif %}
+
+        <form class="auth__form" method="post" action="{{ base }}/garage/verify">
+            <label>Cod de acces
+                <input type="text" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" required autofocus
+                       autocomplete="one-time-code" placeholder="••••••" class="auth__code">
+            </label>
+            <button class="btn btn--primary btn--lg" type="submit">Intră în garaj <span aria-hidden="true">→</span></button>
+        </form>
+
+        <p class="auth__note"><a href="{{ base }}/garage/login">← Folosește alt email / telefon</a></p>
+    </div>
+</section>
+{% endblock %}

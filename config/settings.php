@@ -22,6 +22,20 @@ return [
         'pass' => $_ENV['ADMIN_PASS'] ?? '',
     ],
 
+    // Email (My Garage OTP + dealer notifications). When SMTP_HOST is empty the
+    // Mailer logs to storage/logs/mail.log instead of sending (dev). Address that
+    // receives service-request notifications = MAIL_DEALER.
+    'mail' => [
+        'from'      => $_ENV['MAIL_FROM'] ?? 'no-reply@motociclete.com.ro',
+        'from_name' => $_ENV['MAIL_FROM_NAME'] ?? 'Dual Motors',
+        'dealer'    => $_ENV['MAIL_DEALER'] ?? ($_ENV['MAIL_FROM'] ?? 'contact@motociclete.com.ro'),
+        'smtp_host' => $_ENV['SMTP_HOST'] ?? '',
+        'smtp_port' => (int) ($_ENV['SMTP_PORT'] ?? 587),
+        'smtp_user' => $_ENV['SMTP_USER'] ?? '',
+        'smtp_pass' => $_ENV['SMTP_PASS'] ?? '',
+        'smtp_secure' => $_ENV['SMTP_SECURE'] ?? 'tls', // tls|ssl|''
+    ],
+
     'twig' => [
         'templates' => dirname(__DIR__) . '/templates',
         // File cache only when explicitly enabled (avoids write-permission issues on shared hosting).
