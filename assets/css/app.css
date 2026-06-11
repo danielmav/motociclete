@@ -587,19 +587,21 @@ a.card-moto { display: block; color: inherit; }
 /* Product tabs: presentation vs accessories. Progressive enhancement — without JS
    the bar is hidden and both panels stack (content stays accessible). */
 .ptabs { display: none; }
-.js .ptabs { display: block; position: sticky; top: 62px; z-index: 90;
-    background: rgba(255,255,255,.95); backdrop-filter: saturate(140%) blur(10px);
-    border-bottom: 1px solid var(--line); }
-.ptabs__nav { display: flex; gap: .5rem; padding: .55rem 0; flex-wrap: wrap; }
-.ptabs__btn { font-family: var(--head); font-weight: 700; font-size: .95rem; padding: .65rem 1.4rem;
-    border: 0; background: transparent; color: var(--muted); cursor: pointer; border-radius: 999px; transition: background .2s, color .2s; }
-.ptabs__btn:hover { color: var(--ink, #0c0c0e); }
-.ptabs__btn.is-active { color: #fff; background: var(--ink, #0c0c0e); }
-.ptabs__count { display: inline-grid; place-items: center; min-width: 1.6em; padding: 0 .4em; margin-left: .4rem;
-    font-size: .72em; line-height: 1.6; border-radius: 999px; background: var(--red); color: #fff; vertical-align: middle; }
-.ptabs__btn.is-active .ptabs__count { background: #fff; color: var(--ink, #0c0c0e); }
+.js .ptabs { display: block; position: sticky; top: 60px; z-index: 90; margin-top: 1.5rem;
+    background: #0c0c0e; }
+.ptabs__nav { display: flex; gap: .4rem; padding: .5rem 0; flex-wrap: wrap; }
+.ptabs__btn { font-family: var(--head); font-weight: 700; font-size: 1rem; padding: .7rem 1.5rem;
+    border: 0; background: transparent; color: rgba(255,255,255,.62); cursor: pointer; border-radius: 999px;
+    transition: background .2s, color .2s; white-space: nowrap; }
+.ptabs__btn:hover { color: #fff; background: rgba(255,255,255,.1); }
+.ptabs__btn.is-active { color: #0c0c0e; background: #fff; }
+.ptabs__count { display: inline-grid; place-items: center; min-width: 1.5em; height: 1.5em; padding: 0 .35em; margin-left: .4rem;
+    font-size: .72em; border-radius: 999px; background: var(--red); color: #fff; vertical-align: middle; }
+.ptabs__btn.is-active .ptabs__count { background: var(--red); color: #fff; }
 .js .ptabs__panel { display: none; }
 .js .ptabs__panel.is-active { display: block; }
+/* The first content section in a panel sits right under the tab bar — trim its top border/padding. */
+.js .ptabs__panel > .product-section:first-child { border-top: 0; }
 /* OEM vs aftermarket distinction */
 .tag-oem { display: inline-block; background: var(--ink, #0c0c0e); color: #fff; font-family: var(--head); font-weight: 800; font-size: .58rem; letter-spacing: .12em; padding: .12em .42em; border-radius: 4px; vertical-align: middle; }
 .kicker--oem .tag-oem { margin-right: .35rem; }
@@ -648,10 +650,14 @@ a.card-moto { display: block; color: inherit; }
 .spec-table p { margin: 0; }
 
 /* video */
-.product-video { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius); overflow: hidden; background: var(--black); display: grid; place-items: center; }
-.product-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-.product-video__play { color: #fff; font-family: var(--head); font-weight: 700; display: inline-flex; align-items: center; gap: .6rem; padding: .9rem 1.6rem; border-radius: 999px; background: rgba(255,255,255,.12); backdrop-filter: blur(6px); }
-.product-video__play:hover { background: var(--red); }
+.product-video { position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius); overflow: hidden; background: var(--black); display: grid; place-items: center; cursor: pointer; }
+.product-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; z-index: 3; }
+.product-video__cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.product-video::after { content: ""; position: absolute; inset: 0; background: rgba(8,8,10,.30); transition: background .3s var(--ease); z-index: 1; }
+.product-video:hover::after { background: rgba(8,8,10,.14); }
+.product-video__play { position: relative; z-index: 2; display: grid; place-items: center; width: 76px; height: 76px; padding-left: 5px;
+    color: #fff; font-size: 1.5rem; border-radius: 50%; background: var(--red); box-shadow: 0 8px 30px rgba(0,0,0,.35); transition: transform .2s var(--ease); }
+.product-video:hover .product-video__play { transform: scale(1.08); }
 
 /* detail shots gallery */
 .detail-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }

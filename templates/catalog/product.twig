@@ -25,13 +25,14 @@
                     {% endif %}
                 </div>
 
-                {% set thumbs = (colors|merge(gallery)) %}
-                {% if thumbs|length > 1 %}
+                {# Hero thumbnails: color variants only — the rest of the imagery
+                   (gallery + details) lives in the "Galerie" tab below. #}
+                {% if colors|length > 1 %}
                     <ul class="gallery__thumbs">
-                        {% for t in thumbs %}
+                        {% for t in colors %}
                             <li>
                                 <button type="button" class="gallery__thumb{{ loop.first ? ' is-active' : '' }}"
-                                        data-gallery-thumb data-src="{{ base }}{{ t.src }}" aria-label="Imagine {{ loop.index }}">
+                                        data-gallery-thumb data-src="{{ base }}{{ t.src }}" aria-label="Culoare {{ loop.index }}">
                                     <img src="{{ base }}{{ t.src }}" alt="" loading="lazy" width="120" height="80"
                                          onerror="this.closest('li').remove()">
                                 </button>
@@ -83,40 +84,63 @@
         </div>
     </div>
 
-    {# ===== Tabs: prezentarea motocicletei vs piese & accesorii ===== #}
+    {# ===== Product tabs: descriere / caracteristici / specificații / galerie / piese ===== #}
     {% set accCount = (oemParts|default([])|length) + (accessories|default([])|length) %}
-    <div class="ptabs" data-ptabs>
-        <div class="container">
-            <div class="ptabs__nav" role="tablist">
-                <button class="ptabs__btn is-active" data-ptab="prezentare" type="button" role="tab">Prezentare</button>
-                {% if accCount %}<button class="ptabs__btn" data-ptab="accesorii" type="button" role="tab">Piese &amp; accesorii <span class="ptabs__count">{{ accCount }}</span></button>{% endif %}
-            </div>
-        </div>
-    </div>
-
-    <div class="ptabs__panel is-active" data-ppanel="prezentare">
-
-    {# ---------------- Description ---------------- #}
-    {% if p.description %}
-        <section class="section product-section">
-            <div class="container product-prose">
-                <h2 class="section__title">Despre {{ p.name }}</h2>
-                {{ p.description|raw }}
-            </div>
-        </section>
-    {% endif %}
-
-    {# ---------------- Specs ---------------- #}
     {% set specs = [
         { id: 'motor', label: 'Motor',              html: p.specs_engine },
         { id: 'sasiu', label: 'Șasiu & suspensii',  html: p.specs_chassis },
         { id: 'dim',   label: 'Dimensiuni',         html: p.specs_dimensions },
         { id: 'conn',  label: 'Conectivitate',      html: p.specs_connectivity }
     ]|filter(s => s.html|trim is not empty) %}
+    {% set galImages = (gallery|default([]))|merge(details|default([])) %}
+    {% set hasGalerie = galImages|length or p.video %}
 
-    {% if specs|length %}
-        <section class="section product-section product-specs" id="specificatii">
+    {% set tabs = [] %}
+    {% if p.description %}{% set tabs = tabs|merge([{ id: 'descriere', label: 'Descriere' }]) %}{% endif %}
+    {% if p.details_html|trim is not empty %}{% set tabs = tabs|merge([{ id: 'caracteristici', label: 'Caracteristici cheie' }]) %}{% endif %}
+    {% if specs|length %}{% set tabs = tabs|merge([{ id: 'specificatii', label: 'Specificații' }]) %}{% endif %}
+    {% if hasGalerie %}{% set tabs = tabs|merge([{ id: 'galerie', label: 'Galerie' }]) %}{% endif %}
+    {% if accCount %}{% set tabs = tabs|merge([{ id: 'accesorii', label: 'Piese & accesorii', count: accCount }]) %}{% endif %}
+    {% set activeTab = tabs|length ? tabs[0].id : '' %}
+
+    {% if tabs|length %}
+        <div class="ptabs" data-ptabs>
             <div class="container">
+                <div class="ptabs__nav" role="tablist">
+                    {% for t in tabs %}
+                        <button class="ptabs__btn{{ t.id == activeTab ? ' is-active' : '' }}" data-ptab="{{ t.id }}" type="button" role="tab">
+                            {{ t.label }}{% if t.count is defined %} <span class="ptabs__count">{{ t.count }}</span>{% endif %}
+                        </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {# ---------------- Descriere ---------------- #}
+    {% if p.description %}
+        <div class="ptabs__panel{{ 'descriere' == activeTab ? ' is-active' : '' }}" data-ppanel="descriere">
+            <section class="section product-section"><div class="container product-prose">
+                <h2 class="section__title">Despre {{ p.name }}</h2>
+                {{ p.description|raw }}
+            </div></section>
+        </div>
+    {% endif %}
+
+    {# ---------------- Caracteristici cheie (details_html) ---------------- #}
+    {% if p.details_html|trim is not empty %}
+        <div class="ptabs__panel{{ 'caracteristici' == activeTab ? ' is-active' : '' }}" data-ppanel="caracteristici">
+            <section class="section product-section"><div class="container product-prose product-features">
+                <h2 class="section__title">Caracteristici cheie</h2>
+                {{ p.details_html|raw }}
+            </div></section>
+        </div>
+    {% endif %}
+
+    {# ---------------- Specificații ---------------- #}
+    {% if specs|length %}
+        <div class="ptabs__panel{{ 'specificatii' == activeTab ? ' is-active' : '' }}" data-ppanel="specificatii">
+            <section class="section product-section product-specs"><div class="container">
                 <h2 class="section__title">Specificații tehnice</h2>
                 <div class="tabs" data-tabs>
                     <div class="tabs__nav" role="tablist">
@@ -130,81 +154,42 @@
                         </div>
                     {% endfor %}
                 </div>
-            </div>
-        </section>
+            </div></section>
+        </div>
     {% endif %}
 
-    {# ---------------- Video ---------------- #}
-    {% if p.video %}
-        <section class="section product-section">
-            <div class="container">
-                <h2 class="section__title">Video</h2>
-                <div class="product-video" data-video data-video-id="{{ p.video }}">
-                    <button class="product-video__play" type="button" data-video-play aria-label="Pornește videoclipul">
-                        <span aria-hidden="true">▶</span> Pornește videoclipul
-                    </button>
-                </div>
-            </div>
-        </section>
-    {% endif %}
-
-    {# ---------------- Detail gallery ---------------- #}
-    {% if details|length %}
-        <section class="section product-section">
-            <div class="container">
-                <h2 class="section__title">Detalii</h2>
-                <div class="detail-gallery">
-                    {% for d in details %}
-                        <div class="detail-item media-ph">
-                            <img src="{{ base }}{{ d.src }}" alt="{{ p.name }} — detaliu {{ loop.index }}" loading="lazy" width="600" height="400"
-                                 data-lightbox
-                                 onerror="this.closest('.detail-item').remove()">
-                            <span class="detail-item__zoom" aria-hidden="true">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m17 17 4 4"/><path d="M11 8v6M8 11h6"/></svg>
-                            </span>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </section>
-    {% endif %}
-
-    {# ---------------- Related ---------------- #}
-    {% if related|length %}
-        <section class="section product-section">
-            <div class="container">
-                <header class="section__head">
-                    <div><span class="kicker">Vezi și</span><h2 class="section__title">Modele similare</h2></div>
-                </header>
-                <div class="grid grid--models">
-                    {% for m in related %}
-                        <a class="card-moto" href="{{ base }}{{ m.url }}">
-                            <div class="card-moto__media{{ m.image ? '' : ' media-ph' }}">
-                                {% if m.year %}<span class="badge">{{ m.year }}</span>{% endif %}
-                                {% if m.image %}
-                                    <img src="{{ base }}{{ m.image }}" alt="{{ m.name }}" loading="lazy" width="900" height="600"
-                                         onerror="this.closest('.card-moto__media').classList.add('media-ph');this.remove()">
-                                {% else %}<span class="media-ph__label">{{ m.name }}</span>{% endif %}
+    {# ---------------- Galerie (imagini + video) ---------------- #}
+    {% if hasGalerie %}
+        <div class="ptabs__panel{{ 'galerie' == activeTab ? ' is-active' : '' }}" data-ppanel="galerie">
+            <section class="section product-section"><div class="container">
+                <h2 class="section__title">Galerie</h2>
+                {% if p.video %}
+                    <div class="product-video" data-video data-video-id="{{ p.video }}">
+                        <img class="product-video__cover" src="https://i.ytimg.com/vi/{{ p.video }}/maxresdefault.jpg" alt="{{ p.name }} — video"
+                             loading="lazy" onerror="this.onerror=null;this.src='https://i.ytimg.com/vi/{{ p.video }}/hqdefault.jpg'">
+                        <button class="product-video__play" type="button" data-video-play aria-label="Pornește videoclipul"><span aria-hidden="true">▶</span></button>
+                    </div>
+                {% endif %}
+                {% if galImages|length %}
+                    <div class="detail-gallery">
+                        {% for d in galImages %}
+                            <div class="detail-item media-ph">
+                                <img src="{{ base }}{{ d.src }}" alt="{{ p.name }} — imagine {{ loop.index }}" loading="lazy" width="600" height="400"
+                                     data-lightbox onerror="this.closest('.detail-item').remove()">
+                                <span class="detail-item__zoom" aria-hidden="true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m17 17 4 4"/><path d="M11 8v6M8 11h6"/></svg>
+                                </span>
                             </div>
-                            <div class="card-moto__body">
-                                <h3 class="card-moto__name">{{ m.name }}</h3>
-                                <div class="card-moto__foot">
-                                    {% set rp = prices(m.price) %}
-                                    <span class="price"><small>de la</small> {{ rp.eur }}<span class="price__ron">{{ rp.ron }}</span></span>
-                                    <span class="link-arrow link-arrow--sm">Detalii <span aria-hidden="true">→</span></span>
-                                </div>
-                            </div>
-                        </a>
-                    {% endfor %}
-                </div>
-            </div>
-        </section>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div></section>
+        </div>
     {% endif %}
 
-    </div>{# /panel prezentare #}
-
+    {# ---------------- Piese & accesorii ---------------- #}
     {% if accCount %}
-    <div class="ptabs__panel" data-ppanel="accesorii">
+    <div class="ptabs__panel{{ 'accesorii' == activeTab ? ' is-active' : '' }}" data-ppanel="accesorii">
         {# ---------------- OEM parts (genuine, manufacturer = brand) ---------------- #}
         {% if oemParts is defined and oemParts|length %}
             <section class="section product-section product-section--oem" id="piese-oem">
@@ -261,6 +246,38 @@
             </section>
         {% endif %}
     </div>{# /panel accesorii #}
+    {% endif %}
+
+    {# ---------------- Modele similare (sub taburi, mereu vizibil) ---------------- #}
+    {% if related|length %}
+        <section class="section product-section product-related">
+            <div class="container">
+                <header class="section__head">
+                    <div><span class="kicker">Vezi și</span><h2 class="section__title">Modele similare</h2></div>
+                </header>
+                <div class="grid grid--models">
+                    {% for m in related %}
+                        <a class="card-moto" href="{{ base }}{{ m.url }}">
+                            <div class="card-moto__media{{ m.image ? '' : ' media-ph' }}">
+                                {% if m.year %}<span class="badge">{{ m.year }}</span>{% endif %}
+                                {% if m.image %}
+                                    <img src="{{ base }}{{ m.image }}" alt="{{ m.name }}" loading="lazy" width="900" height="600"
+                                         onerror="this.closest('.card-moto__media').classList.add('media-ph');this.remove()">
+                                {% else %}<span class="media-ph__label">{{ m.name }}</span>{% endif %}
+                            </div>
+                            <div class="card-moto__body">
+                                <h3 class="card-moto__name">{{ m.name }}</h3>
+                                <div class="card-moto__foot">
+                                    {% set rp = prices(m.price) %}
+                                    <span class="price"><small>de la</small> {{ rp.eur }}<span class="price__ron">{{ rp.ron }}</span></span>
+                                    <span class="link-arrow link-arrow--sm">Detalii <span aria-hidden="true">→</span></span>
+                                </div>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
     {% endif %}
 </article>
 
