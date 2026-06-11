@@ -46,7 +46,7 @@ final class Client
      *
      * @return array<int,array<string,mixed>>
      */
-    public function featuredProducts(int $limit = 8): array
+    public function featuredProducts(int $limit = 6): array
     {
         if (!$this->isAvailable()) {
             return [];
@@ -55,6 +55,12 @@ final class Client
         $p = $this->prefix;
         $shop = $this->shopId; // trusted config int, inlined (named params can't repeat)
         $lang = $this->langId;
+        $limit = max(1, $limit);
+        // Random teaser: pick distinct products at several random id anchors and
+        // scan forward to the first match. Avoids ORDER BY RAND() over 300k+ rows
+        // (≈1s) and the clustering of a single-window scan, while staying fast
+        // (PK range seek + LIMIT 1). INNER JOIN on the cover image so every card
+        // shows a photo.
         $sql = "
             SELECT  pr.id_product,
                     pl.name,
@@ -67,18 +73,29 @@ final class Client
             FROM        {$p}product       pr
             JOIN        {$p}product_shop  ps  ON ps.id_product = pr.id_product AND ps.id_shop = {$shop}
             JOIN        {$p}product_lang  pl  ON pl.id_product = pr.id_product AND pl.id_lang = {$lang} AND pl.id_shop = {$shop}
+            JOIN        {$p}image         img ON img.id_product = pr.id_product AND img.cover = 1
             LEFT JOIN   {$p}manufacturer  m   ON m.id_manufacturer = pr.id_manufacturer
-            LEFT JOIN   {$p}image         img ON img.id_product = pr.id_product AND img.cover = 1
-            WHERE   ps.active = 1
-            ORDER BY pr.date_add DESC
-            LIMIT   :lim
+            WHERE   ps.active = 1 AND pr.id_product >= :anchor
+            ORDER BY pr.id_product
+            LIMIT   1
         ";
 
         try {
+            $max = (int) $this->pdo->query("SELECT MAX(id_product) FROM {$p}product")->fetchColumn();
             $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':lim', max(1, $limit), PDO::PARAM_INT);
-            $stmt->execute();
-            $rows = $stmt->fetchAll();
+            $rows = [];
+            $seen = [];
+            // A few extra tries to cover the (rare) anchor that lands past the
+            // last matching product or hits an already-picked id.
+            for ($i = 0, $tries = 0; count($rows) < $limit && $tries < $limit * 5; $tries++) {
+                $stmt->execute([':anchor' => random_int(1, max(1, $max - 50))]);
+                $r = $stmt->fetch();
+                if ($r && empty($seen[$r['id_product']])) {
+                    $seen[$r['id_product']] = true;
+                    $rows[] = $r;
+                    $i++;
+                }
+            }
         } catch (Throwable) {
             return [];
         }
@@ -93,14 +110,16 @@ final class Client
      */
     public function makes(): array
     {
-        // Momentan expunem doar mărcile pe care le reprezintă Dual Motors.
+        // Toate mărcile active; Yamaha & CF MOTO (mărcile reprezentate) sus.
         return $this->options(
             "SELECT m.id_leopartsfilter_make AS id, ml.name
              FROM {$this->prefix}leopartsfilter_make m
              JOIN {$this->prefix}leopartsfilter_make_lang ml
                ON ml.id_leopartsfilter_make = m.id_leopartsfilter_make AND ml.id_lang = :lang
-             WHERE m.active = 1 AND ml.name IN ('YAMAHA', 'CF MOTO')
-             ORDER BY FIELD(ml.name, 'YAMAHA', 'CF MOTO')",
+             WHERE m.active = 1
+             ORDER BY (ml.name IN ('YAMAHA', 'CF MOTO')) DESC,
+                      FIELD(ml.name, 'YAMAHA', 'CF MOTO'),
+                      ml.name",
             []
         );
     }

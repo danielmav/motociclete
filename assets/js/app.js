@@ -211,13 +211,20 @@
             cmpTray.hidden = sel.length === 0;
         };
 
-        // Toggling the compare control must not navigate the card link.
-        cmpGrid.querySelectorAll('.card-moto').forEach(function (card) {
-            card.addEventListener('click', function (e) {
-                if (e.target.closest('[data-cmp]')) e.preventDefault();
+        // The compare control lives inside the card <a>. We must stop the click
+        // from following the link, but a plain preventDefault on the bubbled
+        // click also cancels the checkbox's native toggle — so toggle it
+        // ourselves and update the tray.
+        cmpGrid.querySelectorAll('[data-cmp]').forEach(function (ctrl) {
+            ctrl.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var cb = ctrl.querySelector('[data-cmp-cb]');
+                if (!cb || cb.disabled) return;
+                cb.checked = !cb.checked;
+                cmpUpdate();
             });
         });
-        cmpCbs.forEach(function (c) { c.addEventListener('change', cmpUpdate); });
         cmpGo.addEventListener('click', function (e) { if (cmpSelected().length < 2) e.preventDefault(); });
         cmpClear.addEventListener('click', function () {
             cmpCbs.forEach(function (c) { c.checked = false; c.disabled = false; });

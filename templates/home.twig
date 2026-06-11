@@ -120,7 +120,7 @@
 
         <div class="fitbike__results">
             <div class="fitbike__results-head">
-                <span data-fit-title>{{ accessoriesLive ? 'Noutăți din BikerShop' : 'Produse compatibile' }}</span>
+                <span data-fit-title>{{ accessoriesLive ? 'Accesorii din BikerShop' : 'Produse compatibile' }}</span>
                 {% if accessoriesLive %}
                     <span class="dot-live" data-fit-status>live din BikerShop</span>
                 {% else %}
@@ -171,18 +171,6 @@
     </div>
 </section>
 
-{# ============ TEST RIDE BAND ============ #}
-<section class="ride">
-    <div class="container ride__inner">
-        <div class="ride__copy">
-            <span class="kicker kicker--light">Test ride online</span>
-            <h2 class="ride__title">Alege ziua, modelul și ora.<br>Te urci pe ea.</h2>
-            <p class="ride__text">Rezervare în câțiva pași, confirmare pe e-mail și SMS. Vino în showroom și condu modelul care îți place.</p>
-        </div>
-        <a class="btn btn--primary btn--lg" href="{{ testride_url }}">Programează test ride <span aria-hidden="true">→</span></a>
-    </div>
-</section>
-
 {# ============ EDITORIAL ============ #}
 <section class="section" id="blog">
     <div class="container">
@@ -212,6 +200,18 @@
         {% else %}
             <div class="empty-state"><p>Momentan nu sunt articole de afișat.</p></div>
         {% endif %}
+    </div>
+</section>
+
+{# ============ TEST RIDE BAND ============ #}
+<section class="ride">
+    <div class="container ride__inner">
+        <div class="ride__copy">
+            <span class="kicker kicker--light">Test ride online</span>
+            <h2 class="ride__title">Alege ziua, modelul și ora.<br>Te urci pe ea.</h2>
+            <p class="ride__text">Rezervare în câțiva pași, confirmare pe e-mail și SMS. Vino în showroom și condu modelul care îți place.</p>
+        </div>
+        <a class="btn btn--primary btn--lg" href="{{ testride_url }}">Programează test ride <span aria-hidden="true">→</span></a>
     </div>
 </section>
 

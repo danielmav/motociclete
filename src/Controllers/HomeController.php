@@ -33,12 +33,12 @@ final class HomeController
 
     public function index(Request $request, Response $response): Response
     {
-        $accessories = $this->bikershop->featuredProducts(8);
+        $accessories = $this->bikershop->featuredProducts(6);
 
         return $this->twig->render($response, 'home.twig', [
             'hero'            => $this->hero(),
             'brands'          => $this->brands(),
-            'models'          => $this->catalog->latestProducts(8),
+            'models'          => $this->catalog->randomModels(4),
             'makes'           => $this->bikershop->makes(),
             'accessories'     => $accessories,
             'accessoriesLive' => $this->bikershop->isAvailable(),

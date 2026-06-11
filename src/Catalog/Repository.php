@@ -194,6 +194,28 @@ final class Repository
     }
 
     /**
+     * Random models from the 2026 range for the home "garage" strip.
+     * Falls back to the newest models if the 2026 range is empty.
+     * @return array<int,array<string,mixed>>
+     */
+    public function randomModels(int $limit = 4, int $year = 2026): array
+    {
+        $rows = $this->all(
+            "SELECT p.id, p.brand, p.name, p.subtitle, p.slug, p.year, p.price, p.discount_pct,
+                    p.licence, p.cover_image, c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
+             " . self::PROD_JOIN . "
+             WHERE p.is_active = 1 AND p.year = :year
+             ORDER BY RAND()
+             LIMIT " . (int) $limit,
+            [':year' => $year]
+        );
+        if (!$rows) {
+            return $this->latestProducts($limit);
+        }
+        return array_map([$this, 'shapeCard'], $rows);
+    }
+
+    /**
      * Full product details for several slugs of one brand, in the given order.
      * Used by the comparison page. @return array<int,array<string,mixed>>
      */

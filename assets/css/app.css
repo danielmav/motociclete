@@ -387,6 +387,7 @@ ul { list-style: none; padding: 0; }
 .site-footer__top { display: grid; grid-template-columns: 1.2fr 2fr; gap: clamp(2rem, 5vw, 4rem); padding-bottom: 3rem; }
 .wordmark { font-family: var(--display); font-weight: 900; font-size: 1.8rem; letter-spacing: .01em; color: #fff; }
 .wordmark__accent { color: var(--red); }
+.site-footer__logo { display: block; width: 150px; height: auto; margin-top: 1rem; }
 .site-footer__tag { margin: 1rem 0 1.4rem; max-width: 38ch; color: #8b8b93; }
 .site-footer__social { display: flex; gap: 1.2rem; }
 .site-footer__social a { font-family: var(--head); font-weight: 600; font-size: .85rem; color: #c7c7cd; transition: color .2s var(--ease); }
