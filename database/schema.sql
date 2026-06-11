@@ -68,6 +68,7 @@ CREATE TABLE `products` (
     `lp_make_id`         INT UNSIGNED NULL,              -- BikerShop id_leopartsfilter_make
     `lp_model_id`        INT UNSIGNED NULL,              -- BikerShop id_leopartsfilter_model
     `lp_year_id`         INT UNSIGNED NULL,              -- BikerShop id_leopartsfilter_year
+    `bs_product_id`      INT UNSIGNED NULL,              -- BikerShop id_product al motocicletei (produse asociate via advrider_related)
     `created_at`         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at`         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),

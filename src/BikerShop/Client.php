@@ -241,6 +241,88 @@ final class Client
     }
 
     /**
+     * Related product ids for a BikerShop motorcycle product, exactly as the
+     * advrider_related module shows them on the storefront: merged from the
+     * partseurope + manual + rvx caches (source order), deduped, only active &
+     * visible products. Split into OEM/aftermarket by manufacturer downstream.
+     * @return array<int,int>
+     */
+    public function relatedBikeProductIds(int $bsProductId, int $cap = 200): array
+    {
+        if ($bsProductId < 1 || !$this->isAvailable()) {
+            return [];
+        }
+        $p = $this->prefix;
+        $shop = $this->shopId; // trusted config int, inlined
+        // Same order as the module's default ADVRIDER_RELATED_SOURCE_ORDER.
+        $tables = [
+            'advrider_related_partseurope_cache',
+            'advrider_related_manual_cache',
+            'advrider_related_rvx_cache',
+        ];
+        $seen = [];
+        $out = [];
+        foreach ($tables as $t) {
+            $sql = "SELECT c.id_related_product AS rid
+                    FROM {$p}{$t} c
+                    JOIN {$p}product_shop ps ON ps.id_product = c.id_related_product
+                         AND ps.id_shop = {$shop} AND ps.active = 1
+                         AND ps.visibility IN ('both','catalog','search')
+                    WHERE c.id_product = :id
+                    ORDER BY c.position, c.id_related_product";
+            try {
+                $stmt = $this->pdo->prepare($sql);
+                $stmt->execute([':id' => $bsProductId]);
+                foreach ($stmt->fetchAll() as $r) {
+                    $rid = (int) $r['rid'];
+                    if ($rid > 0 && empty($seen[$rid])) {
+                        $seen[$rid] = true;
+                        $out[] = $rid;
+                        if (count($out) >= $cap) {
+                            return $out;
+                        }
+                    }
+                }
+            } catch (Throwable) {
+                // table missing / unreachable — skip this source
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Related products for a bike, fetched + split by manufacturer into OEM
+     * (manufacturer = the bike's brand) and aftermarket (everything else).
+     * @return array{oem:array<int,array<string,mixed>>,aftermarket:array<int,array<string,mixed>>,url:?string}
+     */
+    public function relatedForBike(int $bsProductId, string $brand, int $perGroup = 15): array
+    {
+        $empty = ['oem' => [], 'aftermarket' => [], 'url' => null];
+        if ($bsProductId < 1 || !$this->isAvailable()) {
+            return $empty;
+        }
+        $ids = $this->relatedBikeProductIds($bsProductId);
+        if (!$ids) {
+            return $empty;
+        }
+        $products = $this->productsByIds($ids, count($ids));
+        $needle = $brand === 'cfmoto' ? 'cfmoto' : 'yamaha';
+        $oem = $after = [];
+        foreach ($products as $pr) {
+            if (str_contains(mb_strtolower((string) $pr['manufacturer']), $needle)) {
+                $oem[] = $pr;
+            } else {
+                $after[] = $pr;
+            }
+        }
+        return [
+            'oem'         => array_slice($oem, 0, $perGroup),
+            'aftermarket' => array_slice($after, 0, $perGroup),
+            'url'         => $this->productUrl($bsProductId, ''),
+        ];
+    }
+
+    /**
      * Look up BikerShop LeoPartsFilter IDs for a local product.
      * Used by database/migrate_fitment.php to populate lp_* columns.
      *

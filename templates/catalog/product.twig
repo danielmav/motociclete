@@ -165,9 +165,10 @@
                         <span class="kicker kicker--oem"><span class="tag-oem">OEM</span> Piese originale {{ brandLabel }}</span>
                         <h2 class="section__title">Piese originale pentru {{ p.name }}</h2>
                     </div>
+                    {% if bsUrl %}<a class="link-arrow" href="{{ bsUrl }}" target="_blank" rel="noopener">Vezi toate pe BikerShop <span aria-hidden="true">→</span></a>{% endif %}
                 </header>
                 <p class="product-section__lead">Piese de schimb originale {{ brandLabel }}, fabricate de producător, potrivite pentru modelul tău.</p>
-                <div class="grid grid--acc grid--acc--4">
+                <div class="grid grid--acc grid--acc--5">
                     {% for a in oemParts %}
                         <a class="card-acc card-acc--sm card-acc--oem" href="{{ a.url }}" target="_blank" rel="noopener">
                             <div class="card-acc__media media-ph media-ph--sm">
@@ -195,14 +196,10 @@
                         <span class="kicker">Aftermarket · BikerShop</span>
                         <h2 class="section__title">Accesorii & echipament compatibile</h2>
                     </div>
-                    <a class="link-arrow"
-                       href="https://bikershop.ro{% if p.lp_model_id %}/accesorii-moto?id_leopartsfilter_model={{ p.lp_model_id }}{% if p.lp_year_id %}&id_leopartsfilter_year={{ p.lp_year_id }}{% endif %}{% endif %}"
-                       target="_blank" rel="noopener">
-                        Vezi toate pe BikerShop <span aria-hidden="true">→</span>
-                    </a>
+                    {% if bsUrl %}<a class="link-arrow" href="{{ bsUrl }}" target="_blank" rel="noopener">Vezi toate pe BikerShop <span aria-hidden="true">→</span></a>{% endif %}
                 </header>
                 <p class="product-section__lead">Piese, consumabile și echipament de la alți producători (aftermarket), compatibile cu modelul tău.</p>
-                <div class="grid grid--acc grid--acc--4">
+                <div class="grid grid--acc grid--acc--5">
                     {% for a in accessories %}
                         <a class="card-acc card-acc--sm" href="{{ a.url }}" target="_blank" rel="noopener">
                             <div class="card-acc__media media-ph media-ph--sm">

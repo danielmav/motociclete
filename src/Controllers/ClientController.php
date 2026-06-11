@@ -152,27 +152,14 @@ final class ClientController
             throw new HttpNotFoundException($request);
         }
 
-        $oemParts = $accessories = [];
-        if ($bike['product_id'] && $this->bikershop->isAvailable()) {
-            $oemIds = $this->catalog->oemPartIds($bike['product_id'], 8);
-            if ($oemIds) {
-                $oemParts = $this->bikershop->productsByIds($oemIds, 8);
-            }
-            if ($bike['lp_model_id']) {
-                $accessories = $this->bikershop->compatibleProducts(
-                    $bike['lp_model_id'],
-                    $bike['lp_year_id'] ?: null,
-                    8
-                );
-            }
-        }
+        $rel = $this->bikershop->relatedForBike((int) ($bike['bs_product_id'] ?? 0), (string) $bike['brand'], 10);
 
         return $this->twig->render($response, 'client/moto.twig', [
             'bike'        => $bike,
             'service'     => $this->repo->serviceRecords($bike['id']),
             'incidents'   => $this->repo->incidents($bike['id']),
-            'oemParts'    => $oemParts,
-            'accessories' => $accessories,
+            'oemParts'    => $rel['oem'],
+            'accessories' => $rel['aftermarket'],
         ]);
     }
 

@@ -911,14 +911,15 @@ a.card-art { display: block; color: inherit; }
 .compare__spec td { font-size: .9rem; }
 
 /* ============================================================
-   ACCESSORY GRID — 4-up compact variant (product page)
+   ACCESSORY GRID — 5-up compact variant (product page)
    ============================================================ */
-.grid--acc--4 { grid-template-columns: repeat(4, 1fr); gap: .9rem; }
-.card-acc--sm .card-acc__name { font-size: .82rem; min-height: 2.4em; }
-.card-acc--sm .card-acc__brand { font-size: .62rem; }
-.card-acc--sm .card-acc__price { font-size: .9rem; }
-@media (max-width: 1000px) { .grid--acc--4 { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 640px)  { .grid--acc--4 { grid-template-columns: repeat(2, 1fr); } }
+.grid--acc--5 { grid-template-columns: repeat(5, 1fr); gap: .8rem; }
+.card-acc--sm .card-acc__name { font-size: .8rem; min-height: 2.4em; }
+.card-acc--sm .card-acc__brand { font-size: .6rem; }
+.card-acc--sm .card-acc__price { font-size: .88rem; }
+@media (max-width: 1200px) { .grid--acc--5 { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 900px)  { .grid--acc--5 { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 600px)  { .grid--acc--5 { grid-template-columns: repeat(2, 1fr); } }
 
 @media (max-width: 600px) {
     .cmp-tray__actions { width: 100%; }

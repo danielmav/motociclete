@@ -179,22 +179,15 @@ final class CatalogController
         }
         $crumbs[] = ['label' => $product['name'], 'url' => null];
 
-        // Two complementary, clearly-separated product sources for this bike:
-        //  - OEM (piese originale): genuine parts, manufacturer = the bike's brand,
-        //    from BikerShop's diagram cache (precomputed into oem_product_map).
-        //  - Aftermarket (accesorii & echipament): LeoPartsFilter fitment, other makers.
-        $oemParts = $accessories = [];
-        if ($this->bikershop->isAvailable()) {
-            $oemIds = $this->repo->oemPartIds($id, 12);
-            if ($oemIds) {
-                $oemParts = $this->bikershop->productsByIds($oemIds, 12);
-            }
-            $modelId = isset($product['lp_model_id']) ? (int) $product['lp_model_id'] : 0;
-            if ($modelId) {
-                $yearId = isset($product['lp_year_id']) ? (int) $product['lp_year_id'] : null;
-                $accessories = $this->bikershop->compatibleProducts($modelId, $yearId ?: null, 12);
-            }
-        }
+        // Same related products BikerShop curates for this motorcycle (advrider_related
+        // module: manual + partseurope caches), split by manufacturer into:
+        //  - OEM (piese originale): manufacturer = the bike's brand (Yamaha/CFMOTO);
+        //  - Aftermarket (accesorii & echipament): every other manufacturer.
+        $bsId = isset($product['bs_product_id']) ? (int) $product['bs_product_id'] : 0;
+        $rel = $this->bikershop->relatedForBike($bsId, $brand, 15);
+        $oemParts = $rel['oem'];
+        $accessories = $rel['aftermarket'];
+        $bsUrl = $rel['url'];
 
         return $this->twig->render($response, 'catalog/product.twig', [
             'brand'        => $brand,
@@ -207,6 +200,7 @@ final class CatalogController
             'related'      => $this->repo->related($product, 4),
             'oemParts'     => $oemParts,
             'accessories'  => $accessories,
+            'bsUrl'        => $bsUrl,
             'crumbs'       => $crumbs,
         ]);
     }

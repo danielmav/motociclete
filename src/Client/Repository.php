@@ -90,7 +90,7 @@ final class Repository
         $row = $this->one(
             "SELECT b.id, b.model_label, b.year, b.vin, b.color, b.plate, b.mileage_km,
                     b.nickname, b.notes, b.purchase_date, b.product_id, b.clienti_id,
-                    p.brand, p.name AS product_name, p.slug, p.cover_image, p.lp_model_id, p.lp_year_id,
+                    p.brand, p.name AS product_name, p.slug, p.cover_image, p.lp_model_id, p.lp_year_id, p.bs_product_id,
                     c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
              FROM client_bikes b
              JOIN clienti cl ON cl.id = b.clienti_id
@@ -388,6 +388,7 @@ final class Repository
             'purchase_date' => $r['purchase_date'] ?? null,
             'lp_model_id'   => isset($r['lp_model_id']) ? (int) $r['lp_model_id'] : null,
             'lp_year_id'    => isset($r['lp_year_id']) ? (int) $r['lp_year_id'] : null,
+            'bs_product_id' => isset($r['bs_product_id']) ? (int) $r['bs_product_id'] : null,
             'cover'      => $cover,
             'url'        => $url,
         ];
