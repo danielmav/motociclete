@@ -584,6 +584,22 @@ a.card-moto { display: block; color: inherit; }
 /* product sections */
 .product-section { padding-block: clamp(2.2rem, 5vw, 4rem); border-top: 1px solid var(--line); }
 .product-section__lead { color: var(--muted); max-width: 70ch; margin: -0.4rem 0 1.4rem; }
+/* Product tabs: presentation vs accessories. Progressive enhancement — without JS
+   the bar is hidden and both panels stack (content stays accessible). */
+.ptabs { display: none; }
+.js .ptabs { display: block; position: sticky; top: 62px; z-index: 90;
+    background: rgba(255,255,255,.95); backdrop-filter: saturate(140%) blur(10px);
+    border-bottom: 1px solid var(--line); }
+.ptabs__nav { display: flex; gap: .5rem; padding: .55rem 0; flex-wrap: wrap; }
+.ptabs__btn { font-family: var(--head); font-weight: 700; font-size: .95rem; padding: .65rem 1.4rem;
+    border: 0; background: transparent; color: var(--muted); cursor: pointer; border-radius: 999px; transition: background .2s, color .2s; }
+.ptabs__btn:hover { color: var(--ink, #0c0c0e); }
+.ptabs__btn.is-active { color: #fff; background: var(--ink, #0c0c0e); }
+.ptabs__count { display: inline-grid; place-items: center; min-width: 1.6em; padding: 0 .4em; margin-left: .4rem;
+    font-size: .72em; line-height: 1.6; border-radius: 999px; background: var(--red); color: #fff; vertical-align: middle; }
+.ptabs__btn.is-active .ptabs__count { background: #fff; color: var(--ink, #0c0c0e); }
+.js .ptabs__panel { display: none; }
+.js .ptabs__panel.is-active { display: block; }
 /* OEM vs aftermarket distinction */
 .tag-oem { display: inline-block; background: var(--ink, #0c0c0e); color: #fff; font-family: var(--head); font-weight: 800; font-size: .58rem; letter-spacing: .12em; padding: .12em .42em; border-radius: 4px; vertical-align: middle; }
 .kicker--oem .tag-oem { margin-right: .35rem; }

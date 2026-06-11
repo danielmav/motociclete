@@ -413,6 +413,28 @@
         });
     }
 
+    /* ---- Product tabs: presentation vs accessories ---- */
+    var ptabs = document.querySelector('[data-ptabs]');
+    if (ptabs) {
+        var pbtns = Array.prototype.slice.call(ptabs.querySelectorAll('[data-ptab]'));
+        var ppanels = Array.prototype.slice.call(document.querySelectorAll('[data-ppanel]'));
+        var setPanel = function (id) {
+            pbtns.forEach(function (b) {
+                var on = b.getAttribute('data-ptab') === id;
+                b.classList.toggle('is-active', on);
+                b.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+            ppanels.forEach(function (p) { p.classList.toggle('is-active', p.getAttribute('data-ppanel') === id); });
+        };
+        pbtns.forEach(function (btn) {
+            btn.addEventListener('click', function () { setPanel(btn.getAttribute('data-ptab')); });
+        });
+        // Deep link: #accesorii / #piese-oem opens the accessories tab.
+        if (/(accesorii|piese-oem)/.test(location.hash)) {
+            setPanel('accesorii');
+        }
+    }
+
     /* ---- Lazy YouTube embed ---- */
     var video = document.querySelector('[data-video]');
     if (video) {
