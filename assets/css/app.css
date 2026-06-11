@@ -583,6 +583,13 @@ a.card-moto { display: block; color: inherit; }
 
 /* product sections */
 .product-section { padding-block: clamp(2.2rem, 5vw, 4rem); border-top: 1px solid var(--line); }
+.product-section__lead { color: var(--muted); max-width: 70ch; margin: -0.4rem 0 1.4rem; }
+/* OEM vs aftermarket distinction */
+.tag-oem { display: inline-block; background: var(--ink, #0c0c0e); color: #fff; font-family: var(--head); font-weight: 800; font-size: .58rem; letter-spacing: .12em; padding: .12em .42em; border-radius: 4px; vertical-align: middle; }
+.kicker--oem .tag-oem { margin-right: .35rem; }
+.product-section--oem { background: linear-gradient(180deg, rgba(12,12,14,.035), transparent 60%); }
+.card-acc--oem .card-acc__brand { color: var(--ink, #0c0c0e); display: inline-flex; align-items: center; gap: .35rem; }
+.card-acc--oem .card-acc__brand .tag-oem { background: var(--red); }
 .product-prose { max-width: 75ch; }
 .product-prose p { margin-bottom: 1rem; }
 .product-prose img { border-radius: var(--radius-sm); margin: 1rem 0; }

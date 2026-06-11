@@ -198,6 +198,49 @@ final class Client
     }
 
     /**
+     * Active products by their BikerShop ids, in the given order. Used to render
+     * the OEM parts strip: ids come precomputed from the local `oem_product_map`
+     * (see database/migrate_oem_fitment.php), details are fetched live here on
+     * the primary key (fast). @return array<int,array<string,mixed>>
+     */
+    public function productsByIds(array $ids, int $limit = 12): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        if (!$ids || !$this->isAvailable()) {
+            return [];
+        }
+        $ids = array_slice($ids, 0, $limit);
+        $p = $this->prefix;
+        $shop = $this->shopId; // trusted config ints, inlined (named params can't repeat)
+        $lang = $this->langId;
+        $in = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "
+            SELECT  pr.id_product, pl.name, pl.link_rewrite,
+                    COALESCE(ps.price, pr.price) AS price,
+                    (SELECT t.rate FROM {$p}tax_rule trl JOIN {$p}tax t ON t.id_tax = trl.id_tax
+                      WHERE trl.id_tax_rules_group = pr.id_tax_rules_group AND t.active = 1 LIMIT 1) AS tax_rate,
+                    m.name AS manufacturer, img.id_image
+            FROM        {$p}product       pr
+            JOIN        {$p}product_shop  ps  ON ps.id_product = pr.id_product AND ps.id_shop = {$shop} AND ps.active = 1
+            JOIN        {$p}product_lang  pl  ON pl.id_product = pr.id_product AND pl.id_lang = {$lang} AND pl.id_shop = {$shop}
+            LEFT JOIN   {$p}manufacturer  m   ON m.id_manufacturer = pr.id_manufacturer
+            LEFT JOIN   {$p}image         img ON img.id_product = pr.id_product AND img.cover = 1
+            WHERE   pr.id_product IN ({$in})
+        ";
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($ids);
+            $shaped = array_map(fn (array $r) => $this->shapeProduct($r), $stmt->fetchAll());
+        } catch (Throwable) {
+            return [];
+        }
+        // Preserve the precomputed order (position) the ids were passed in.
+        $order = array_flip($ids);
+        usort($shaped, fn ($a, $b) => ($order[$a['id']] ?? PHP_INT_MAX) <=> ($order[$b['id']] ?? PHP_INT_MAX));
+        return $shaped;
+    }
+
+    /**
      * Look up BikerShop LeoPartsFilter IDs for a local product.
      * Used by database/migrate_fitment.php to populate lp_* columns.
      *

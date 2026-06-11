@@ -46,6 +46,23 @@ final class Repository
         return $this->pdo instanceof PDO;
     }
 
+    /**
+     * BikerShop product ids that are OEM parts for a local product, from the
+     * precomputed `oem_product_map` (built by database/migrate_oem_fitment.php).
+     * @return array<int,int>
+     */
+    public function oemPartIds(int $productId, int $limit = 12): array
+    {
+        $rows = $this->all(
+            "SELECT bs_id_product FROM oem_product_map
+             WHERE product_id = :pid
+             ORDER BY position
+             LIMIT " . (int) $limit,
+            [':pid' => $productId]
+        );
+        return array_map(static fn ($r) => (int) $r['bs_id_product'], $rows);
+    }
+
     // -- URL / image helpers --------------------------------------------------
 
     /** Web-relative image path (templates prepend {{ base }}). Null if no file. */

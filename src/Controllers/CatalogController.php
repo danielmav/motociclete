@@ -179,11 +179,21 @@ final class CatalogController
         }
         $crumbs[] = ['label' => $product['name'], 'url' => null];
 
-        $accessories = [];
-        $modelId = isset($product['lp_model_id']) ? (int) $product['lp_model_id'] : 0;
-        if ($modelId && $this->bikershop->isAvailable()) {
-            $yearId = isset($product['lp_year_id']) ? (int) $product['lp_year_id'] : null;
-            $accessories = $this->bikershop->compatibleProducts($modelId, $yearId ?: null, 12);
+        // Two complementary, clearly-separated product sources for this bike:
+        //  - OEM (piese originale): genuine parts, manufacturer = the bike's brand,
+        //    from BikerShop's diagram cache (precomputed into oem_product_map).
+        //  - Aftermarket (accesorii & echipament): LeoPartsFilter fitment, other makers.
+        $oemParts = $accessories = [];
+        if ($this->bikershop->isAvailable()) {
+            $oemIds = $this->repo->oemPartIds($id, 12);
+            if ($oemIds) {
+                $oemParts = $this->bikershop->productsByIds($oemIds, 12);
+            }
+            $modelId = isset($product['lp_model_id']) ? (int) $product['lp_model_id'] : 0;
+            if ($modelId) {
+                $yearId = isset($product['lp_year_id']) ? (int) $product['lp_year_id'] : null;
+                $accessories = $this->bikershop->compatibleProducts($modelId, $yearId ?: null, 12);
+            }
         }
 
         return $this->twig->render($response, 'catalog/product.twig', [
@@ -195,6 +205,7 @@ final class CatalogController
             'gallery'      => $this->repo->images($brand, $id, 'gallery'),
             'details'      => $this->repo->images($brand, $id, 'detail'),
             'related'      => $this->repo->related($product, 4),
+            'oemParts'     => $oemParts,
             'accessories'  => $accessories,
             'crumbs'       => $crumbs,
         ]);

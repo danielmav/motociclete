@@ -156,14 +156,44 @@
         </section>
     {% endif %}
 
-    {# ---------------- Compatible accessories (BikerShop fitment) ---------------- #}
+    {# ---------------- OEM parts (genuine, manufacturer = brand) ---------------- #}
+    {% if oemParts is defined and oemParts|length %}
+        <section class="section product-section product-section--oem" id="piese-oem">
+            <div class="container">
+                <header class="section__head">
+                    <div>
+                        <span class="kicker kicker--oem"><span class="tag-oem">OEM</span> Piese originale {{ brandLabel }}</span>
+                        <h2 class="section__title">Piese originale pentru {{ p.name }}</h2>
+                    </div>
+                </header>
+                <p class="product-section__lead">Piese de schimb originale {{ brandLabel }}, fabricate de producător, potrivite pentru modelul tău.</p>
+                <div class="grid grid--acc grid--acc--4">
+                    {% for a in oemParts %}
+                        <a class="card-acc card-acc--sm card-acc--oem" href="{{ a.url }}" target="_blank" rel="noopener">
+                            <div class="card-acc__media media-ph media-ph--sm">
+                                {% if a.image %}
+                                    <img loading="lazy" src="{{ a.image }}" alt="{{ a.name }}" width="300" height="300"
+                                         onerror="this.closest('.card-acc__media').classList.add('media-ph');this.remove()">
+                                {% endif %}
+                            </div>
+                            <span class="card-acc__brand"><span class="tag-oem">OEM</span> {{ a.manufacturer ?: brandLabel }}</span>
+                            <span class="card-acc__name">{{ a.name }}</span>
+                            <span class="card-acc__price">{{ a.price|number_format(2, ',', '.') }} Lei</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    {% endif %}
+
+    {# ---------------- Aftermarket accessories & parts (LeoPartsFilter fitment) ---------------- #}
     {% if accessories is defined and accessories|length %}
         <section class="section product-section" id="accesorii">
             <div class="container">
                 <header class="section__head">
                     <div>
-                        <span class="kicker">BikerShop</span>
-                        <h2 class="section__title">Accesorii compatibile</h2>
+                        <span class="kicker">Aftermarket · BikerShop</span>
+                        <h2 class="section__title">Accesorii & echipament compatibile</h2>
                     </div>
                     <a class="link-arrow"
                        href="https://bikershop.ro{% if p.lp_model_id %}/accesorii-moto?id_leopartsfilter_model={{ p.lp_model_id }}{% if p.lp_year_id %}&id_leopartsfilter_year={{ p.lp_year_id }}{% endif %}{% endif %}"
@@ -171,6 +201,7 @@
                         Vezi toate pe BikerShop <span aria-hidden="true">→</span>
                     </a>
                 </header>
+                <p class="product-section__lead">Piese, consumabile și echipament de la alți producători (aftermarket), compatibile cu modelul tău.</p>
                 <div class="grid grid--acc grid--acc--4">
                     {% for a in accessories %}
                         <a class="card-acc card-acc--sm" href="{{ a.url }}" target="_blank" rel="noopener">
