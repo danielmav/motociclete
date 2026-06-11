@@ -22,6 +22,7 @@ Construit pe milestone-uri (vezi planul aprobat). **Milestone 1 livrat = home pa
 - **mysqldump / mysql client** (dump/import DB): `C:/laragon/bin/mysql/mysql-8.0.30-winx64/bin/`.
   Conectare la DB remote: pasează parola via env `MYSQL_PWD` (parolele au caractere speciale → evită `-p`). Dev IP whitelisted în Remote MySQL pe serverele remote.
   PowerShell `>` scrie UTF-16 (strică importul) → `mysqldump --result-file=…` + `mysql -e "source …"`. Bash tool NU are cmdleturi PowerShell (`Select-Object`/`-String`).
+  Sursarea unui `.sql` UTF-8 cu clientul mysql necesită `--default-character-set=utf8mb4` (altfel diacriticele devin mojibake la INSERT).
 - **Slim 4** (routing), **Twig** (templating), **PDO** (MySQL/MariaDB), **phpdotenv**.
 - Frontend: **CSS + JS vanilla**, fără build step. Fonturi Google (Archivo Expanded / Archivo / Hanken Grotesk).
 - **Laragon**, `http://motociclete.test`. Document root = rădăcina proiectului; `.htaccess` rutează tot prin `index.php` și protejează `src/`, `templates/`, `vendor/`, `.env`.
@@ -71,6 +72,22 @@ Construit pe milestone-uri (vezi planul aprobat). **Milestone 1 livrat = home pa
 - `src/BikerShop/Client.php`: `makes()`, `models(makeId)`, `years(makeId,modelId)`, `compatibleProducts(modelId, yearId?, limit)`, `featuredProducts()`.
 - **API JSON live:** `GET /api/fit/models?make=`, `/api/fit/years?make=&model=`, `/api/fit/products?model=&year=` (vezi `ApiController`). JS-ul home (`assets/js/app.js`, `[data-fit]`) face cascadarea + randează cardurile.
 
+## Produse asociate (pagina produs + My Garage) — OEM vs Aftermarket
+
+- **OEM = fabricat de același producător** (manufacturer Yamaha/CFMoto); **aftermarket = alți producători**. Split pe `manufacturer`.
+- Sursa = relațiile curatate ale modulului **`advrider_related`** de pe BikerShop (NU `diagram_cache`, NU leoparts): `ps_advrider_related_{manual,partseurope,rvx}_cache`, keyed pe **id_product-ul produsului-motocicletă bikershop** (`RelatedSourcesHelper::getMergedRelatedIds`).
+- Mapare model local → produs bikershop: coloana `products.bs_product_id`, populată de `database/migrate_bs_models.php` (referința bikershop a motocicletei ≈ `products.slug`, ex. `mt-09-2026`). CFMOTO n-are produse-motocicletă pe bikershop (degradare grațioasă).
+- `BikerShop\Client::relatedBikeProductIds()` + `relatedForBike(bsId, brand)` → `{oem, aftermarket}`. Folosit de `CatalogController` (pagina produs, pe taburi) și `ClientController`.
+- `documente/advrider_related/` = sursa modulului PrestaShop (gitignored, parole în clar). `sync_oem.php`→`oem_cache` = echivalențe piesă↔piesă (pt. pagina unei PIESE). `oem_product_map`/`migrate_oem_fitment.php` (abordarea veche diagram_cache) rămân dar **nefolosite la runtime**.
+- Pagina produs e pe **taburi** (`[data-ptabs]` în `app.js`): Descriere / Caracteristici cheie (`products.details_html`) / Specificații / Galerie (imagini+video) / Piese & accesorii. Progressive enhancement (fără JS, panourile se stivuiesc).
+
+## My Garage — zonă privată clienți (`/garage`)
+
+- Login **passwordless OTP pe email** (introdu email/telefon din tabela `clienti`). `ClientController` + `App\Client\Repository` + `App\Support\Mailer`. Sesiune PHP nativă pornită în `Bootstrap` (cookie `dm_garage`).
+- **Mailer**: fără SMTP (dev) scrie în `storage/logs/mail.log`; `APP_ENV=dev` arată codul și pe `/garage/verify`. Producție = SMTP (`.env`: `SMTP_*`, `MAIL_FROM`, `MAIL_DEALER`).
+- Datele moto (km/culoare/accidente/revizii) sunt întreținute de ADMIN: `/admin/garage`, `/admin/service-requests`. Tabele în `database/schema_garage.sql` (CREATE IF NOT EXISTS, soft-links la `products`): `client_bikes, service_records, incidents, service_requests, client_otp, oem_product_map`.
+- Seed (PHP 8.1 Laragon): `schema_garage.sql` → `normalize_clienti.php` (`telefon_norm`/`email_norm`) → `seed_garage.php` (`unitate`→catalog) → `migrate_bs_models.php` (`bs_product_id`). Re-rulează seed + bs_models după re-migrarea catalogului. `normalize_phone()`/`normalize_email()` în helpers.
+
 ## Convenții
 
 - Toate query-urile = prepared statements. BikerShop NU se scrie niciodată (read-only).
@@ -98,6 +115,7 @@ După editări `app.css`/`app.js`: bump `?v=N` în `layout.twig` (cache-bust).
 Screenshot: Chrome NU e pe PATH în Bash → cale completă
 `"/c/Program Files/Google/Chrome/Application/chrome.exe" --headless=new --screenshot=<CALE-ABSOLUTĂ>.png --window-size=1440,2600 <url>`
 (calea relativă a fișierului dă „cannot find path"; cale absolută obligatorie).
+Screenshot interactiv / pagini cu sesiune (taburi, login garage): `npm i --no-save puppeteer-core` (folosește Chrome-ul existent prin `executablePath`), injectează cookie-ul de sesiune, apoi `page.screenshot`. **`node_modules/` e gitignored.**
 
 ## Deploy (staging `/2026/`)
 
