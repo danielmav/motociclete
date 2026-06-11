@@ -587,8 +587,9 @@ a.card-moto { display: block; color: inherit; }
 /* Product tabs: presentation vs accessories. Progressive enhancement — without JS
    the bar is hidden and both panels stack (content stays accessible). */
 .ptabs { display: none; }
-.js .ptabs { display: block; position: sticky; top: 60px; z-index: 90; margin-top: 1.5rem;
+.js .ptabs { display: block; position: sticky; top: 84px; z-index: 90; margin-top: 1.5rem;
     background: #0c0c0e; }
+@media (max-width: 520px) { .js .ptabs { top: 70px; } }
 .ptabs__nav { display: flex; gap: .4rem; padding: .5rem 0; flex-wrap: wrap; }
 .ptabs__btn { font-family: var(--head); font-weight: 700; font-size: 1rem; padding: .7rem 1.5rem;
     border: 0; background: transparent; color: rgba(255,255,255,.62); cursor: pointer; border-radius: 999px;

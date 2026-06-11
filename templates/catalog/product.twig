@@ -120,20 +120,20 @@
     {# ---------------- Descriere ---------------- #}
     {% if p.description %}
         <div class="ptabs__panel{{ 'descriere' == activeTab ? ' is-active' : '' }}" data-ppanel="descriere">
-            <section class="section product-section"><div class="container product-prose">
+            <section class="section product-section"><div class="container"><div class="product-prose">
                 <h2 class="section__title">Despre {{ p.name }}</h2>
                 {{ p.description|raw }}
-            </div></section>
+            </div></div></section>
         </div>
     {% endif %}
 
     {# ---------------- Caracteristici cheie (details_html) ---------------- #}
     {% if p.details_html|trim is not empty %}
         <div class="ptabs__panel{{ 'caracteristici' == activeTab ? ' is-active' : '' }}" data-ppanel="caracteristici">
-            <section class="section product-section"><div class="container product-prose product-features">
+            <section class="section product-section"><div class="container"><div class="product-prose">
                 <h2 class="section__title">Caracteristici cheie</h2>
                 {{ p.details_html|raw }}
-            </div></section>
+            </div></div></section>
         </div>
     {% endif %}
 
