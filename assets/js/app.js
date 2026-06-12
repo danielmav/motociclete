@@ -490,7 +490,12 @@
             if (lastFocus) { lastFocus.focus(); }
         };
         openers.forEach(function (b) {
-            b.addEventListener('click', function () { openModal(b.getAttribute('data-modal-open')); });
+            b.addEventListener('click', function (e) {
+                // Allow links to keep working as a no-JS fallback / new-tab (ctrl/cmd click).
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) { return; }
+                e.preventDefault();
+                openModal(b.getAttribute('data-modal-open'));
+            });
         });
         document.querySelectorAll('[data-modal]').forEach(function (m) {
             m.querySelectorAll('[data-modal-close]').forEach(function (c) {

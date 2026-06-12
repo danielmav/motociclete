@@ -993,6 +993,7 @@ body.modal-open { overflow: hidden; }
 .modal[hidden] { display: none; }
 .modal__overlay { position: absolute; inset: 0; background: rgba(17,17,17,.55); }
 .modal__dialog { position: relative; z-index: 1; width: 100%; max-width: 460px; max-height: 92vh; overflow: auto; background: #fff; border-radius: var(--radius); padding: 1.6rem; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+.modal__dialog--wide { max-width: 680px; }
 .modal__x { position: absolute; top: .6rem; right: .8rem; border: 0; background: none; font-size: 1.6rem; line-height: 1; cursor: pointer; color: var(--muted, #666); }
 .modal__title { margin: 0 0 .2rem; }
 .modal__sub { color: var(--muted, #666); margin: 0 0 1rem; font-size: .9rem; }

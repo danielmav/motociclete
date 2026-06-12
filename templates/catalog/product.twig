@@ -88,7 +88,7 @@
                         </div>
                         <div class="finance-calc__foot">
                             <span>{{ financePriceRon|number_format(0, ',', '.') }} lei{% if financeCfg %} · DAE {{ financeCfg.dae|number_format(1, ',', '.') }}%{% endif %}</span>
-                            <a class="link-arrow link-arrow--sm" href="{{ base }}/finantare">Detalii →</a>
+                            <a class="link-arrow link-arrow--sm" href="{{ base }}/finantare"{% if financeCfg and financeCfg.page_html %} data-modal-open="finantare"{% endif %}>Detalii →</a>
                         </div>
                     </div>
                 {% endif %}
@@ -312,5 +312,19 @@
 </article>
 
 {% include 'partials/lead-modals.twig' with { 'p': p, 'brand': brand, 'brandLabel': brandLabel } %}
+
+{# Financing conditions in a modal (same content as /finantare, which stays as a no-JS fallback). #}
+{% if financeCfg and financeCfg.page_html %}
+<div class="modal" data-modal="finantare" hidden>
+    <div class="modal__overlay" data-modal-close></div>
+    <div class="modal__dialog modal__dialog--wide" role="dialog" aria-modal="true" aria-labelledby="modal-title-finantare">
+        <button type="button" class="modal__x" data-modal-close aria-label="Închide">&times;</button>
+        <div class="modal__body">
+            <h2 class="modal__title" id="modal-title-finantare">{{ financeCfg.page_title|default('Finanțare UniCredit') }}</h2>
+            <div class="prose finance-prose">{{ financeCfg.page_html|raw }}</div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 {% endblock %}
