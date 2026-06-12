@@ -31,6 +31,15 @@ return function (App $app, Twig $twig, array $container): void {
     $app->get('/api/fit/years',    $api('years'));
     $app->get('/api/fit/products', $api('products'));
 
+    // --- Product-page lead forms (Cere ofertă / Test ride) ---
+    $lead = function (string $method) use ($container) {
+        return function ($request, $response) use ($container, $method) {
+            return (new \App\Controllers\ContactController($container))->{$method}($request, $response);
+        };
+    };
+    $app->post('/api/lead/oferta',    $lead('oferta'));
+    $app->post('/api/lead/test-ride', $lead('testRide'));
+
     // Health check (handy while wiring things up).
     $app->get('/health', function ($request, $response) use ($container) {
         $response->getBody()->write(json_encode([
