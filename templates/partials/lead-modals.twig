@@ -1,0 +1,58 @@
+{# Two lead modals (Cere ofertă / Test ride) for the product page.
+   Hidden by default; opened by JS via [data-modal-open="oferta|test-ride"].
+   Each form posts via fetch to /api/lead/*; success swaps to the thank-you panel. #}
+{% set modelName = p.name ~ (p.year ? ' ' ~ p.year : '') %}
+
+{% set forms = [
+    { id: 'oferta',    action: '/api/lead/oferta',    title: 'Cere ofertă',           submit: 'Trimite cererea' },
+    { id: 'test-ride', action: '/api/lead/test-ride', title: 'Programează test ride', submit: 'Trimite programarea' }
+] %}
+
+{% for f in forms %}
+<div class="modal" data-modal="{{ f.id }}" hidden>
+    <div class="modal__overlay" data-modal-close></div>
+    <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title-{{ f.id }}">
+        <button type="button" class="modal__x" data-modal-close aria-label="Închide">&times;</button>
+        <div class="modal__body" data-modal-form>
+            <h2 class="modal__title" id="modal-title-{{ f.id }}">{{ f.title }}</h2>
+            <p class="modal__sub">{{ modelName }} · {{ brandLabel }}</p>
+            <form class="lead-form" method="post" action="{{ base }}{{ f.action }}" data-lead-form>
+                <input type="hidden" name="brand" value="{{ brand }}">
+                <input type="hidden" name="product_slug" value="{{ p.slug }}">
+                <input type="hidden" name="product_name" value="{{ p.name }}">
+                <div class="lead-form__hp" aria-hidden="true">
+                    <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+                </div>
+                <label class="field"><span>Nume și prenume *</span>
+                    <input type="text" name="name" required autocomplete="name"></label>
+                <label class="field"><span>Email *</span>
+                    <input type="email" name="email" required autocomplete="email"></label>
+                <label class="field"><span>Telefon *</span>
+                    <input type="tel" name="phone" required autocomplete="tel"></label>
+                {% if f.id == 'test-ride' %}
+                    <label class="field"><span>Categorie permis *</span>
+                        <select name="licence" required>
+                            <option value="">Alege…</option>
+                            <option value="AM">AM</option>
+                            <option value="A1">A1</option>
+                            <option value="A2">A2</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                        </select></label>
+                {% else %}
+                    <label class="field"><span>Mesaj</span>
+                        <textarea name="message" rows="3"></textarea></label>
+                {% endif %}
+                <p class="lead-form__err" data-lead-err hidden></p>
+                <button type="submit" class="btn btn--primary btn--lg">{{ f.submit }}</button>
+            </form>
+        </div>
+        <div class="modal__body modal__thanks" data-modal-thanks hidden>
+            <div class="modal__check" aria-hidden="true">✓</div>
+            <h2 class="modal__title">Mulțumim pentru mesaj</h2>
+            <p>Un reprezentant va intra în legătură cu dumneavoastră cât se poate de repede.</p>
+            <button type="button" class="btn btn--ghost" data-modal-close>Închide</button>
+        </div>
+    </div>
+</div>
+{% endfor %}
