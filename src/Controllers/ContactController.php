@@ -116,7 +116,7 @@ final class ContactController
         $lines[] = 'Data: ' . date('Y-m-d H:i:s');
 
         try {
-            $this->mailer->send($this->dealer, $subject, implode("\n", array_filter($lines, fn ($l) => $l !== '' || true)));
+            $this->mailer->send($this->dealer, $subject, implode("\n", $lines));
         } catch (Throwable) {
             // never let mail failure break the JSON response
         }
