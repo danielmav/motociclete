@@ -955,25 +955,25 @@ a.card-art { display: block; color: inherit; }
 /* Modele similare — subtle grey band */
 .product-related { background: var(--surface); padding-top: 3rem; padding-bottom: 3rem; }
 
-/* WhatsApp / call buttons */
-.product__contact { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .75rem; }
-.btn--wa { background: #25D366; color: #fff; display: inline-flex; align-items: center; gap: .5rem; }
+/* Action buttons: test ride / ofertă / WhatsApp / telefon — compact, one line on desktop */
+.product__actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin: 1rem 0 1.2rem; }
+.btn--sm { padding: .55rem .9rem; font-size: .85rem; }
+.product__actions .btn { white-space: nowrap; }
+.btn--wa { background: #25D366; color: #fff; display: inline-flex; align-items: center; gap: .4rem; }
 .btn--wa:hover { background: #1ebe5b; color: #fff; }
+.btn--wa svg { width: 16px; height: 16px; }
 .btn--call { background: var(--surface); color: var(--ink, #111); }
 .btn--call:hover { background: #ececee; }
 
-/* Rate calculator */
-.finance-calc { margin-top: 1.25rem; padding: 1rem 1.1rem; background: var(--surface); border-radius: var(--radius); border: 1px solid #ececee; }
-.finance-calc__brand { font-size: .8rem; letter-spacing: .04em; text-transform: uppercase; color: var(--muted, #666); margin-bottom: .6rem; }
-.finance-calc__row { display: flex; gap: 1rem; flex-wrap: wrap; }
-.finance-calc__field { display: flex; flex-direction: column; gap: .25rem; min-width: 0; flex: 1; }
-.finance-calc__field label { font-size: .8rem; color: var(--muted, #666); }
-.finance-calc__price { font-weight: 600; padding: .5rem 0; }
-.finance-calc__term { padding: .5rem .6rem; border: 1px solid #d8d8db; border-radius: 8px; background: #fff; }
-.finance-calc__result { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-top: .9rem; padding-top: .9rem; border-top: 1px solid #ececee; }
-.finance-calc__label { color: var(--muted, #666); font-size: .9rem; }
-.finance-calc__rate { font-size: 1.5rem; font-weight: 700; color: var(--red); }
-.finance-calc__foot { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-top: .7rem; font-size: .8rem; color: var(--muted, #666); }
+/* Rate calculator — compact card in the summary column */
+.finance-calc { margin: 1rem 0; padding: .7rem .85rem; background: var(--surface); border-radius: 10px; border: 1px solid #ececee; max-width: 320px; }
+.finance-calc__head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+.finance-calc__brand { font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; color: var(--muted, #666); }
+.finance-calc__term { padding: .35rem .5rem; border: 1px solid #d8d8db; border-radius: 7px; background: #fff; font-size: .82rem; }
+.finance-calc__result { display: flex; align-items: baseline; gap: .3rem; margin-top: .4rem; }
+.finance-calc__rate { font-size: 1.3rem; font-weight: 700; color: var(--red); line-height: 1.1; }
+.finance-calc__per { color: var(--muted, #666); font-size: .8rem; }
+.finance-calc__foot { display: flex; justify-content: space-between; align-items: center; gap: .8rem; margin-top: .35rem; font-size: .72rem; color: var(--muted, #666); }
 
 /* Modals */
 body.modal-open { overflow: hidden; }

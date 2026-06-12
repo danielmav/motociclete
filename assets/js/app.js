@@ -426,11 +426,22 @@
             });
             ppanels.forEach(function (p) { p.classList.toggle('is-active', p.getAttribute('data-ppanel') === id); });
         };
+        // Scroll so the top of the newly-selected panel sits just under the sticky
+        // tab bar. We can't use ptabs.scrollIntoView — the bar is position:sticky, so
+        // the browser thinks it's already in view and won't scroll. Measure the active
+        // panel instead and offset by the sticky header + tab-bar height.
+        var revealActivePanel = function () {
+            var panel = document.querySelector('[data-ppanel].is-active');
+            if (!panel) { return; }
+            var stickyTop = parseInt(window.getComputedStyle(ptabs).top, 10) || 0;
+            var barH = ptabs.offsetHeight;
+            var y = panel.getBoundingClientRect().top + window.pageYOffset - stickyTop - barH - 6;
+            window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+        };
         pbtns.forEach(function (btn) {
             btn.addEventListener('click', function () {
                 setPanel(btn.getAttribute('data-ptab'));
-                // Bring the (sticky) tab bar + freshly shown panel into view.
-                ptabs.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                revealActivePanel();
             });
         });
         // Deep link: #accesorii / #piese-oem opens the accessories tab.
