@@ -427,13 +427,98 @@
             ppanels.forEach(function (p) { p.classList.toggle('is-active', p.getAttribute('data-ppanel') === id); });
         };
         pbtns.forEach(function (btn) {
-            btn.addEventListener('click', function () { setPanel(btn.getAttribute('data-ptab')); });
+            btn.addEventListener('click', function () {
+                setPanel(btn.getAttribute('data-ptab'));
+                // Bring the (sticky) tab bar + freshly shown panel into view.
+                ptabs.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
         });
         // Deep link: #accesorii / #piese-oem opens the accessories tab.
         if (/(accesorii|piese-oem)/.test(location.hash)) {
             setPanel('accesorii');
         }
     }
+
+    /* ---- UniCredit rate calculator ---- */
+    var fcalc = document.getElementById('unicredit-calculator');
+    if (fcalc) {
+        var rates = {};
+        try { rates = JSON.parse(fcalc.getAttribute('data-rates') || '{}'); } catch (e) { rates = {}; }
+        var termSel = fcalc.querySelector('[data-fc-term]');
+        var rateOut = fcalc.querySelector('[data-fc-rate]');
+        var fmtLei = function (n) {
+            return n.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' lei';
+        };
+        var update = function () {
+            var v = rates[termSel.value];
+            if (typeof v === 'number') { rateOut.textContent = fmtLei(v); }
+        };
+        if (termSel && rateOut) {
+            termSel.addEventListener('change', update);
+            update();
+        }
+    }
+
+    /* ---- Lead modals (Cere ofertă / Test ride) ---- */
+    (function () {
+        var openers = document.querySelectorAll('[data-modal-open]');
+        if (!openers.length) { return; }
+        var lastFocus = null;
+        var openModal = function (id) {
+            var m = document.querySelector('[data-modal="' + id + '"]');
+            if (!m) { return; }
+            lastFocus = document.activeElement;
+            m.hidden = false;
+            document.body.classList.add('modal-open');
+            var first = m.querySelector('input, select, textarea, button');
+            if (first) { first.focus(); }
+        };
+        var closeModal = function (m) {
+            m.hidden = true;
+            document.body.classList.remove('modal-open');
+            if (lastFocus) { lastFocus.focus(); }
+        };
+        openers.forEach(function (b) {
+            b.addEventListener('click', function () { openModal(b.getAttribute('data-modal-open')); });
+        });
+        document.querySelectorAll('[data-modal]').forEach(function (m) {
+            m.querySelectorAll('[data-modal-close]').forEach(function (c) {
+                c.addEventListener('click', function () { closeModal(m); });
+            });
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('[data-modal]:not([hidden])').forEach(closeModal);
+            }
+        });
+        // AJAX submit
+        document.querySelectorAll('[data-lead-form]').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var modal = form.closest('[data-modal]');
+                var err = form.querySelector('[data-lead-err]');
+                var btn = form.querySelector('button[type="submit"]');
+                if (err) { err.hidden = true; }
+                if (btn) { btn.disabled = true; }
+                fetch(form.getAttribute('action'), {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: new FormData(form)
+                }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                  .then(function (data) {
+                      if (data && data.ok) {
+                          modal.querySelector('[data-modal-form]').hidden = true;
+                          modal.querySelector('[data-modal-thanks]').hidden = false;
+                      } else if (err) {
+                          err.textContent = (data && data.error) || 'A apărut o eroare. Încearcă din nou sau sună-ne.';
+                          err.hidden = false;
+                      }
+                  }).catch(function () {
+                      if (err) { err.textContent = 'Conexiune eșuată. Încearcă din nou.'; err.hidden = false; }
+                  }).finally(function () { if (btn) { btn.disabled = false; } });
+            });
+        });
+    })();
 
     /* ---- Lazy YouTube embed ---- */
     var video = document.querySelector('[data-video]');
