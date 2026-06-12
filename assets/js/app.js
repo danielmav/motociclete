@@ -52,9 +52,12 @@
     var sClose = document.querySelector('[data-search-close]');
     if (sOpen) sOpen.addEventListener('click', function () { search && search.hidden ? openSearch() : closeSearch(); });
     if (sClose) sClose.addEventListener('click', closeSearch);
-    // Search backend lands in a later milestone — keep the demo clean for now.
+    // The form submits as a normal GET to /cauta (SearchController) — don't block it.
+    // Just guard against empty queries so we never navigate to a blank results page.
     var searchForm = search ? search.querySelector('.search__form') : null;
-    if (searchForm) searchForm.addEventListener('submit', function (e) { e.preventDefault(); });
+    if (searchForm) searchForm.addEventListener('submit', function (e) {
+        if (searchInput && !searchInput.value.trim()) { e.preventDefault(); searchInput.focus(); }
+    });
 
     /* ---- Esc closes any open layer ---- */
     document.addEventListener('keydown', function (e) {

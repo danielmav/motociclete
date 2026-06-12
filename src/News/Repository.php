@@ -76,6 +76,37 @@ final class Repository
         return array_map([$this, 'shapeCard'], $rows);
     }
 
+    /**
+     * Search active articles by title, excerpt and body. Every word must match
+     * (AND). Shaped as cards. @return array<int,array<string,mixed>>
+     */
+    public function search(string $query, int $limit = 12): array
+    {
+        $parts = preg_split('/\s+/', trim($query)) ?: [];
+        $words = array_values(array_filter($parts, static fn ($w) => mb_strlen($w) >= 2));
+        if (!$words || !$this->isAvailable()) {
+            return [];
+        }
+        $conds = [];
+        $params = [];
+        foreach ($words as $w) {
+            $conds[] = "(n.title LIKE ? OR n.excerpt LIKE ? OR n.body LIKE ?)";
+            $like = '%' . $w . '%';
+            array_push($params, $like, $like, $like);
+        }
+        $params[] = $query . '%';
+        $rows = $this->all(
+            "SELECT n.id, n.title, n.slug, n.excerpt, n.published_at,
+                    " . self::COVER_SUBQUERY . " AS cover
+             FROM news n
+             WHERE n.is_active = 1 AND " . implode(' AND ', $conds) . "
+             ORDER BY (n.title LIKE ?) DESC, n.published_at DESC, n.id DESC
+             LIMIT " . (int) $limit,
+            $params
+        );
+        return array_map([$this, 'shapeCard'], $rows);
+    }
+
     /** A single article by id (with body + gallery), or null. @return array<string,mixed>|null */
     public function find(int $id): ?array
     {

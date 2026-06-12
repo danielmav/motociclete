@@ -438,6 +438,16 @@ ul { list-style: none; padding: 0; }
 .search__hints a { padding: .35rem .75rem; border-radius: 999px; background: var(--surface); font-weight: 600; color: var(--ink-2); transition: background .2s var(--ease), color .2s var(--ease); }
 .search__hints a:hover { background: var(--red-soft); color: var(--red-dark); }
 
+/* search results page (/cauta) */
+.search-page__form { display: flex; align-items: center; gap: .7rem; margin-top: 1.4rem; max-width: 720px; border: 1px solid var(--line); border-radius: 999px; padding: .5rem .5rem .5rem 1.1rem; }
+.search-page__form svg { color: var(--muted); flex: 0 0 auto; }
+.search-page__form input { flex: 1; min-width: 0; border: 0; outline: none; background: none; font-family: var(--display); font-weight: 600; font-size: 1.05rem; color: var(--ink); }
+.search-page__form input::placeholder { color: #b6b6bc; }
+.search-page__form .btn { flex: 0 0 auto; }
+.search-group__title { font-family: var(--display); font-weight: 800; font-size: clamp(1.2rem, 3vw, 1.6rem); margin-bottom: 1.2rem; display: flex; align-items: baseline; gap: .6rem; }
+.search-group__title small { font-size: .8rem; font-weight: 600; color: var(--muted); }
+.empty-state__hint { font-size: .9rem; }
+
 /* ============================================================
    VIRTUAL TOUR
    ============================================================ */
@@ -827,6 +837,15 @@ a.card-moto, .card-moto, .card-moto__body, .card-cat { min-width: 0; }
 @media (max-width: 820px)  { .grid--models, .grid--cats { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 600px)  { .grid--models { grid-template-columns: 1fr; } .grid--cats { grid-template-columns: 1fr; } }
 
+/* search results: tighter 5-up grid with smaller cards (placed last so it wins) */
+.grid--5 { grid-template-columns: repeat(5, 1fr); gap: 1rem; }
+.grid--5 .card-moto__name, .grid--5 .card-art__title { font-size: 1rem; }
+.grid--5 .card-moto__body { padding: .9rem; }
+.grid--5 .price { font-size: .92rem; }
+@media (max-width: 1280px) { .grid--5 { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 1000px) { .grid--5 { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 680px)  { .grid--5 { grid-template-columns: repeat(2, 1fr); } }
+
 /* ============================================================
    BLOG cards — real images in the editorial cards
    ============================================================ */
@@ -959,6 +978,7 @@ a.card-art { display: block; color: inherit; }
 
 /* Modele similare — subtle grey band */
 .product-related { background: var(--surface); padding-top: 3rem; padding-bottom: 3rem; }
+.blog-home { background: var(--surface); }
 
 /* Action buttons: test ride / ofertă / WhatsApp / telefon — compact, one line on desktop */
 .product__actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin: 1rem 0 1.2rem; }

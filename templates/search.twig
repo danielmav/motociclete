@@ -1,0 +1,123 @@
+{% extends 'layout.twig' %}
+
+{% block title %}{% if q %}Căutare „{{ q }}”{% else %}Căutare{% endif %} | Dual Motors{% endblock %}
+{% block description %}Caută motociclete Yamaha și CFMOTO, echipament, piese și articole pe motociclete.com.ro.{% endblock %}
+
+{% block content %}
+
+<section class="section catalog-head">
+    <div class="container">
+        <span class="kicker">Căutare</span>
+        <h1 class="catalog-head__title">{% if q %}Rezultate pentru „{{ q }}”{% else %}Caută pe site{% endif %}</h1>
+
+        <form class="search-page__form" action="{{ base }}/cauta" method="get" role="search">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.7"/><path d="M20 20l-3.2-3.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <input type="search" name="q" value="{{ q }}" placeholder="Caută motociclete, echipament, piese, articole…" aria-label="Caută în tot site-ul" autofocus autocomplete="off">
+            <button class="btn btn--primary" type="submit">Caută</button>
+        </form>
+
+        {% if q %}
+            <p class="catalog-count">{{ total }} {{ total == 1 ? 'rezultat' : 'rezultate' }}</p>
+        {% endif %}
+    </div>
+</section>
+
+{% if q and total %}
+
+    {% if models|length %}
+    <section class="section section--tight">
+        <div class="container">
+            <h2 class="search-group__title">Motociclete <small>{{ models|length }}</small></h2>
+            <div class="grid grid--models grid--5">
+                {% for m in models %}
+                    <a class="card-moto" href="{{ base }}{{ m.url }}">
+                        <div class="card-moto__media{{ m.image ? '' : ' media-ph' }}">
+                            {% if m.year %}<span class="badge">{{ m.year }}</span>{% endif %}
+                            {% if m.old_price %}<span class="badge badge--sale badge--tr">−{{ m.discount }}%</span>{% endif %}
+                            {% if m.image %}
+                                <img src="{{ base }}{{ m.image }}" alt="{{ m.name }}" loading="lazy" width="900" height="600"
+                                     onerror="this.closest('.card-moto__media').classList.add('media-ph');this.remove()">
+                            {% else %}
+                                <span class="media-ph__label">{{ m.name }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="card-moto__body">
+                            <div class="card-moto__meta">
+                                <span class="chip">{{ m.cat }}</span>
+                                {% if m.licence %}<span class="chip chip--permis">Permis {{ m.licence }}</span>{% endif %}
+                            </div>
+                            <h3 class="card-moto__name">{{ m.name }}</h3>
+                            <div class="card-moto__foot">
+                                {% set pr = prices(m.price) %}
+                                <span class="price">
+                                    <small>de la</small>
+                                    {{ pr.eur }}
+                                    <span class="price__ron">{{ pr.ron }}{% if m.old_price %} · <s>{{ prices(m.old_price).eur }}</s>{% endif %}</span>
+                                </span>
+                                <span class="link-arrow link-arrow--sm">Detalii <span aria-hidden="true">→</span></span>
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if accessories|length %}
+    <section class="section section--tight">
+        <div class="container">
+            <h2 class="search-group__title">Echipament &amp; piese <small>din BikerShop</small></h2>
+            <div class="grid grid--acc grid--5">
+                {% for a in accessories %}
+                    <a class="card-acc" href="{{ a.url }}" target="_blank" rel="noopener">
+                        <div class="card-acc__media media-ph media-ph--sm">
+                            {% if a.image %}<img loading="lazy" src="{{ a.image }}" alt="{{ a.name }}" width="300" height="300" onerror="this.remove()">{% else %}<span class="media-ph__label">{{ a.manufacturer }}</span>{% endif %}
+                        </div>
+                        <span class="card-acc__brand">{{ a.manufacturer }}</span>
+                        <span class="card-acc__name">{{ a.name }}</span>
+                        <span class="card-acc__price">{{ a.price|number_format(2, ',', '.') }} Lei</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if articles|length %}
+    <section class="section section--tight">
+        <div class="container">
+            <h2 class="search-group__title">Articole <small>{{ articles|length }}</small></h2>
+            <div class="grid grid--articles grid--5">
+                {% for art in articles %}
+                    <a class="card-art" href="{{ base }}{{ art.url }}">
+                        <div class="card-art__media{{ art.image ? '' : ' media-ph' }}">
+                            {% if art.image %}
+                                <img src="{{ base }}{{ art.image }}" alt="{{ art.title }}" loading="lazy" width="640" height="400"
+                                     onerror="this.closest('.card-art__media').classList.add('media-ph');this.remove()">
+                            {% else %}<span class="media-ph__label">Pe Două Roți</span>{% endif %}
+                        </div>
+                        <span class="card-art__cat">Noutăți{% if art.date %} · {{ art.date }}{% endif %}</span>
+                        <h3 class="card-art__title">{{ art.title }}</h3>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+{% elseif q %}
+
+    <section class="section section--tight">
+        <div class="container">
+            <div class="empty-state">
+                <p>Nu am găsit nimic pentru „{{ q }}”.</p>
+                <p class="empty-state__hint">Încearcă un termen mai scurt (ex. „MT-09”, „cască”, „ulei”) sau răsfoiește catalogul.</p>
+                <a class="btn btn--ghost" href="{{ base }}/yamaha">Vezi modelele Yamaha <span aria-hidden="true">→</span></a>
+            </div>
+        </div>
+    </section>
+
+{% endif %}
+
+{% endblock %}

@@ -177,6 +177,45 @@ final class Repository
         return array_map([$this, 'shapeCard'], $rows);
     }
 
+    /**
+     * Full-text-ish search across the local catalog (name, subtitle, brand).
+     * Every word must match somewhere (AND), so "mt 09" finds "MT-09".
+     * Shaped as cards. @return array<int,array<string,mixed>>
+     */
+    public function search(string $query, int $limit = 24): array
+    {
+        $words = self::words($query);
+        if (!$words || !$this->isAvailable()) {
+            return [];
+        }
+        $conds = [];
+        $params = [];
+        foreach ($words as $w) {
+            $conds[] = "(p.name LIKE ? OR p.subtitle LIKE ? OR p.brand LIKE ?)";
+            $like = '%' . $w . '%';
+            array_push($params, $like, $like, $like);
+        }
+        // Surface exact-ish name matches first (whole query as a prefix of the name).
+        $params[] = $query . '%';
+        $rows = $this->all(
+            "SELECT p.id, p.brand, p.name, p.subtitle, p.slug, p.year, p.price, p.discount_pct,
+                    p.licence, p.cover_image, c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
+             " . self::PROD_JOIN . "
+             WHERE p.is_active = 1 AND " . implode(' AND ', $conds) . "
+             ORDER BY (p.name LIKE ?) DESC, p.year DESC, p.name
+             LIMIT " . (int) $limit,
+            $params
+        );
+        return array_map([$this, 'shapeCard'], $rows);
+    }
+
+    /** Split a search query into trimmed, non-empty words (min 2 chars). @return array<int,string> */
+    private static function words(string $query): array
+    {
+        $parts = preg_split('/\s+/', trim($query)) ?: [];
+        return array_values(array_filter($parts, static fn ($w) => mb_strlen($w) >= 2));
+    }
+
     /** Full product detail by (brand, slug), shaped with breadcrumb + url. Null if missing. */
     public function product(string $brand, string $slug): ?array
     {

@@ -198,6 +198,62 @@ final class Client
     }
 
     /**
+     * Search active, search-visible products by name. Every word must match (AND),
+     * so "ulei Putoline" finds "Ulei de furca Putoline …". LIKE scan over
+     * product_lang (~334k rows, ≈1.2s) — fine for a page submit; the storefront
+     * search index (ps_search_*) is not populated. @return array<int,array<string,mixed>>
+     */
+    public function searchProducts(string $query, int $limit = 24): array
+    {
+        if (!$this->isAvailable()) {
+            return [];
+        }
+        $parts = preg_split('/\s+/', trim($query)) ?: [];
+        $words = array_values(array_filter($parts, static fn ($w) => mb_strlen($w) >= 2));
+        if (!$words) {
+            return [];
+        }
+        $p = $this->prefix;
+        $shop = $this->shopId; // trusted config ints, inlined (named params can't repeat)
+        $lang = $this->langId;
+        $conds = [];
+        $params = [];
+        foreach ($words as $w) {
+            $conds[] = "pl.name LIKE ?";
+            $params[] = '%' . $w . '%';
+        }
+        $params[] = $query . '%';              // relevance: whole query as a name prefix
+        $params[] = max(1, $limit);            // LIMIT
+        $sql = "
+            SELECT  pr.id_product, pl.name, pl.link_rewrite,
+                    COALESCE(ps.price, pr.price) AS price,
+                    (SELECT t.rate FROM {$p}tax_rule trl JOIN {$p}tax t ON t.id_tax = trl.id_tax
+                      WHERE trl.id_tax_rules_group = pr.id_tax_rules_group AND t.active = 1 LIMIT 1) AS tax_rate,
+                    m.name AS manufacturer, img.id_image
+            FROM        {$p}product_lang  pl
+            JOIN        {$p}product_shop  ps  ON ps.id_product = pl.id_product AND ps.id_shop = {$shop}
+                         AND ps.active = 1 AND ps.visibility IN ('both','search')
+            JOIN        {$p}product       pr  ON pr.id_product = pl.id_product
+            LEFT JOIN   {$p}manufacturer  m   ON m.id_manufacturer = pr.id_manufacturer
+            LEFT JOIN   {$p}image         img ON img.id_product = pr.id_product AND img.cover = 1
+            WHERE   pl.id_lang = {$lang} AND pl.id_shop = {$shop} AND " . implode(' AND ', $conds) . "
+            ORDER BY (pl.name LIKE ?) DESC, pl.name
+            LIMIT ?
+        ";
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $i = 1;
+            foreach ($params as $v) {
+                $stmt->bindValue($i++, $v, is_int($v) ? PDO::PARAM_INT : PDO::PARAM_STR);
+            }
+            $stmt->execute();
+            return array_map(fn (array $r) => $this->shapeProduct($r), $stmt->fetchAll());
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /**
      * Active products by their BikerShop ids, in the given order. Used to render
      * the OEM parts strip: ids come precomputed from the local `oem_product_map`
      * (see database/migrate_oem_fitment.php), details are fetched live here on

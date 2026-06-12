@@ -82,6 +82,11 @@ return function (App $app, Twig $twig, array $container): void {
         return (new CompareController($twig, $container))->index($request, $response, $args);
     });
 
+    // --- Site-wide search (catalog + blog + BikerShop equipment) ---
+    $app->get('/cauta', function ($request, $response) use ($twig, $container) {
+        return (new \App\Controllers\SearchController($twig, $container))->index($request, $response);
+    });
+
     // --- Financing conditions page (UniCredit), backed by the `finance` table ---
     $app->get('/finantare', function ($request, $response) use ($twig, $container) {
         return (new \App\Controllers\FinanceController($twig, $container))->page($request, $response);
