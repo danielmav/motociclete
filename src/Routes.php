@@ -73,6 +73,11 @@ return function (App $app, Twig $twig, array $container): void {
         return (new CompareController($twig, $container))->index($request, $response, $args);
     });
 
+    // --- Financing conditions page (UniCredit), backed by the `finance` table ---
+    $app->get('/finantare', function ($request, $response) use ($twig, $container) {
+        return (new \App\Controllers\FinanceController($twig, $container))->page($request, $response);
+    });
+
     // --- My Garage (private client area, passwordless OTP login) ---
     $garage = function (string $method) use ($twig, $container) {
         return function ($request, $response, $args) use ($twig, $container, $method) {
