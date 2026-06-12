@@ -56,6 +56,7 @@
             </div>
 
             {% if p.price %}
+            <div class="product__price-row">
                 {% set now = prices(p.price) %}
                 <div class="product__price">
                     {% if p.old_price %}<span class="badge badge--sale">−{{ p.discount_pct|round }}%</span>{% endif %}
@@ -69,28 +70,29 @@
                     {% endif %}
                     <span class="product__price-note">preț cu TVA {{ currency.vat }}% · curs {{ currency.rate }} lei/€</span>
                 </div>
-            {% endif %}
 
-            {% if financePriceRon and financeRates|length %}
-                {% set defaultTerm = (financeRates|keys|last) %}
-                <div class="finance-calc" id="unicredit-calculator" data-rates='{{ financeRates|json_encode }}'>
-                    <div class="finance-calc__head">
-                        <span class="finance-calc__brand">Rate UniCredit</span>
-                        <select id="fc-term" class="finance-calc__term" data-fc-term aria-label="Durată credit">
-                            {% for n in financeRates|keys %}
-                                <option value="{{ n }}"{{ n == defaultTerm ? ' selected' : '' }}>{{ n }} luni</option>
-                            {% endfor %}
-                        </select>
+                {% if financePriceRon and financeRates|length %}
+                    {% set defaultTerm = (financeRates|keys|last) %}
+                    <div class="finance-calc" id="unicredit-calculator" data-rates='{{ financeRates|json_encode }}'>
+                        <div class="finance-calc__head">
+                            <span class="finance-calc__brand">Rate UniCredit</span>
+                            <select id="fc-term" class="finance-calc__term" data-fc-term aria-label="Durată credit">
+                                {% for n in financeRates|keys %}
+                                    <option value="{{ n }}"{{ n == defaultTerm ? ' selected' : '' }}>{{ n }} luni</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="finance-calc__result">
+                            <span class="finance-calc__rate" data-fc-rate>{{ financeRates[defaultTerm]|number_format(2, ',', '.') }} lei</span>
+                            <span class="finance-calc__per">/lună</span>
+                        </div>
+                        <div class="finance-calc__foot">
+                            <span>{{ financePriceRon|number_format(0, ',', '.') }} lei{% if financeCfg %} · DAE {{ financeCfg.dae|number_format(1, ',', '.') }}%{% endif %}</span>
+                            <a class="link-arrow link-arrow--sm" href="{{ base }}/finantare">Detalii →</a>
+                        </div>
                     </div>
-                    <div class="finance-calc__result">
-                        <span class="finance-calc__rate" data-fc-rate>{{ financeRates[defaultTerm]|number_format(2, ',', '.') }} lei</span>
-                        <span class="finance-calc__per">/lună</span>
-                    </div>
-                    <div class="finance-calc__foot">
-                        <span>{{ financePriceRon|number_format(0, ',', '.') }} lei{% if financeCfg %} · DAE {{ financeCfg.dae|number_format(1, ',', '.') }}%{% endif %}</span>
-                        <a class="link-arrow link-arrow--sm" href="{{ base }}/finantare">Detalii →</a>
-                    </div>
-                </div>
+                {% endif %}
+            </div>
             {% endif %}
 
             {% if p.excerpt %}<div class="product__excerpt">{{ p.excerpt|raw }}</div>{% endif %}

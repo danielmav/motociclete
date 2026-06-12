@@ -583,7 +583,7 @@ a.card-moto { display: block; color: inherit; }
 
 /* product sections */
 .product-section { padding-block: clamp(2.2rem, 5vw, 4rem); border-top: 1px solid var(--line); }
-.product-section__lead { color: var(--muted); max-width: 70ch; margin: -0.4rem 0 1.4rem; }
+.product-section__lead { color: var(--muted); margin: -0.4rem 0 1.4rem; }
 /* Product tabs: presentation vs accessories. Progressive enhancement — without JS
    the bar is hidden and both panels stack (content stays accessible). */
 .ptabs { display: none; }
@@ -638,6 +638,9 @@ a.card-moto { display: block; color: inherit; }
 .product-prose p { margin-bottom: 1rem; }
 .product-prose img { border-radius: var(--radius-sm); margin: 1rem 0; }
 .product-prose h2, .product-prose h3 { font-family: var(--head); margin: 1.5rem 0 .6rem; }
+/* Tab titles must look identical across all tabs — the `.product-prose h2` rule above
+   would otherwise give Descriere/Caracteristici a different font + extra top margin. */
+.product-section .section__title { font-family: var(--display); margin: 0 0 1.2rem; }
 
 /* spec tabs + tables */
 .tabs__nav { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1.4rem; border-bottom: 1px solid var(--line); }
@@ -662,6 +665,8 @@ a.card-moto { display: block; color: inherit; }
 
 /* detail shots gallery */
 .detail-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+/* Separator between the cover video and the image gallery in the Galerie tab. */
+.product-video + .detail-gallery { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--line); }
 .detail-item {
     position: relative;
     aspect-ratio: 3 / 2;
@@ -965,8 +970,15 @@ a.card-art { display: block; color: inherit; }
 .btn--call { background: var(--surface); color: var(--ink, #111); }
 .btn--call:hover { background: #ececee; }
 
-/* Rate calculator — compact card in the summary column */
-.finance-calc { margin: 1rem 0; padding: .7rem .85rem; background: var(--surface); border-radius: 10px; border: 1px solid #ececee; max-width: 320px; }
+/* Price + rate calculator side by side: 50/50 on desktop, stacked on mobile. */
+.product__price-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: stretch; margin-bottom: 1.2rem; }
+.product__price-row > * { flex: 1 1 240px; min-width: 0; margin: 0; }
+@media (max-width: 600px) { .product__price-row > * { flex-basis: 100%; } }
+/* Price framed like the calculator card, but without a background fill. */
+.product__price-row .product__price { padding: .7rem .85rem; border: 1px solid #ececee; border-radius: 10px; align-content: center; }
+
+/* Rate calculator — compact card */
+.finance-calc { padding: .7rem .85rem; background: var(--surface); border-radius: 10px; border: 1px solid #ececee; }
 .finance-calc__head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
 .finance-calc__brand { font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; color: var(--muted, #666); }
 .finance-calc__term { padding: .35rem .5rem; border: 1px solid #d8d8db; border-radius: 7px; background: #fff; font-size: .82rem; }
