@@ -21,6 +21,7 @@ final class CatalogController
     private Repository $repo;
     private BikerShopClient $bikershop;
     private string $base;
+    private \App\Finance\Repository $finance;
     private array $brandLabels = ['yamaha' => 'Yamaha', 'cfmoto' => 'CFMOTO'];
 
     /** @param array<string,mixed> $container */
@@ -29,6 +30,7 @@ final class CatalogController
         $this->repo      = $container['catalog'];
         $this->bikershop = $container['bikershop'];
         $this->base      = (string) ($container['settings']['app']['base_path'] ?? '');
+        $this->finance = $container['finance'];
     }
 
     /** /{brand} — brand landing: list of top categories. */
@@ -189,6 +191,13 @@ final class CatalogController
         $accessories = $rel['aftermarket'];
         $bsUrl = $rel['url'];
 
+        // UniCredit rate calculator: RON (VAT-inclusive) price + per-term instalments.
+        $cur = $this->twig->getEnvironment()->getGlobals()['currency'];
+        $priceEur = (float) ($product['price'] ?? 0);
+        $priceRon = $priceEur > 0 ? price_dual($priceEur, $cur)['ron_raw'] : 0;
+        $financeRates = $priceRon > 0 ? $this->finance->ratesFor((float) $priceRon) : [];
+        $financeCfg = $this->finance->config();
+
         return $this->twig->render($response, 'catalog/product.twig', [
             'brand'        => $brand,
             'brandLabel'   => $this->brandLabels[$brand] ?? ucfirst($brand),
@@ -201,7 +210,10 @@ final class CatalogController
             'oemParts'     => $oemParts,
             'accessories'  => $accessories,
             'bsUrl'        => $bsUrl,
-            'crumbs'       => $crumbs,
+            'crumbs'        => $crumbs,
+            'financePriceRon' => $priceRon,
+            'financeRates'    => $financeRates,
+            'financeCfg'      => $financeCfg,
         ]);
     }
 }
