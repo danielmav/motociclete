@@ -56,6 +56,7 @@
             </div>
 
             {% if p.price %}
+            <div class="product__price-row">
                 {% set now = prices(p.price) %}
                 <div class="product__price">
                     {% if p.old_price %}<span class="badge badge--sale">−{{ p.discount_pct|round }}%</span>{% endif %}
@@ -69,13 +70,42 @@
                     {% endif %}
                     <span class="product__price-note">preț cu TVA {{ currency.vat }}% · curs {{ currency.rate }} lei/€</span>
                 </div>
+
+                {% if financePriceRon and financeRates|length %}
+                    {% set defaultTerm = (financeRates|keys|last) %}
+                    <div class="finance-calc" id="unicredit-calculator" data-rates='{{ financeRates|json_encode }}'>
+                        <div class="finance-calc__head">
+                            <span class="finance-calc__brand">Rate UniCredit</span>
+                            <select id="fc-term" class="finance-calc__term" data-fc-term aria-label="Durată credit">
+                                {% for n in financeRates|keys %}
+                                    <option value="{{ n }}"{{ n == defaultTerm ? ' selected' : '' }}>{{ n }} luni</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="finance-calc__result">
+                            <span class="finance-calc__rate" data-fc-rate>{{ financeRates[defaultTerm]|number_format(2, ',', '.') }} lei</span>
+                            <span class="finance-calc__per">/lună</span>
+                        </div>
+                        <div class="finance-calc__foot">
+                            <span>{{ financePriceRon|number_format(0, ',', '.') }} lei{% if financeCfg %} · DAE {{ financeCfg.dae|number_format(1, ',', '.') }}%{% endif %}</span>
+                            <a class="link-arrow link-arrow--sm" href="{{ base }}/finantare">Detalii →</a>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
             {% endif %}
 
             {% if p.excerpt %}<div class="product__excerpt">{{ p.excerpt|raw }}</div>{% endif %}
 
-            <div class="product__cta">
-                <a class="btn btn--primary btn--lg" href="{{ testride_url }}">Programează test ride <span aria-hidden="true">→</span></a>
-                <a class="btn btn--ghost" href="{{ base }}/contact?model={{ p.slug }}">Cere ofertă</a>
+            {% set wamsg = ('Bună ziua, sunt interesat de ' ~ p.name ~ (p.year ? ' ' ~ p.year : '') ~ '. Aș dori detalii.')|url_encode %}
+            <div class="product__actions">
+                <button type="button" class="btn btn--primary btn--sm" data-modal-open="test-ride">Programează test ride</button>
+                <button type="button" class="btn btn--ghost btn--sm" data-modal-open="oferta">Cere ofertă</button>
+                <a class="btn btn--wa btn--sm" href="https://wa.me/40722354437?text={{ wamsg }}" target="_blank" rel="noopener" aria-label="Scrie-ne pe WhatsApp">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.79 1.21h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm5.8 14.16c-.24.68-1.4 1.3-1.94 1.34-.5.05-.97.23-3.27-.68-2.76-1.09-4.5-3.92-4.64-4.1-.13-.18-1.1-1.46-1.1-2.79s.7-1.98.95-2.25c.24-.27.53-.34.7-.34l.5.01c.16.01.38-.06.59.45.24.58.81 2 .88 2.14.07.14.12.31.02.49-.09.18-.14.29-.27.45-.14.16-.29.36-.41.48-.14.14-.28.29-.12.57.16.27.71 1.17 1.53 1.9 1.05.93 1.94 1.22 2.22 1.36.27.14.43.12.59-.07.16-.18.68-.79.86-1.07.18-.27.36-.22.6-.13.25.09 1.57.74 1.84.88.27.14.45.2.51.31.07.11.07.63-.17 1.32Z"/></svg>
+                    WhatsApp
+                </a>
+                <a class="btn btn--call btn--sm" href="tel:0722354437" aria-label="Sună la 0722 354 437">0722 354 437</a>
             </div>
 
             {% if colors|length %}
@@ -280,5 +310,7 @@
         </section>
     {% endif %}
 </article>
+
+{% include 'partials/lead-modals.twig' with { 'p': p, 'brand': brand, 'brandLabel': brandLabel } %}
 
 {% endblock %}

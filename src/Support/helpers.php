@@ -31,6 +31,27 @@ if (!function_exists('money_lei')) {
     }
 }
 
+if (!function_exists('credit_annuity')) {
+    /**
+     * Monthly instalment for a fixed-rate consumer credit (annuity formula).
+     *
+     * @param float $principal financed amount (RON, VAT inclusive)
+     * @param float $annualRate annual interest rate as a fraction (0.145 = 14,5%)
+     * @param int   $months     number of monthly instalments
+     */
+    function credit_annuity(float $principal, float $annualRate, int $months): float
+    {
+        if ($months <= 0) {
+            return 0.0;
+        }
+        $r = $annualRate / 12;
+        if ($r <= 0.0) {
+            return $principal / $months;
+        }
+        return $principal * $r / (1 - pow(1 + $r, -$months));
+    }
+}
+
 if (!function_exists('price_dual')) {
     /**
      * Turn a stored EUR amount into VAT-inclusive EUR + RON display strings.

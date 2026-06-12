@@ -583,7 +583,7 @@ a.card-moto { display: block; color: inherit; }
 
 /* product sections */
 .product-section { padding-block: clamp(2.2rem, 5vw, 4rem); border-top: 1px solid var(--line); }
-.product-section__lead { color: var(--muted); max-width: 70ch; margin: -0.4rem 0 1.4rem; }
+.product-section__lead { color: var(--muted); margin: -0.4rem 0 1.4rem; }
 /* Product tabs: presentation vs accessories. Progressive enhancement — without JS
    the bar is hidden and both panels stack (content stays accessible). */
 .ptabs { display: none; }
@@ -638,6 +638,9 @@ a.card-moto { display: block; color: inherit; }
 .product-prose p { margin-bottom: 1rem; }
 .product-prose img { border-radius: var(--radius-sm); margin: 1rem 0; }
 .product-prose h2, .product-prose h3 { font-family: var(--head); margin: 1.5rem 0 .6rem; }
+/* Tab titles must look identical across all tabs — the `.product-prose h2` rule above
+   would otherwise give Descriere/Caracteristici a different font + extra top margin. */
+.product-section .section__title { font-family: var(--display); margin: 0 0 1.2rem; }
 
 /* spec tabs + tables */
 .tabs__nav { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1.4rem; border-bottom: 1px solid var(--line); }
@@ -662,6 +665,8 @@ a.card-moto { display: block; color: inherit; }
 
 /* detail shots gallery */
 .detail-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+/* Separator between the cover video and the image gallery in the Galerie tab. */
+.product-video + .detail-gallery { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--line); }
 .detail-item {
     position: relative;
     aspect-ratio: 3 / 2;
@@ -949,3 +954,67 @@ a.card-art { display: block; color: inherit; }
     .cmp-tray__actions .btn { flex: 1; text-align: center; }
     .compare__rowhead { width: 6rem; }
 }
+
+/* ===== Product-page features: calculator, modals, contact, related band ===== */
+
+/* Modele similare — subtle grey band */
+.product-related { background: var(--surface); padding-top: 3rem; padding-bottom: 3rem; }
+
+/* Action buttons: test ride / ofertă / WhatsApp / telefon — compact, one line on desktop */
+.product__actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin: 1rem 0 1.2rem; }
+.btn--sm { padding: .55rem .9rem; font-size: .85rem; }
+.product__actions .btn { white-space: nowrap; }
+.btn--wa { background: #25D366; color: #fff; display: inline-flex; align-items: center; gap: .4rem; }
+.btn--wa:hover { background: #1ebe5b; color: #fff; }
+.btn--wa svg { width: 16px; height: 16px; }
+.btn--call { background: var(--surface); color: var(--ink, #111); }
+.btn--call:hover { background: #ececee; }
+
+/* Price + rate calculator side by side: 50/50 on desktop, stacked on mobile. */
+.product__price-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: stretch; margin-bottom: 1.2rem; }
+.product__price-row > * { flex: 1 1 240px; min-width: 0; margin: 0; }
+@media (max-width: 600px) { .product__price-row > * { flex-basis: 100%; } }
+/* Price framed like the calculator card, but without a background fill. */
+.product__price-row .product__price { padding: .7rem .85rem; border: 1px solid #ececee; border-radius: 10px; align-content: center; }
+
+/* Rate calculator — compact card */
+.finance-calc { padding: .7rem .85rem; background: var(--surface); border-radius: 10px; border: 1px solid #ececee; }
+.finance-calc__head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+.finance-calc__brand { font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; color: var(--muted, #666); }
+.finance-calc__term { padding: .35rem .5rem; border: 1px solid #d8d8db; border-radius: 7px; background: #fff; font-size: .82rem; }
+.finance-calc__result { display: flex; align-items: baseline; gap: .3rem; margin-top: .4rem; }
+.finance-calc__rate { font-size: 1.3rem; font-weight: 700; color: var(--red); line-height: 1.1; }
+.finance-calc__per { color: var(--muted, #666); font-size: .8rem; }
+.finance-calc__foot { display: flex; justify-content: space-between; align-items: center; gap: .8rem; margin-top: .35rem; font-size: .72rem; color: var(--muted, #666); }
+
+/* Modals */
+body.modal-open { overflow: hidden; }
+.modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.modal[hidden] { display: none; }
+.modal__overlay { position: absolute; inset: 0; background: rgba(17,17,17,.55); }
+.modal__dialog { position: relative; z-index: 1; width: 100%; max-width: 460px; max-height: 92vh; overflow: auto; background: #fff; border-radius: var(--radius); padding: 1.6rem; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+.modal__x { position: absolute; top: .6rem; right: .8rem; border: 0; background: none; font-size: 1.6rem; line-height: 1; cursor: pointer; color: var(--muted, #666); }
+.modal__title { margin: 0 0 .2rem; }
+.modal__sub { color: var(--muted, #666); margin: 0 0 1rem; font-size: .9rem; }
+.modal__thanks { text-align: center; padding: 1rem 0; }
+.modal__check { width: 56px; height: 56px; margin: 0 auto 1rem; border-radius: 50%; background: #25D366; color: #fff; font-size: 1.8rem; display: flex; align-items: center; justify-content: center; }
+
+/* Lead form */
+.lead-form { display: flex; flex-direction: column; gap: .8rem; }
+.lead-form .field { display: flex; flex-direction: column; gap: .3rem; }
+.lead-form .field > span { font-size: .85rem; color: var(--muted, #555); }
+.lead-form input, .lead-form select, .lead-form textarea { padding: .6rem .7rem; border: 1px solid #d8d8db; border-radius: 8px; font: inherit; background: #fff; }
+.lead-form input:focus, .lead-form select:focus, .lead-form textarea:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+.lead-form__hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.lead-form__err { color: var(--red); font-size: .85rem; margin: 0; }
+
+/* Financing page */
+.container--narrow { max-width: 820px; }
+.page-head { margin-bottom: 1.5rem; }
+.page-title { margin: .2rem 0 0; }
+.prose { line-height: 1.7; }
+.prose ul, .prose ol { padding-left: 1.2rem; }
+.prose li { margin: .3rem 0; }
+.finance-prose table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+.finance-prose th, .finance-prose td { text-align: left; padding: .5rem .7rem; border-bottom: 1px solid #ececee; vertical-align: top; }
+.finance-prose h2, .finance-prose h3 { margin-top: 1.6rem; }

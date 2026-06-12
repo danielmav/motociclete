@@ -81,6 +81,7 @@ final class Bootstrap
             'bikershop' => new BikerShop\Client($db, $settings['db']['bikershop']),
             'catalog'   => new Catalog\Repository($db),
             'news'      => new News\Repository($db),
+            'finance'   => new Finance\Repository($db),
             'client'    => new Client\Repository($db),
             'mailer'    => new Support\Mailer(
                 $settings['mail'],

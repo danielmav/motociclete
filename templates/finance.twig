@@ -1,0 +1,24 @@
+{% extends 'layout.twig' %}
+
+{% block title %}{{ finance.page_title|default('Finanțare') }} | Dual Motors{% endblock %}
+{% block description %}Finanțare auto-moto prin UniCredit Consumer Financing: dobândă fixă, DAE, perioadă de creditare și pașii pentru creditul 100% online.{% endblock %}
+
+{% block content %}
+<article class="section">
+    <div class="container container--narrow">
+        <header class="page-head">
+            <span class="kicker">Finanțare</span>
+            <h1 class="page-title">{{ finance.page_title|default('Finanțare prin UniCredit Consumer Financing') }}</h1>
+        </header>
+
+        {% if finance and finance.page_html %}
+            <div class="prose finance-prose">{{ finance.page_html|raw }}</div>
+        {% else %}
+            <p>Informațiile despre finanțare vor fi disponibile în curând. Pentru detalii, contactează-ne la
+               <a href="tel:0722354437">0722 354 437</a>.</p>
+        {% endif %}
+
+        <p class="finance-back"><a class="link-arrow" href="{{ base }}/">← Înapoi la showroom</a></p>
+    </div>
+</article>
+{% endblock %}

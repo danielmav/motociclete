@@ -31,6 +31,15 @@ return function (App $app, Twig $twig, array $container): void {
     $app->get('/api/fit/years',    $api('years'));
     $app->get('/api/fit/products', $api('products'));
 
+    // --- Product-page lead forms (Cere ofertă / Test ride) ---
+    $lead = function (string $method) use ($container) {
+        return function ($request, $response) use ($container, $method) {
+            return (new \App\Controllers\ContactController($container))->{$method}($request, $response);
+        };
+    };
+    $app->post('/api/lead/oferta',    $lead('oferta'));
+    $app->post('/api/lead/test-ride', $lead('testRide'));
+
     // Health check (handy while wiring things up).
     $app->get('/health', function ($request, $response) use ($container) {
         $response->getBody()->write(json_encode([
@@ -71,6 +80,11 @@ return function (App $app, Twig $twig, array $container): void {
     // --- Compare models (same brand + same main category) ---
     $app->get('/compara', function ($request, $response, $args) use ($twig, $container) {
         return (new CompareController($twig, $container))->index($request, $response, $args);
+    });
+
+    // --- Financing conditions page (UniCredit), backed by the `finance` table ---
+    $app->get('/finantare', function ($request, $response) use ($twig, $container) {
+        return (new \App\Controllers\FinanceController($twig, $container))->page($request, $response);
     });
 
     // --- My Garage (private client area, passwordless OTP login) ---
