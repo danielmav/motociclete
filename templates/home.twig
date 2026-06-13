@@ -5,45 +5,62 @@
 
 {% block content %}
 
-{# ============ HERO ============ #}
-<section class="hero" data-reveal-root>
-    <div class="container hero__grid">
-        <div class="hero__copy">
-            <span class="kicker" data-reveal>{{ hero.kicker }}</span>
-            <h1 class="hero__title" data-reveal>{{ hero.title|nl2br }}</h1>
-            <p class="hero__sub" data-reveal>{{ hero.subtitle }}</p>
-            <div class="hero__cta" data-reveal>
-                <a class="btn btn--primary" href="{{ base }}{{ hero.ctaPrimary.href }}">{{ hero.ctaPrimary.label }}</a>
-                <a class="btn btn--ghost" href="{{ testride_url }}">{{ hero.ctaSecondary.label }} <span aria-hidden="true">→</span></a>
-            </div>
-            <dl class="hero__stats" data-reveal>
-                <div><dt>23</dt><dd>ani experiență</dd></div>
-                <div><dt>2</dt><dd>branduri ca dealer</dd></div>
-                <div><dt>7</dt><dd>branduri importate</dd></div>
-            </dl>
-        </div>
+{# ============ HERO (4-slide rotator) ============ #}
+<section class="herov2" data-hero-slider aria-roledescription="carousel" aria-label="Prezentare showroom">
+    <div class="herov2__bg" aria-hidden="true"></div>
 
-        <div class="hero__stage" data-reveal>
-            <div class="hero__media">
-                <img src="{{ base }}{{ hero.image }}" alt="{{ hero.imageAlt }}" width="1600" height="900" fetchpriority="high">
-                <span class="media-corner" aria-hidden="true"></span>
-            </div>
-            <span class="hero__ghost" aria-hidden="true">MT-09</span>
+    <div class="container herov2__slides">
+        {% for s in heroSlides %}
+            <article class="herov2__slide{{ loop.first ? ' is-active' }}" data-hero-slide="{{ loop.index0 }}" aria-hidden="{{ loop.first ? 'false' : 'true' }}">
+                <div class="herov2__grid">
+                    <div class="herov2__copy">
+                        <span class="kicker" data-hero-anim>{{ s.kicker }}</span>
+                        <h1 class="herov2__title" data-hero-anim>{{ s.titleHtml|raw }}</h1>
+                        <p class="herov2__sub" data-hero-anim>{{ s.sub }}</p>
+                        <div class="herov2__cta" data-hero-anim>
+                            <a class="btn btn--primary btn--lg" href="{{ base }}{{ s.cta.href }}">{{ s.cta.label }}</a>
+                            <a class="btn btn--ghost btn--lg" href="{{ testride_url }}">Programează test ride <span aria-hidden="true">→</span></a>
+                        </div>
+                        {% if s.stats %}
+                            <dl class="herov2__stats" data-hero-anim>
+                                {% for st in s.statsList %}<div><dt>{{ st.value }}</dt><dd>{{ st.label }}</dd></div>{% endfor %}
+                            </dl>
+                        {% endif %}
+                    </div>
+
+                    <div class="herov2__stage" data-hero-anim>
+                        {% set isAbs = s.image starts with 'http' %}
+                        <div class="herov2__media{{ s.image ? '' : ' media-ph' }}">
+                            <img src="{{ isAbs ? s.image : base ~ s.image }}" alt="{{ s.imageAlt }}" width="1600" height="900"
+                                 {{ loop.first ? 'fetchpriority="high"' : 'loading="lazy"' }}
+                                 onerror="this.closest('.herov2__media').classList.add('media-ph');this.remove()">
+                            <span class="media-corner" aria-hidden="true"></span>
+                        </div>
+                        <span class="herov2__ghost" aria-hidden="true">{{ s.ghost }}</span>
+                    </div>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+
+    <div class="container herov2__controls">
+        <div class="herov2__dots" role="tablist" aria-label="Slide-uri">
+            {% for s in heroSlides %}
+                <button class="herov2__dot{{ loop.first ? ' is-active' }}" type="button" data-hero-dot="{{ loop.index0 }}" role="tab" aria-label="Slide {{ loop.index }}" aria-selected="{{ loop.first ? 'true' : 'false' }}"></button>
+            {% endfor %}
+        </div>
+        <div class="herov2__arrows">
+            <button class="herov2__arrow" type="button" data-hero-prev aria-label="Slide-ul anterior">‹</button>
+            <button class="herov2__arrow" type="button" data-hero-next aria-label="Slide-ul următor">›</button>
         </div>
     </div>
 </section>
 
-{# ============ BRANDS ============ #}
-<section class="brands">
-    <div class="container brands__inner">
-        {% for label, names in brands %}
-            <div class="brands__group">
-                <p class="brands__lead">{{ label }}</p>
-                <ul class="brands__row">
-                    {% for n in names %}<li class="brands__item">{{ n }}</li>{% endfor %}
-                </ul>
-            </div>
-        {% endfor %}
+{# ============ BRAND MARQUEE ============ #}
+<section class="marquee" aria-label="Branduri partenere">
+    <div class="marquee__track">
+        {% for label, names in brands %}{% for n in names %}<span class="marquee__item">{{ n }}</span><span class="marquee__dot" aria-hidden="true">•</span>{% endfor %}{% endfor %}
+        {% for label, names in brands %}{% for n in names %}<span class="marquee__item" aria-hidden="true">{{ n }}</span><span class="marquee__dot" aria-hidden="true">•</span>{% endfor %}{% endfor %}
     </div>
 </section>
 

@@ -1,44 +1,24 @@
-<header class="site-header" data-header>
+{% import 'partials/_model_card_v2.twig' as cards %}
+{#
+   Site-wide mega-header. Type-first menu (Motociclete / Scutere / ATV / Marine)
+   with a brand filter and live subcategory sidebar + model panes, powered by the
+   `navV2` global (App\Support\NavigationV2, file-cached in Bootstrap).
+#}
+<header class="site-header headerv2" data-header>
     <div class="container site-header__inner">
         <a class="brand" href="{{ base }}/" aria-label="Dual Motors — acasă">
             <img src="{{ base }}/assets/img/logo.png" alt="Dual Motors" class="brand__logo" width="240" height="126">
         </a>
 
-        <nav class="nav" aria-label="Navigație principală">
-            {% for item in nav %}
-                {% if item.mega is defined %}
-                    <div class="nav__item" data-menu>
-                        <button class="nav__link" aria-expanded="false">
-                            {{ item.label }}
-                            <svg class="nav__caret" width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-                        </button>
-                        <div class="mega">
-                            <div class="container mega__inner">
-                                <div class="mega__cols">
-                                    {% for col in item.mega.columns %}
-                                        <div class="mega__col">
-                                            <span class="mega__title">{{ col.title }}</span>
-                                            <ul class="mega__list">
-                                                {% for link in col.links %}
-                                                    <li><a href="{{ base }}{{ link[1] }}">{{ link[0] }}</a></li>
-                                                {% endfor %}
-                                            </ul>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                                <a class="mega__feature" href="{{ base }}{{ item.mega.feature.href }}">
-                                    {% if item.mega.feature.img %}
-                                        <img class="mega__feature-img" src="{{ base }}{{ item.mega.feature.img }}" alt="{{ item.mega.feature.title }}" loading="lazy" width="900" height="600">
-                                    {% endif %}
-                                    <span class="mega__feature-kicker">{{ item.mega.feature.kicker }}</span>
-                                    <span class="mega__feature-title">{{ item.mega.feature.title }}</span>
-                                    <span class="link-arrow link-arrow--sm">Descoperă <span aria-hidden="true">→</span></span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+        <nav class="navv2" aria-label="Navigație principală">
+            {% for item in navV2.items %}
+                {% if item.type == 'products' or item.type == 'mega' %}
+                    <button class="navv2__link" data-panel-v2="{{ item.key }}" aria-expanded="false">
+                        {{ item.label }}
+                        <svg class="navv2__caret" width="10" height="6" viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+                    </button>
                 {% else %}
-                    <a class="nav__link" href="{{ item.href starts with '#' ? item.href : base ~ item.href }}">{{ item.label }}</a>
+                    <a class="navv2__link" href="{{ item.href starts with '#' ? item.href : base ~ item.href }}">{{ item.label }}</a>
                 {% endif %}
             {% endfor %}
         </nav>
@@ -47,24 +27,110 @@
             <button class="iconbtn" aria-label="Caută" data-search-open>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.7"/><path d="M20 20l-3.2-3.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
             </button>
-            <a class="iconbtn" href="{{ base }}/garage" aria-label="My Garage">
+            <a class="iconbtn" href="{{ base }}/garage" aria-label="My Garage" title="My Garage">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 10l9-6 9 6v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 20v-6h8v6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
             </a>
             <a class="iconbtn" href="{{ base }}/cont" aria-label="Cont">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.6" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
             </a>
-            <button class="burger" aria-label="Meniu" data-burger>
+            <button class="burger" aria-label="Meniu" data-burger-v2>
                 <span></span><span></span><span></span>
             </button>
         </div>
     </div>
 
-    {# Full-content search overlay #}
+    {# ===== Desktop mega panels ===== #}
+    <div class="megav2-overlay" data-megav2-overlay hidden></div>
+
+    {% for item in navV2.items %}
+        {% if item.type == 'products' %}
+            <div class="megav2" id="panelv2-{{ item.key }}" data-panel-body="{{ item.key }}" hidden>
+                <div class="container megav2__inner">
+                    {% if item.pills %}
+                        <div class="megav2__brandstrip">
+                            <span class="megav2__brandlabel">Brand</span>
+                            {% for p in item.pills %}
+                                <button class="bpillv2 bpillv2--{{ p }}{{ loop.first ? ' is-active' }}" data-brand-pill="{{ p }}" data-panel="{{ item.key }}">
+                                    {{ p == 'all' ? 'Toate' : (p == 'yamaha' ? 'Yamaha' : 'CFMOTO') }}
+                                </button>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="megav2__body">
+                        <aside class="megav2__sidebar">
+                            {% for g in item.groups %}
+                                <div class="stabgroup" data-brand-group="{{ g.brand }}">
+                                    <div class="stabgroup__label">{{ g.label }}</div>
+                                    {% for s in g.subcats %}
+                                        <button class="stabv2{{ (loop.parent.loop.first and loop.first) ? ' is-active' }}" data-stab="{{ s.id }}" data-brand="{{ s.brand }}" data-panel="{{ item.key }}">
+                                            {% if s.icon %}<span class="stabv2__icon">{{ s.icon }}</span>{% endif %}
+                                            <span class="stabv2__name">{{ s.name }}</span>
+                                            <span class="stabv2__count">{{ s.count }}</span>
+                                        </button>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </aside>
+
+                        <div class="megav2__content">
+                            {% for g in item.groups %}
+                                {% for s in g.subcats %}
+                                    <div class="panev2{{ (loop.parent.loop.first and loop.first) ? ' is-active' }}" data-pane="{{ s.id }}" data-brand="{{ s.brand }}">
+                                        <div class="panev2__head">
+                                            <div>
+                                                <span class="kicker">{{ g.label }}</span>
+                                                <h3 class="panev2__title">{{ s.name }}</h3>
+                                            </div>
+                                            <a class="link-arrow link-arrow--sm" href="{{ base }}{{ s.url }}">Vezi toate {{ s.count }} <span aria-hidden="true">→</span></a>
+                                        </div>
+                                        <div class="grid megav2__grid">
+                                            {% for m in s.products %}{{ cards.card(m, base) }}{% endfor %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% endfor %}
+                            <div class="panev2-empty" data-pane-empty hidden>Niciun model pentru acest filtru.</div>
+                        </div>
+                    </div>
+
+                    <div class="megav2__footer">
+                        <a href="{{ base }}{{ item.href }}">Toată gama {{ item.label }} <span aria-hidden="true">→</span></a>
+                        <a class="btn btn--primary btn--sm" href="{{ testride_url }}">Programează test ride</a>
+                    </div>
+                </div>
+            </div>
+        {% elseif item.type == 'mega' %}
+            <div class="megav2 megav2--links" id="panelv2-{{ item.key }}" data-panel-body="{{ item.key }}" hidden>
+                <div class="container megav2__inner megav2__inner--links">
+                    <div class="megav2__cols">
+                        {% for col in item.columns %}
+                            <div class="megav2__col">
+                                <span class="megav2__coltitle">{{ col.title }}</span>
+                                <ul class="megav2__list">
+                                    {% for link in col.links %}
+                                        <li><a href="{{ base }}{{ link[1] }}">{{ link[0] }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <a class="megav2__feature" href="{{ base }}{{ item.feature.href }}">
+                        <span class="megav2__feature-kicker kicker">{{ item.feature.kicker }}</span>
+                        <span class="megav2__feature-title">{{ item.feature.title }}</span>
+                        <span class="link-arrow link-arrow--sm">Descoperă <span aria-hidden="true">→</span></span>
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+
+    {# Full-content search overlay (shared site-wide) #}
     <div class="search" data-search hidden>
         <div class="container search__inner">
             <form class="search__form" action="{{ base }}/cauta" method="get" role="search">
                 <svg class="search__icon" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.7"/><path d="M20 20l-3.2-3.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-                <input class="search__input" type="search" name="q" placeholder="Caută motociclete, echipament, piese, articole…" aria-label="Caută în tot site-ul" autocomplete="off">
+                <input class="search__input" type="search" name="q" placeholder="Caută motociclete, piese, articole…" aria-label="Caută în tot site-ul" autocomplete="off">
                 <button class="iconbtn search__close" type="button" aria-label="Închide căutarea" data-search-close>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
                 </button>
@@ -72,10 +138,51 @@
             <div class="search__hints">
                 <span>Populare:</span>
                 <a href="{{ base }}/cauta?q=MT-09">MT-09</a>
-                <a href="{{ base }}/cauta?q=cască%20Arai">cască Arai</a>
                 <a href="{{ base }}/cauta?q=Ténéré%20700">Ténéré 700</a>
-                <a href="{{ base }}/cauta?q=ulei%20Putoline">ulei Putoline</a>
+                <a href="{{ base }}/cauta?q=CFMOTO%20450">CFMOTO 450</a>
             </div>
         </div>
     </div>
 </header>
+
+{# ===== Mobile offcanvas (3-screen slider) ===== #}
+<div class="ocv2" data-ocv2 hidden>
+    <div class="ocv2__top">
+        <button class="ocv2__back" data-ocv2-back hidden>
+            <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg>
+            Înapoi
+        </button>
+        <span class="ocv2__crumb" data-ocv2-crumb>Meniu</span>
+        <button class="ocv2__close" data-ocv2-close aria-label="Închide">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg>
+        </button>
+    </div>
+
+    <div class="ocv2__slider" data-ocv2-slider>
+        {# Screen 1: top-level #}
+        <div class="ocv2__screen" data-ocv2-screen="1">
+            {% for item in navV2.items %}
+                {% if item.type == 'products' %}
+                    <button class="ocv2__main" data-ocv2-open="{{ item.key }}">{{ item.label }}<span class="ocv2__arrow">›</span></button>
+                {% elseif item.type == 'mega' %}
+                    <a class="ocv2__main" href="{{ base }}{{ item.href }}">{{ item.label }}<span class="ocv2__arrow">›</span></a>
+                {% else %}
+                    <a class="ocv2__main" href="{{ item.href starts with '#' ? item.href : base ~ item.href }}">{{ item.label }}<span class="ocv2__arrow">›</span></a>
+                {% endif %}
+            {% endfor %}
+            <a class="ocv2__main" href="{{ base }}/garage">My Garage<span class="ocv2__arrow">›</span></a>
+        </div>
+
+        {# Screen 2: subcategories (populated by JS) #}
+        <div class="ocv2__screen" data-ocv2-screen="2">
+            <div class="ocv2__pills" data-ocv2-pills hidden></div>
+            <div data-ocv2-subcats></div>
+        </div>
+
+        {# Screen 3: products (populated by JS) #}
+        <div class="ocv2__screen" data-ocv2-screen="3">
+            <div class="ocv2__prodhead"><span class="ocv2__prodtitle" data-ocv2-prodtitle>—</span></div>
+            <div class="grid megav2__grid" data-ocv2-grid></div>
+        </div>
+    </div>
+</div>

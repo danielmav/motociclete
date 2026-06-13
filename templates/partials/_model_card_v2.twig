@@ -1,0 +1,28 @@
+{# Reusable model card for the v2 redesign (menu panes + page grids).
+   `m` is a shaped catalog card (see Catalog\Repository::shapeCard). #}
+{% macro card(m, base) %}
+    <a class="card-moto card-moto--v2" href="{{ base }}{{ m.url }}">
+        <div class="card-moto__media{{ m.image ? '' : ' media-ph' }}">
+            {% if m.year %}<span class="badge">{{ m.year }}</span>{% endif %}
+            {% if m.old_price %}<span class="badge badge--sale badge--tr">−{{ m.discount }}%</span>{% endif %}
+            {% if m.image %}
+                <img src="{{ base }}{{ m.image }}" alt="{{ m.name }}" loading="lazy" width="900" height="600"
+                     onerror="this.closest('.card-moto__media').classList.add('media-ph');this.remove()">
+            {% else %}
+                <span class="media-ph__label">{{ m.name }}</span>
+            {% endif %}
+        </div>
+        <div class="card-moto__body">
+            <div class="card-moto__meta">
+                {% if m.cat %}<span class="chip">{{ m.cat }}</span>{% endif %}
+                {% if m.licence %}<span class="chip chip--permis">Permis {{ m.licence }}</span>{% endif %}
+            </div>
+            <h3 class="card-moto__name">{{ m.name }}</h3>
+            <div class="card-moto__foot">
+                {% set pr = prices(m.price) %}
+                <span class="price"><small>de la</small> {{ pr.eur }}<span class="price__ron">{{ pr.ron }}</span></span>
+                <span class="link-arrow link-arrow--sm">Detalii <span aria-hidden="true">→</span></span>
+            </div>
+        </div>
+    </a>
+{% endmacro %}

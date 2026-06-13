@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\BikerShop\Client;
 use App\Catalog\Repository as Catalog;
+use App\Hero\Repository as Hero;
 use App\News\Repository as News;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -21,6 +22,7 @@ final class HomeController
 {
     private Client $bikershop;
     private Catalog $catalog;
+    private Hero $hero;
     private News $news;
 
     /** @param array<string,mixed> $container */
@@ -28,6 +30,7 @@ final class HomeController
     {
         $this->bikershop = $container['bikershop'];
         $this->catalog   = $container['catalog'];
+        $this->hero      = $container['hero'];
         $this->news      = $container['news'];
     }
 
@@ -36,29 +39,15 @@ final class HomeController
         $accessories = $this->bikershop->featuredProducts(6);
 
         return $this->twig->render($response, 'home.twig', [
-            'hero'            => $this->hero(),
+            'heroSlides'      => $this->hero->slides(),
             'brands'          => $this->brands(),
-            'models'          => $this->catalog->randomModels(4),
+            'models'          => $this->catalog->randomModels(8),
             'makes'           => $this->bikershop->makes(),
             'accessories'     => $accessories,
             'accessoriesLive' => $this->bikershop->isAvailable(),
             'tour'            => $this->virtualTour(),
             'articles'        => $this->news->latest(3),
         ]);
-    }
-
-    /** @return array<string,mixed> */
-    private function hero(): array
-    {
-        return [
-            'kicker'   => '23 de ani pe două roți',
-            'title'    => "Motocicleta ta\ncâștigă teren.",
-            'subtitle' => 'Dealer autorizat Yamaha și CFMOTO. Showroom Pipera, București — plus tot echipamentul și piesele potrivite pentru ea, din BikerShop.',
-            'image'    => '/assets/img/models/mt09-hero.webp',
-            'imageAlt' => 'Yamaha MT-09 în mișcare',
-            'ctaPrimary'   => ['label' => 'Vezi modelele 2026', 'href' => '/motociclete'],
-            'ctaSecondary' => ['label' => 'Programează test ride', 'href' => 'http://drivetest.test'],
-        ];
     }
 
     /**

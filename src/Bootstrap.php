@@ -63,7 +63,6 @@ final class Bootstrap
         $twig->getEnvironment()->addGlobal('app', $settings['app']);
         $twig->getEnvironment()->addGlobal('base', $settings['app']['base_path']);
         $twig->getEnvironment()->addGlobal('testride_url', $settings['app']['testride_url']);
-        $twig->getEnvironment()->addGlobal('nav', Support\Navigation::menu());
         $twig->getEnvironment()->addGlobal('currency', $currency);
         $twig->getEnvironment()->addFilter(
             new \Twig\TwigFilter('money', fn ($v) => money_ron((float) $v))
@@ -80,6 +79,7 @@ final class Bootstrap
             'app_settings' => $appSettings,
             'bikershop' => new BikerShop\Client($db, $settings['db']['bikershop']),
             'catalog'   => new Catalog\Repository($db),
+            'hero'      => new Hero\Repository($db),
             'news'      => new News\Repository($db),
             'finance'   => new Finance\Repository($db),
             'client'    => new Client\Repository($db),
@@ -89,6 +89,13 @@ final class Bootstrap
                 ($settings['app']['env'] ?? 'prod') === 'dev'
             ),
         ];
+
+        // Site-wide mega menu (live from the catalog, file-cached). Registered
+        // after the container so it can use the catalog repository.
+        $twig->getEnvironment()->addGlobal(
+            'navV2',
+            Support\NavigationV2::cached($container['catalog'], $root . '/storage/cache')
+        );
 
         // --- Error handling ---
         $debug = (bool) $settings['app']['debug'];
