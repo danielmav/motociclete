@@ -3,7 +3,8 @@
         <div class="site-footer__brand">
             <span class="wordmark">DUAL<span class="wordmark__accent">MOTORS</span></span>
             <img class="site-footer__logo" src="{{ base }}/assets/img/logo.png" alt="Dual Motors" width="240" height="126" loading="lazy">
-            <p class="site-footer__tag">23 de ani pe două roți. Dealer autorizat Yamaha & CFMOTO, București — Pipera.</p>
+            <p class="site-footer__tag">23 de ani pe două roți. Dealer autorizat Yamaha &amp; CFMOTO, București — Pipera.</p>
+            <p class="site-footer__address">{{ site.address ?: 'Șos. Pipera 48, București' }}<br>{{ site.schedule ?: 'Luni–Vineri 9–18 · Sâmbătă 10–14' }}</p>
             <div class="site-footer__social">
                 {% if site.social.instagram %}<a href="{{ site.social.instagram }}" target="_blank" rel="noopener" aria-label="Instagram">Instagram</a>{% endif %}
                 {% if site.social.facebook %}<a href="{{ site.social.facebook }}" target="_blank" rel="noopener" aria-label="Facebook">Facebook</a>{% endif %}
@@ -13,40 +14,41 @@
         </div>
 
         <div class="site-footer__cols">
-            <div class="fcol">
-                <h4>Motociclete</h4>
-                <a href="{{ base }}/motociclete/naked">Naked</a>
-                <a href="{{ base }}/motociclete/sport">Sport</a>
-                <a href="{{ base }}/motociclete/adventure">Adventure</a>
-                <a href="{{ base }}/motociclete/touring">Touring</a>
-                <a href="{{ base }}/motociclete/scuter">Scuter</a>
-            </div>
-            <div class="fcol">
-                <h4>Echipament</h4>
-                <a href="{{ base }}/echipament/casti">Căști</a>
-                <a href="{{ base }}/echipament/geci">Geci</a>
-                <a href="{{ base }}/echipament/manusi">Mănuși</a>
-                <a href="{{ base }}/echipament/cizme">Cizme</a>
-                <a href="https://bikershop.ro">BikerShop ↗</a>
-            </div>
+            {# Category columns mirror the top mega-menu (live from the catalog). #}
+            {% for item in navV2.items %}
+                {% if item.type == 'products' %}
+                    <div class="fcol">
+                        <h4><a href="{{ base }}{{ item.href }}">{{ item.label }}</a></h4>
+                        {% for sub in (item.groups|first).subcats|slice(0, 6) %}
+                            <a href="{{ base }}{{ sub.url }}">{{ sub.name }}</a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endfor %}
             <div class="fcol">
                 <h4>Dual Motors</h4>
                 <a href="{{ testride_url }}">Test ride</a>
                 <a href="{{ base }}/service">Service</a>
                 <a href="{{ base }}/finantare">Finanțare</a>
-                <a href="{{ base }}/despre">Despre noi</a>
+                <a href="{{ base }}/despre_dual_motors">Despre noi</a>
                 <a href="{{ base }}/contact">Contact</a>
             </div>
-            <div class="fcol">
-                <h4>Contact</h4>
-                {% if site.departments|length %}
-                    {% for dpt in site.departments %}
-                        <p class="fcol__text" style="margin:0 0 .4rem">{{ dpt.label }}{% if dpt.email %}<br><a href="mailto:{{ dpt.email }}">{{ dpt.email }}</a>{% endif %}{% if dpt.phone %}<br>{{ dpt.phone }}{% endif %}</p>
-                    {% endfor %}
-                {% endif %}
-                <p class="fcol__text">{{ site.address ?: 'Șos. Pipera 48, București' }}<br>{{ site.schedule ?: 'Luni–Vineri 9–18 · Sâmbătă 10–14' }}</p>
-            </div>
         </div>
+    </div>
+
+    {# Contact data on its own line below the menus. #}
+    <div class="container site-footer__contact">
+        {% for dpt in site.departments %}
+            <div class="fcontact">
+                <span class="fcontact__label">{{ dpt.label }}</span>
+                {% if dpt.phone %}<a href="tel:{{ dpt.phone|replace({' ': ''}) }}">{{ dpt.phone }}</a>{% endif %}
+                {% if dpt.phone and dpt.email %} · {% endif %}
+                {% if dpt.email %}<a href="mailto:{{ dpt.email }}">{{ dpt.email }}</a>{% endif %}
+            </div>
+        {% endfor %}
+        {% if site.phone %}
+            <div class="fcontact"><span class="fcontact__label">Telefon</span><a href="tel:{{ site.phone|replace({' ': ''}) }}">{{ site.phone }}</a></div>
+        {% endif %}
     </div>
 
     <div class="container site-footer__bottom">

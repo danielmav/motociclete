@@ -102,9 +102,9 @@ default `/dm-control`; citită în `config/settings.php` ca `admin.path`). NU ma
   `App\Admin\BaseController` = guard + CSRF + `render()` + `to()` (redirect) + `bustMenuCache()`.
   Primul user: `database/seed_admin_user.php <user> <parola>`.
 - **Rute:** grup în `src/Routes.php` sub `$adminBase` cu factory `$adminCtl('Class','method')`.
-  Controllere: `Auth, Dashboard, Hero, Category, Product, News, Event, Settings, Message, Garage, Upload`.
+  Controllere: `Auth, Dashboard, Hero, Category, Product, News, Event, About, History, Service, Settings, Message, Garage, Upload`.
 - **Upload imagini:** `POST {base}/upload` (`UploadController` + `App\Admin\Upload`) — multipart, validare
-  (jpg/png/webp, 12MB), context whitelist → subfolder `/media` (`hero`, `noutati-moto`, `evenimente`,
+  (jpg/png/webp, 12MB), context whitelist → subfolder `/media` (`hero`, `noutati-moto`, `evenimente`, `despre` (context `about`),
   `{brand}/{culori|motociclete|detalii|cover}`). JS dropzone + reorder + cover în `assets/js/admin.js`
   (`[data-imgmgr]`, `data-store=url|filename`).
 - **WYSIWYG:** Quill vendorat local `assets/vendor/quill/` (fără build/CDN), pe `[data-editor="câmp"]` + `<textarea>`.
@@ -113,14 +113,29 @@ default `/dm-control`; citită în `config/settings.php` ca `admin.path`). NU ma
 - **Module → tabele:** Hero=`hero_slides`; Categorii/Produse=`categories`/`products`/`product_images`
   (salvarea **bustează `storage/cache/navv2.cache`**); Blog=`news`/`news_images`/`news_categories`;
   Evenimente=`events`/`event_images` (+ public `/evenimente`, `/evenimente/{slug}`);
+  Despre=intro (`settings.about_heading/about_intro_html`)+galerie `about_images`+`team_members`+timeline `history_entries`/`history_images`
+  (admin `AboutController`+`HistoryController` → `App\About\Repository`+`App\History\Repository`; public canonic **`/despre_dual_motors`** (SEO, oglindă a fișierului legacy)
+  = `AboutController`+`about.twig`; `/despre` și `/despre_dual_motors.php` fac **301** către canonic — rute statice obligatorii: catch-all `/{slug}` e `[a-z0-9-]+`, fără underscore.
+  Galeria showroom = carusel fade auto (`[data-carousel]` în `app.js`), iar **toate** imaginile din pagină au click-to-zoom (`[data-zoom]` + lightbox grupat pe `[data-zoom-group]`));
+  Service=descriere/notă (`settings.service_heading/service_desc_html/service_note_html`)+`service_prices` (rânduri grupate, editor `[data-rows]` cu **array-uri paralele** `price_group[]`/`price_label[]`/`price_value[]`)
+  (admin `ServiceController` → `App\Service\Repository`; public `/service`+`/service/programare` = `App\Controllers\ServiceController`+`service.twig`);
   Setări=`settings`+`finance`+`contact_departments`+`pages` (pagini legale publice la `/{slug}` via `PageController`,
-  rută înregistrată ULTIMA); Mesaje=`site_messages`+`service_requests`+`email_log`; Garage reutilizează
+  rută înregistrată ULTIMA); Mesaje=`site_messages`+`service_requests`+`service_bookings`+`email_log`; Garage reutilizează
   `Client\Repository` + calendar din `service_requests.preferred_date`.
+- **Pagini de conținut (Despre / Service):** schema în `database/schema_pages.sql` (rulată de `migrate_admin.php`),
+  seed din legacy: `seed_about.php` (intro+echipă+timeline, imagini deja în `media/despre/`, inclusiv subfoldere `2014/`,`2016/`
+  → `History\Repository` encodează **per-segment** path-ul ca slash-ul să supraviețuiască) + `seed_service.php` (descriere+notă+prețuri).
+  Formularul de programare service e **anonim** (NU `service_requests`, care cere `clienti_id`) → tabela proprie `service_bookings`,
+  POST `/service/programare` (validare + honeypot `website` → DB + email dealer ca `ContactController`), vizibil în admin la
+  Mesaje → „Programări service" (status nou/confirmat/închis). Form AJAX inline = handler `[data-ajax-form]` în `app.js`
+  (ascunde formul, arată `[data-form-thanks]`). Linkurile „Diagrame piese" Yamaha/CFMOTO sunt **statice** în `service.twig`
+  (imagini în `media/service/`, URL-uri fixe bikershop.ro).
 - **Email → DB:** `Support\Mailer::send($to,$subj,$body,$context)` persistă **fiecare** email în `email_log`
   (PDO injectat din `Bootstrap`). Footer-ul folosește globalul Twig `site` (socials/adresă/departamente/pagini legale).
 - **Schemă/migrare (cross-engine):** `database/schema_admin.sql` (CREATE IF NOT EXISTS) + `database/migrate_admin.php`
   (rulează schema split pe `;` via `_dbutil.php` + `ensure_column` prin information_schema — MySQL 8 n-are
-  `ADD COLUMN IF NOT EXISTS`). Seedere: `seed_admin_user.php`, `seed_settings.php` (departamente + pagini legale).
+  `ADD COLUMN IF NOT EXISTS`). Seedere: `seed_admin_user.php`, `seed_settings.php` (departamente + pagini legale),
+  `seed_about.php`, `seed_service.php` (idempotente: umplu doar tabele goale; text din `settings` via INSERT IGNORE → editările din admin se păstrează).
   ⚠️ După ce adminul gestionează catalogul, **NU mai rula `migrate_catalog.php`** (DROP+RECREATE) în producție.
   Pe deploy: rulează `migrate_admin.php` + seederele pe server; folderele `/media/*` upload trebuie scriibile.
 - **Fitment** (mapare produs↔BikerShop make/model/year) NU a fost portat în noul admin (vechiul `/admin/fitment`

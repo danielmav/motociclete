@@ -110,7 +110,7 @@ final class NavigationV2
         $items[] = self::accessories();
         $items[] = ['type' => 'link', 'label' => 'Service', 'href' => '/service'];
         $items[] = ['type' => 'link', 'label' => 'Blog', 'href' => '/blog'];
-        $items[] = ['type' => 'link', 'label' => 'Despre', 'href' => '/#despre'];
+        $items[] = ['type' => 'link', 'label' => 'Despre noi', 'href' => '/despre_dual_motors'];
 
         return ['items' => $items];
     }

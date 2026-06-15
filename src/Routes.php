@@ -91,6 +91,21 @@ return function (App $app, Twig $twig, array $container): void {
     $app->get($adminBase . '/evenimente/{id:[0-9]+}',         $adminCtl('EventController', 'form'));
     $app->post($adminBase . '/evenimente/{id:[0-9]+}',        $adminCtl('EventController', 'save'));
     $app->post($adminBase . '/evenimente/{id:[0-9]+}/delete', $adminCtl('EventController', 'delete'));
+    // Despre — intro + gallery
+    $app->get($adminBase . '/despre',                       $adminCtl('AboutController', 'index'));
+    $app->post($adminBase . '/despre',                      $adminCtl('AboutController', 'save'));
+    // Despre — team members
+    $app->get($adminBase . '/echipa/{id:[0-9]+}',           $adminCtl('AboutController', 'memberForm'));
+    $app->post($adminBase . '/echipa/{id:[0-9]+}',          $adminCtl('AboutController', 'memberSave'));
+    $app->post($adminBase . '/echipa/{id:[0-9]+}/delete',   $adminCtl('AboutController', 'memberDelete'));
+    // Despre — history timeline
+    $app->get($adminBase . '/istoric',                       $adminCtl('HistoryController', 'index'));
+    $app->get($adminBase . '/istoric/{id:[0-9]+}',           $adminCtl('HistoryController', 'form'));
+    $app->post($adminBase . '/istoric/{id:[0-9]+}',          $adminCtl('HistoryController', 'save'));
+    $app->post($adminBase . '/istoric/{id:[0-9]+}/delete',   $adminCtl('HistoryController', 'delete'));
+    // Service — description + note + price list
+    $app->get($adminBase . '/service',                       $adminCtl('ServiceController', 'index'));
+    $app->post($adminBase . '/service',                      $adminCtl('ServiceController', 'save'));
     // Settings
     $app->get($adminBase . '/setari',                              $adminCtl('SettingsController', 'index'));
     $app->post($adminBase . '/setari',                             $adminCtl('SettingsController', 'save'));
@@ -104,6 +119,7 @@ return function (App $app, Twig $twig, array $container): void {
     $app->get($adminBase . '/mesaje',                  $adminCtl('MessageController', 'index'));
     $app->post($adminBase . '/mesaje/citit',           $adminCtl('MessageController', 'markRead'));
     $app->post($adminBase . '/mesaje/service-status',  $adminCtl('MessageController', 'serviceStatus'));
+    $app->post($adminBase . '/mesaje/booking-status',  $adminCtl('MessageController', 'bookingStatus'));
     // Garage
     $app->get($adminBase . '/garage',                       $adminCtl('GarageController', 'index'));
     $app->get($adminBase . '/garage/calendar',              $adminCtl('GarageController', 'calendar'));
@@ -141,6 +157,28 @@ return function (App $app, Twig $twig, array $container): void {
     // --- Financing conditions page (UniCredit), backed by the `finance` table ---
     $app->get('/finantare', function ($request, $response) use ($twig, $container) {
         return (new \App\Controllers\FinanceController($twig, $container))->page($request, $response);
+    });
+
+    // --- Despre noi (admin-managed: intro + team + history timeline) ---
+    // Canonical SEO URL mirrors the legacy filename (despre_dual_motors).
+    $app->get('/despre_dual_motors', function ($request, $response) use ($twig, $container) {
+        return (new \App\Controllers\AboutController($twig, $container))->index($request, $response);
+    });
+    // 301 the old short slug + the legacy .php URL to the canonical one.
+    $despreRedirect = function ($request, $response) use ($container) {
+        return $response
+            ->withHeader('Location', ($container['settings']['app']['base_path'] ?? '') . '/despre_dual_motors')
+            ->withStatus(301);
+    };
+    $app->get('/despre', $despreRedirect);
+    $app->get('/despre_dual_motors.php', $despreRedirect);
+
+    // --- Service (admin-managed description + price list; anonymous booking form) ---
+    $app->get('/service', function ($request, $response) use ($twig, $container) {
+        return (new \App\Controllers\ServiceController($twig, $container))->page($request, $response);
+    });
+    $app->post('/service/programare', function ($request, $response) use ($twig, $container) {
+        return (new \App\Controllers\ServiceController($twig, $container))->book($request, $response);
     });
 
     // --- My Garage (private client area, passwordless OTP login) ---

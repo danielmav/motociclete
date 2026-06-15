@@ -1,0 +1,53 @@
+{% extends 'admin/layout.twig' %}
+{% import 'admin/_widgets.twig' as w %}
+{% set active = 'service' %}
+{% block title %}Service{% endblock %}
+{% block actions %}<a class="adm-btn" href="{{ admin_base }}/mesaje?source=bookings">Programări service →</a>{% endblock %}
+
+{% block content %}
+<form class="adm-form" method="post" action="{{ admin_base }}/service">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+    <label>Titlu pagină
+        <input type="text" name="heading" value="{{ heading|default('') }}">
+    </label>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Descriere (lista de servicii)</span>
+        <div style="margin-top:.6rem">{{ w.editor('desc_html', desc|default('')) }}</div>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Listă de prețuri</span>
+        <p class="adm-help" style="margin:.4rem 0 .6rem">Rândurile cu același <strong>grup</strong> apar împreună într-un card (ex. „Motociclete (TVA inclus)", „Scutere până în 400 cmc").</p>
+        <div class="adm-rows" id="price-rows" data-rows style="margin-top:.4rem">
+            {% for r in prices|default([]) %}
+                <div class="adm-row adm-row--3">
+                    <input type="text" name="price_group[]" value="{{ r.group_label }}" placeholder="Grup">
+                    <input type="text" name="price_label[]" value="{{ r.label }}" placeholder="Serviciu">
+                    <input type="text" name="price_value[]" value="{{ r.price }}" placeholder="Preț">
+                    <button type="button" class="adm-row__del" data-row-del>×</button>
+                </div>
+            {% endfor %}
+            <template data-row-tpl>
+                <div class="adm-row adm-row--3">
+                    <input type="text" name="price_group[]" placeholder="Grup">
+                    <input type="text" name="price_label[]" placeholder="Serviciu">
+                    <input type="text" name="price_value[]" placeholder="Preț">
+                    <button type="button" class="adm-row__del" data-row-del>×</button>
+                </div>
+            </template>
+        </div>
+        <button type="button" class="adm-btn adm-btn--sm" data-row-add="#price-rows" style="margin-top:.5rem">+ rând</button>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Notă (caseta evidențiată — ex. pachete revizie)</span>
+        <div style="margin-top:.6rem">{{ w.editor('note_html', note|default('')) }}</div>
+    </div>
+
+    <div class="adm-actions">
+        <button class="adm-btn adm-btn--primary" type="submit">Salvează</button>
+    </div>
+</form>
+{% endblock %}

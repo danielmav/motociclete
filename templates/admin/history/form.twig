@@ -1,0 +1,43 @@
+{% extends 'admin/layout.twig' %}
+{% import 'admin/_widgets.twig' as w %}
+{% set active = 'about' %}
+{% block title %}{{ id > 0 ? 'Editează moment' : 'Moment nou' }}{% endblock %}
+
+{% block content %}
+<form class="adm-form" method="post" action="{{ admin_base }}/istoric/{{ id }}">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+    <div class="adm-grid2">
+        <label>An
+            <input type="number" name="year" value="{{ entry.year|default('') }}" min="1990" max="2100">
+        </label>
+        <label>Titlu
+            <input type="text" name="title" value="{{ entry.title|default('') }}" required>
+        </label>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Text</span>
+        <div style="margin-top:.6rem">{{ w.editor('body_html', entry.body_html|default('')) }}</div>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Galerie foto</span>
+        <div style="margin-top:.6rem">{{ w.imgmgr('gallery', 'about', 'despre', false, gallery|default([])) }}</div>
+    </div>
+
+    <div class="adm-grid2">
+        <label>Poziție <span class="adm-help">ordonare în cadrul aceluiași an</span>
+            <input type="number" name="position" value="{{ entry.position|default(0) }}">
+        </label>
+        <label style="flex-direction:row;align-items:center;gap:.5rem;margin-top:1.6rem">
+            <input type="checkbox" name="is_active" value="1" {{ entry.is_active is not defined or entry.is_active ? 'checked' }} style="width:auto"> Activ (vizibil pe site)
+        </label>
+    </div>
+
+    <div class="adm-actions">
+        <button class="adm-btn adm-btn--primary" type="submit">Salvează</button>
+        <a class="adm-btn" href="{{ admin_base }}/istoric">Înapoi</a>
+    </div>
+</form>
+{% endblock %}

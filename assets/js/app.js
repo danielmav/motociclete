@@ -537,6 +537,33 @@
                   }).finally(function () { if (btn) { btn.disabled = false; } });
             });
         });
+        // Inline (non-modal) AJAX forms, e.g. the Service booking form.
+        document.querySelectorAll('[data-ajax-form]').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                var err = form.querySelector('[data-form-err]');
+                var thanks = form.parentNode.querySelector('[data-form-thanks]');
+                var btn = form.querySelector('button[type="submit"]');
+                if (err) { err.hidden = true; }
+                if (btn) { btn.disabled = true; }
+                fetch(form.getAttribute('action'), {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: new FormData(form)
+                }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+                  .then(function (data) {
+                      if (data && data.ok) {
+                          form.hidden = true;
+                          if (thanks) { thanks.hidden = false; }
+                      } else if (err) {
+                          err.textContent = (data && data.error) || 'A apărut o eroare. Încearcă din nou sau sună-ne.';
+                          err.hidden = false;
+                      }
+                  }).catch(function () {
+                      if (err) { err.textContent = 'Conexiune eșuată. Încearcă din nou.'; err.hidden = false; }
+                  }).finally(function () { if (btn) { btn.disabled = false; } });
+            });
+        });
     })();
 
     /* ---- Lazy YouTube embed ---- */
@@ -557,4 +584,89 @@
             });
         }
     }
+
+    /* ---- Despre: showroom carousel (fade auto-rotate) ---- */
+    document.querySelectorAll('[data-carousel]').forEach(function (root) {
+        var slides = Array.prototype.slice.call(root.querySelectorAll('[data-carousel-slide]'));
+        if (slides.length < 2) return;
+        var dots = root.querySelector('[data-carousel-dots]');
+        var i = 0, timer = null;
+        var dotEls = [];
+        if (dots) {
+            slides.forEach(function (_, n) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'about-carousel__dot';
+                b.setAttribute('aria-label', 'Imaginea ' + (n + 1));
+                b.addEventListener('click', function () { go(n); restart(); });
+                dots.appendChild(b);
+                dotEls.push(b);
+            });
+        }
+        function go(n) {
+            i = (n + slides.length) % slides.length;
+            slides.forEach(function (s, k) { s.classList.toggle('is-active', k === i); });
+            dotEls.forEach(function (d, k) { d.classList.toggle('is-active', k === i); });
+        }
+        function next() { go(i + 1); }
+        function restart() { if (timer) { clearInterval(timer); } timer = setInterval(next, 4500); }
+        var prev = root.querySelector('[data-carousel-prev]');
+        var nxt = root.querySelector('[data-carousel-next]');
+        if (prev) prev.addEventListener('click', function () { go(i - 1); restart(); });
+        if (nxt) nxt.addEventListener('click', function () { go(i + 1); restart(); });
+        root.addEventListener('mouseenter', function () { if (timer) clearInterval(timer); });
+        root.addEventListener('mouseleave', restart);
+        go(0);
+        restart();
+    });
+
+    /* ---- Lightbox: click-to-zoom on [data-zoom] (grouped for prev/next) ---- */
+    (function () {
+        var triggers = Array.prototype.slice.call(document.querySelectorAll('[data-zoom]'));
+        if (!triggers.length) return;
+
+        var box = document.createElement('div');
+        box.className = 'lightbox';
+        box.setAttribute('role', 'dialog');
+        box.innerHTML =
+            '<button class="lightbox__close" type="button" aria-label="Închide">×</button>' +
+            '<button class="lightbox__nav lightbox__nav--prev" type="button" aria-label="Anterioara">‹</button>' +
+            '<img class="lightbox__img" alt="">' +
+            '<button class="lightbox__nav lightbox__nav--next" type="button" aria-label="Următoarea">›</button>';
+        document.body.appendChild(box);
+        var imgEl = box.querySelector('.lightbox__img');
+        var group = [], idx = 0;
+
+        function isOpen() { return box.classList.contains('is-open'); }
+        function hrefOf(el) { return el.getAttribute('href') || el.getAttribute('data-zoom'); }
+        function groupOf(el) {
+            var g = el.closest('[data-zoom-group]');
+            return g ? Array.prototype.slice.call(g.querySelectorAll('[data-zoom]')) : [el];
+        }
+        function show(n) { idx = (n + group.length) % group.length; imgEl.src = hrefOf(group[idx]); }
+        function open(el) {
+            group = groupOf(el);
+            idx = Math.max(0, group.indexOf(el));
+            imgEl.src = hrefOf(el);
+            box.classList.add('is-open');
+            document.body.style.overflow = 'hidden';
+            var multi = group.length > 1;
+            box.querySelectorAll('.lightbox__nav').forEach(function (b) { b.hidden = !multi; });
+        }
+        function close() { box.classList.remove('is-open'); document.body.style.overflow = ''; }
+
+        triggers.forEach(function (el) {
+            el.addEventListener('click', function (e) { e.preventDefault(); open(el); });
+        });
+        box.querySelector('.lightbox__close').addEventListener('click', function (e) { e.stopPropagation(); close(); });
+        box.querySelector('.lightbox__nav--prev').addEventListener('click', function (e) { e.stopPropagation(); show(idx - 1); });
+        box.querySelector('.lightbox__nav--next').addEventListener('click', function (e) { e.stopPropagation(); show(idx + 1); });
+        box.addEventListener('click', function (e) { if (e.target === box) close(); });
+        document.addEventListener('keydown', function (e) {
+            if (!isOpen()) return;
+            if (e.key === 'Escape') close();
+            else if (e.key === 'ArrowLeft') show(idx - 1);
+            else if (e.key === 'ArrowRight') show(idx + 1);
+        });
+    })();
 })();

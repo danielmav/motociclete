@@ -101,8 +101,8 @@ CREATE TABLE `product_images` (
 -- re-migration, so the admin-managed values survive a catalog re-import.
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `settings` (
-    `skey`   VARCHAR(64)  NOT NULL,
-    `svalue` VARCHAR(255) NULL,
+    `skey`   VARCHAR(64) NOT NULL,
+    `svalue` TEXT NULL,                -- TEXT: ține HTML lung (intro Despre, descriere Service)
     PRIMARY KEY (`skey`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

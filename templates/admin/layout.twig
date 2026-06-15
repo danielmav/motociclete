@@ -7,7 +7,7 @@
     <title>{% block title %}Administrare{% endblock %} · Dual Motors</title>
     <script>window.ADMIN_BASE={{ admin_base|json_encode|raw }};window.CSRF={{ csrf|json_encode|raw }};</script>
     <link rel="stylesheet" href="{{ base }}/assets/vendor/quill/quill.snow.css">
-    <link rel="stylesheet" href="{{ base }}/assets/css/admin.css?v=1">
+    <link rel="stylesheet" href="{{ base }}/assets/css/admin.css?v=2">
     <link rel="icon" href="{{ base }}/assets/img/logo.png" type="image/png">
     {% block head %}{% endblock %}
 </head>
@@ -24,6 +24,8 @@
             {k:'products',  label:'Produse',    href:'/produse'},
             {k:'news',      label:'Blog',       href:'/blog'},
             {k:'events',    label:'Evenimente', href:'/evenimente'},
+            {k:'about',     label:'Despre / Istoric', href:'/despre'},
+            {k:'service',   label:'Service',    href:'/service'},
             {k:'garage',    label:'Garage',     href:'/garage'},
             {k:'messages',  label:'Mesaje',     href:'/mesaje'},
             {k:'settings',  label:'Setări',     href:'/setari'}

@@ -12,6 +12,17 @@ $settings = require __DIR__ . '/../config/settings.php';
 $pdo = (new App\Database($settings['db']))->local();
 
 run_sql_file($pdo, __DIR__ . '/schema_admin.sql');
+run_sql_file($pdo, __DIR__ . '/schema_pages.sql');
+
+// Widen settings.svalue to TEXT (older schemas had VARCHAR(255) → truncated long HTML).
+$col = $pdo->query(
+    "SELECT DATA_TYPE FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'settings' AND COLUMN_NAME = 'svalue'"
+)->fetchColumn();
+if ($col !== false && strtolower((string) $col) !== 'text') {
+    $pdo->exec('ALTER TABLE `settings` MODIFY `svalue` TEXT NULL');
+    echo "  ~ settings.svalue -> TEXT\n";
+}
 
 // Non-destructive column adds (cross-engine: checked via information_schema).
 ensure_column($pdo, 'news', 'category_id', 'ALTER TABLE `news` ADD COLUMN `category_id` INT UNSIGNED NULL');

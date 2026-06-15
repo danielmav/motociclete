@@ -1,0 +1,29 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'about' %}
+{% block title %}Istoria Dual Motors{% endblock %}
+{% block actions %}<a class="adm-btn adm-btn--primary" href="{{ admin_base }}/istoric/0">+ Moment nou</a>{% endblock %}
+
+{% block content %}
+<p class="adm-muted" style="margin-bottom:1rem">Timeline-ul de pe pagina <a href="{{ base }}/despre_dual_motors" target="_blank">Despre noi</a>, ordonat după an (descrescător).</p>
+<table class="adm-table">
+    <thead><tr><th>An</th><th>Titlu</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for e in entries %}
+        <tr>
+            <td><strong>{{ e.year ?: '—' }}</strong></td>
+            <td>{{ e.title }}</td>
+            <td>{% if e.is_active %}<span class="adm-badge adm-badge--on">activ</span>{% else %}<span class="adm-badge adm-badge--off">ascuns</span>{% endif %}</td>
+            <td style="white-space:nowrap">
+                <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/istoric/{{ e.id }}">Editează</a>
+                <form method="post" action="{{ admin_base }}/istoric/{{ e.id }}/delete" style="display:inline" onsubmit="return confirm('Ștergi momentul?')">
+                    <input type="hidden" name="_csrf" value="{{ csrf }}">
+                    <button class="adm-btn adm-btn--sm adm-btn--danger" type="submit">Șterge</button>
+                </form>
+            </td>
+        </tr>
+    {% else %}
+        <tr><td colspan="4" class="adm-muted">Niciun moment. Adaugă primul.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

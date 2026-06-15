@@ -1,0 +1,47 @@
+{% extends 'admin/layout.twig' %}
+{% import 'admin/_widgets.twig' as w %}
+{% set active = 'about' %}
+{% block title %}{{ id > 0 ? 'Editează membru' : 'Membru nou' }}{% endblock %}
+
+{% block content %}
+<form class="adm-form" method="post" action="{{ admin_base }}/echipa/{{ id }}">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+    <div class="adm-grid2">
+        <label>Nume
+            <input type="text" name="name" value="{{ member.name|default('') }}" required>
+        </label>
+        <label>Rol / poziție
+            <input type="text" name="role" value="{{ member.role|default('') }}">
+        </label>
+    </div>
+
+    <div class="adm-grid2">
+        <label>Telefon
+            <input type="text" name="phone" value="{{ member.phone|default('') }}">
+        </label>
+        <label>Email
+            <input type="email" name="email" value="{{ member.email|default('') }}">
+        </label>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Fotografie</span>
+        <div style="margin-top:.6rem">{{ w.imgmgr('photo', 'about', 'despre', true, member.photo ? [{filename: member.photo}] : []) }}</div>
+    </div>
+
+    <div class="adm-grid2">
+        <label>Poziție
+            <input type="number" name="position" value="{{ member.position|default(0) }}">
+        </label>
+        <label style="flex-direction:row;align-items:center;gap:.5rem;margin-top:1.6rem">
+            <input type="checkbox" name="is_active" value="1" {{ member.is_active is not defined or member.is_active ? 'checked' }} style="width:auto"> Activ (vizibil pe site)
+        </label>
+    </div>
+
+    <div class="adm-actions">
+        <button class="adm-btn adm-btn--primary" type="submit">Salvează</button>
+        <a class="adm-btn" href="{{ admin_base }}/despre">Înapoi</a>
+    </div>
+</form>
+{% endblock %}

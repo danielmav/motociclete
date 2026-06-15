@@ -86,6 +86,7 @@ textarea{min-height:90px;resize:vertical}
 /* ---- Repeatable rows (specs, stats) ---- */
 .adm-rows{display:flex;flex-direction:column;gap:.5rem}
 .adm-row{display:grid;grid-template-columns:1fr 1fr auto;gap:.5rem;align-items:center}
+.adm-row--3{grid-template-columns:1fr 1.4fr .9fr auto}
 .adm-row__del{border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;padding:.4rem .6rem;color:var(--err)}
 
 /* ---- Dropzone / image manager ---- */

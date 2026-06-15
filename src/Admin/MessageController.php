@@ -21,7 +21,7 @@ final class MessageController extends BaseController
             return $d;
         }
         $source = (string) ($request->getQueryParams()['source'] ?? 'leads');
-        if (!in_array($source, ['leads', 'service', 'email'], true)) {
+        if (!in_array($source, ['leads', 'service', 'bookings', 'email'], true)) {
             $source = 'leads';
         }
 
@@ -29,18 +29,22 @@ final class MessageController extends BaseController
             'active'  => 'messages',
             'source'  => $source,
             'counts'  => [
-                'leads'   => $this->count('SELECT COUNT(*) FROM site_messages WHERE is_read = 0'),
-                'service' => $this->count("SELECT COUNT(*) FROM service_requests WHERE status = 'nou'"),
-                'email'   => $this->count('SELECT COUNT(*) FROM email_log WHERE is_read = 0'),
+                'leads'    => $this->count('SELECT COUNT(*) FROM site_messages WHERE is_read = 0'),
+                'service'  => $this->count("SELECT COUNT(*) FROM service_requests WHERE status = 'nou'"),
+                'bookings' => $this->container['service']->newBookingCount(),
+                'email'    => $this->count('SELECT COUNT(*) FROM email_log WHERE is_read = 0'),
             ],
             'leads'    => [],
             'requests' => [],
+            'bookings' => [],
             'emails'   => [],
         ];
         if ($source === 'leads') {
             $data['leads'] = $this->rows('SELECT * FROM site_messages ORDER BY created_at DESC LIMIT 300');
         } elseif ($source === 'service') {
             $data['requests'] = $this->container['client']->serviceRequests(null);
+        } elseif ($source === 'bookings') {
+            $data['bookings'] = $this->container['service']->bookings();
         } else {
             $data['emails'] = $this->rows('SELECT * FROM email_log ORDER BY created_at DESC LIMIT 300');
         }
@@ -77,6 +81,19 @@ final class MessageController extends BaseController
             $this->container['client']->setRequestStatus((int) ($body['id'] ?? 0), (string) ($body['status'] ?? ''));
         }
         return $this->to($response, '/mesaje?source=service');
+    }
+
+    /** POST {base}/mesaje/booking-status — change a service booking status. */
+    public function bookingStatus(Request $request, Response $response): Response
+    {
+        if ($d = $this->requireAuth($response)) {
+            return $d;
+        }
+        $body = $this->body($request);
+        if ($this->csrfOk($body)) {
+            $this->container['service']->setBookingStatus((int) ($body['id'] ?? 0), (string) ($body['status'] ?? ''));
+        }
+        return $this->to($response, '/mesaje?source=bookings');
     }
 
     private function count(string $sql): int

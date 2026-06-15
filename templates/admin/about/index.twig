@@ -1,0 +1,60 @@
+{% extends 'admin/layout.twig' %}
+{% import 'admin/_widgets.twig' as w %}
+{% set active = 'about' %}
+{% block title %}Despre noi{% endblock %}
+{% block actions %}<a class="adm-btn" href="{{ admin_base }}/istoric">Istoric / Timeline →</a>{% endblock %}
+
+{% block content %}
+<form class="adm-form" method="post" action="{{ admin_base }}/despre">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+    <label>Titlu secțiune
+        <input type="text" name="heading" value="{{ heading|default('') }}">
+    </label>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Text introducere</span>
+        <div style="margin-top:.6rem">{{ w.editor('intro_html', intro|default('')) }}</div>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Galerie showroom</span>
+        <div style="margin-top:.6rem">{{ w.imgmgr('gallery', 'about', 'despre', false, gallery|default([])) }}</div>
+    </div>
+
+    <div class="adm-actions">
+        <button class="adm-btn adm-btn--primary" type="submit">Salvează</button>
+    </div>
+</form>
+
+<hr class="adm-sep" style="margin:2rem 0">
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+    <h2 style="font-size:1.1rem">Echipa Dual Motors</h2>
+    <a class="adm-btn adm-btn--primary" href="{{ admin_base }}/echipa/0">+ Membru nou</a>
+</div>
+
+<table class="adm-table">
+    <thead><tr><th></th><th>Nume</th><th>Rol</th><th>Telefon</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for m in team %}
+        <tr>
+            <td>{% if m.photo %}<img class="adm-thumb" src="{{ base }}/media/despre/{{ m.photo|url_encode }}" alt="">{% endif %}</td>
+            <td><strong>{{ m.name }}</strong></td>
+            <td class="adm-muted">{{ m.role }}</td>
+            <td class="adm-muted">{{ m.phone }}</td>
+            <td>{% if m.is_active %}<span class="adm-badge adm-badge--on">activ</span>{% else %}<span class="adm-badge adm-badge--off">ascuns</span>{% endif %}</td>
+            <td style="white-space:nowrap">
+                <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/echipa/{{ m.id }}">Editează</a>
+                <form method="post" action="{{ admin_base }}/echipa/{{ m.id }}/delete" style="display:inline" onsubmit="return confirm('Ștergi membrul?')">
+                    <input type="hidden" name="_csrf" value="{{ csrf }}">
+                    <button class="adm-btn adm-btn--sm adm-btn--danger" type="submit">Șterge</button>
+                </form>
+            </td>
+        </tr>
+    {% else %}
+        <tr><td colspan="6" class="adm-muted">Niciun membru. Adaugă primul.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

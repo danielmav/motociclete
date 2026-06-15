@@ -1,0 +1,99 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Service moto autorizat RAR — Dual Motors | motociclete.com.ro{% endblock %}
+{% block description %}Service moto autorizat RAR la Dual Motors: revizii, anvelope, suspensii, tuning și diagnoză pentru orice marcă. Listă de prețuri și programare online.{% endblock %}
+
+{% block content %}
+<section class="section service-page">
+    <div class="container">
+        <header class="page-head">
+            <span class="kicker">Service</span>
+            <h1 class="page-title">{{ heading }}</h1>
+        </header>
+
+        <div class="service-grid">
+            {# --- Description --- #}
+            <div class="service-desc">
+                {% if desc_html %}<div class="prose">{{ desc_html|raw }}</div>{% endif %}
+
+                {% if price_groups|length %}
+                    <h2 class="service-block__title">Listă de prețuri</h2>
+                    <div class="service-prices">
+                        {% for g in price_groups %}
+                            <div class="price-card">
+                                <h3 class="price-card__title">{{ g.label }}</h3>
+                                <table class="price-table">
+                                    <tbody>
+                                    {% for r in g.rows %}
+                                        <tr><td>{{ r.label }}</td><td class="price-table__val">{{ r.price }}</td></tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if note_html %}<div class="service-note prose">{{ note_html|raw }}</div>{% endif %}
+                {% endif %}
+            </div>
+
+            {# --- Booking form --- #}
+            <aside class="service-booking" id="programare">
+                <div class="booking-card">
+                    <h2 class="booking-card__title">Programare service</h2>
+                    <p class="booking-card__lead">Completează detaliile motocicletei și te contactăm pentru a stabili data și alte detalii.</p>
+
+                    <form data-ajax-form action="{{ base }}/service/programare" method="post" class="booking-form" novalidate>
+                        {# honeypot #}
+                        <input type="text" name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
+
+                        <div class="booking-form__row">
+                            <label>Nume<input type="text" name="name" required></label>
+                            <label>Telefon<input type="tel" name="phone" required></label>
+                        </div>
+                        <label>Email<input type="email" name="email"></label>
+                        <div class="booking-form__row">
+                            <label>Marcă<input type="text" name="marca" placeholder="Yamaha, Honda…"></label>
+                            <label>Model<input type="text" name="model" placeholder="MT-09, R1…"></label>
+                        </div>
+                        <div class="booking-form__row">
+                            <label>An fabricație<input type="text" name="an_fabricatie" placeholder="2021"></label>
+                            <label>Kilometri<input type="text" name="kilometri" placeholder="12.000"></label>
+                        </div>
+                        <label>Serie șasiu<input type="text" name="sasiu"></label>
+                        <label>Lucrări solicitate<textarea name="lucrari" rows="3"></textarea></label>
+
+                        <p class="booking-form__err" data-form-err hidden></p>
+                        <button type="submit" class="btn btn--primary booking-form__submit">Trimite cererea</button>
+                    </form>
+
+                    <div class="booking-thanks" data-form-thanks hidden>
+                        <p class="booking-thanks__title">Mulțumim! 🏍️</p>
+                        <p>Cererea ta a fost trimisă. Te contactăm cât de curând pentru a stabili programarea.</p>
+                    </div>
+
+                    <div class="booking-card__call">
+                        <span>Sau sună direct:</span>
+                        <a href="tel:0724371365">☎ 0724 371 365</a>
+                        <a class="wa" href="https://wa.me/40724371365" target="_blank" rel="noopener">WhatsApp</a>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        {# --- Parts diagrams --- #}
+        <div class="parts-diagrams">
+            <h2 class="service-block__title">Diagrame piese</h2>
+            <div class="parts-grid">
+                <a class="parts-card" href="https://bikershop.ro/content/11-piese-yamaha" target="_blank" rel="noopener">
+                    <img src="{{ base }}/media/service/yamaha-parts.jpg" alt="Diagrame piese Yamaha" loading="lazy">
+                    <span class="parts-card__label">Diagrame piese Yamaha <span class="parts-card__arrow">↗</span></span>
+                </a>
+                <a class="parts-card" href="https://bikershop.ro/content/14-piese-cfmoto" target="_blank" rel="noopener">
+                    <img src="{{ base }}/media/service/cfmoto-parts.jpg" alt="Diagrame piese CFMOTO" loading="lazy">
+                    <span class="parts-card__label">Diagrame piese CFMOTO <span class="parts-card__arrow">↗</span></span>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -5,7 +5,8 @@
 {% block content %}
 <div style="display:flex;gap:.5rem;margin-bottom:1.2rem">
     <a class="adm-btn{{ source == 'leads' ? ' adm-btn--primary' }}" href="{{ admin_base }}/mesaje?source=leads">Cereri site {% if counts.leads %}<span class="adm-badge adm-badge--on">{{ counts.leads }}</span>{% endif %}</a>
-    <a class="adm-btn{{ source == 'service' ? ' adm-btn--primary' }}" href="{{ admin_base }}/mesaje?source=service">Cereri service {% if counts.service %}<span class="adm-badge adm-badge--on">{{ counts.service }}</span>{% endif %}</a>
+    <a class="adm-btn{{ source == 'service' ? ' adm-btn--primary' }}" href="{{ admin_base }}/mesaje?source=service">Cereri service (Garage) {% if counts.service %}<span class="adm-badge adm-badge--on">{{ counts.service }}</span>{% endif %}</a>
+    <a class="adm-btn{{ source == 'bookings' ? ' adm-btn--primary' }}" href="{{ admin_base }}/mesaje?source=bookings">Programări service {% if counts.bookings %}<span class="adm-badge adm-badge--on">{{ counts.bookings }}</span>{% endif %}</a>
     <a class="adm-btn{{ source == 'email' ? ' adm-btn--primary' }}" href="{{ admin_base }}/mesaje?source=email">Emailuri trimise {% if counts.email %}<span class="adm-badge adm-badge--on">{{ counts.email }}</span>{% endif %}</a>
 </div>
 
@@ -52,6 +53,34 @@
             </tr>
         {% else %}
             <tr><td colspan="6" class="adm-muted">Nicio cerere.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+{% elseif source == 'bookings' %}
+    <table class="adm-table">
+        <thead><tr><th>Data</th><th>Nume</th><th>Contact</th><th>Motocicletă</th><th>Detalii</th><th>Lucrări</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for b in bookings %}
+            <tr style="{{ b.status == 'nou' ? 'font-weight:600' }}">
+                <td class="adm-muted">{{ b.created_at|date('d.m.Y H:i') }}</td>
+                <td>{{ b.name }}</td>
+                <td class="adm-muted">{{ b.phone }}{% if b.email %}<br>{{ b.email }}{% endif %}</td>
+                <td>{{ (b.marca ~ ' ' ~ b.model)|trim ?: '—' }}</td>
+                <td class="adm-muted">{% if b.an_fabricatie %}An {{ b.an_fabricatie }}<br>{% endif %}{% if b.kilometri %}{{ b.kilometri }} km<br>{% endif %}{% if b.sasiu %}Șasiu {{ b.sasiu }}{% endif %}</td>
+                <td class="adm-muted">{{ b.lucrari ?: '—' }}</td>
+                <td>
+                    <form method="post" action="{{ admin_base }}/mesaje/booking-status" style="display:flex;gap:.3rem">
+                        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ b.id }}">
+                        <select name="status">
+                            {% for st in ['nou','confirmat','inchis'] %}<option value="{{ st }}" {{ b.status == st ? 'selected' }}>{{ st }}</option>{% endfor %}
+                        </select>
+                        <button class="adm-btn adm-btn--sm" type="submit">OK</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="7" class="adm-muted">Nicio programare.</td></tr>
         {% endfor %}
         </tbody>
     </table>

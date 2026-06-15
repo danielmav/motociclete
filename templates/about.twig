@@ -1,0 +1,106 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Despre Dual Motors — echipă, showroom și istorie | motociclete.com.ro{% endblock %}
+{% block description %}Dual Motors — dealer autorizat Yamaha și CFMOTO, showroom Pipera București. Echipa noastră și peste 23 de ani de poveste pe două roți.{% endblock %}
+
+{% block content %}
+{# --- Intro + showroom gallery --- #}
+<section class="section about-intro">
+    <div class="container">
+        <header class="page-head">
+            <span class="kicker">Despre noi</span>
+            <h1 class="page-title">{{ heading }}</h1>
+        </header>
+
+        <div class="about-intro__grid">
+            <div class="prose about-intro__text">
+                {{ intro_html|raw }}
+            </div>
+
+            {% if gallery|length %}
+                <div class="about-carousel" data-carousel data-zoom-group="showroom">
+                    <div class="about-carousel__viewport">
+                        {% for img in gallery %}
+                            <a class="about-carousel__slide{{ loop.first ? ' is-active' }}" href="{{ base }}{{ img }}" data-zoom data-carousel-slide aria-label="Mărește imaginea">
+                                <img src="{{ base }}{{ img }}" alt="Showroom Dual Motors" loading="lazy">
+                            </a>
+                        {% endfor %}
+                    </div>
+                    {% if gallery|length > 1 %}
+                        <button type="button" class="about-carousel__nav about-carousel__nav--prev" data-carousel-prev aria-label="Imaginea anterioară">‹</button>
+                        <button type="button" class="about-carousel__nav about-carousel__nav--next" data-carousel-next aria-label="Imaginea următoare">›</button>
+                        <div class="about-carousel__dots" data-carousel-dots></div>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{# --- Team --- #}
+{% if team|length %}
+<section class="section section--alt about-team">
+    <div class="container">
+        <header class="page-head">
+            <span class="kicker">Oamenii din spate</span>
+            <h2 class="section__title">Echipa <strong>Dual Motors</strong></h2>
+        </header>
+
+        <div class="team-grid">
+            {% for m in team %}
+                <article class="team-card reveal">
+                    <div class="team-card__photo">
+                        {% if m.photo %}
+                            <img src="{{ base }}{{ m.photo }}" alt="{{ m.name }}" loading="lazy">
+                        {% else %}
+                            <div class="media-ph"></div>
+                        {% endif %}
+                    </div>
+                    <div class="team-card__body">
+                        <h3 class="team-card__name">{{ m.name }}</h3>
+                        {% if m.role %}<p class="team-card__role">{{ m.role }}</p>{% endif %}
+                        <div class="team-card__contact">
+                            {% if m.phone %}<a href="tel:{{ m.phone|replace({' ': ''}) }}" aria-label="Sună {{ m.name }}">☎ {{ m.phone }}</a>{% endif %}
+                            {% if m.email %}<a href="mailto:{{ m.email }}" aria-label="Email {{ m.name }}">✉ Email</a>{% endif %}
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{# --- History timeline --- #}
+{% if timeline|length %}
+<section class="section about-history">
+    <div class="container">
+        <header class="page-head">
+            <span class="kicker">23 de ani pe drum</span>
+            <h2 class="section__title">Istoria <strong>Dual Motors</strong></h2>
+        </header>
+
+        <ol class="timeline">
+            {% for e in timeline %}
+                <li class="timeline__item reveal">
+                    {% if e.year %}<span class="timeline__year">{{ e.year }}</span>{% endif %}
+                    <article class="timeline__card">
+                        <h3 class="timeline__title">{{ e.title }}</h3>
+                        {% if e.body_html %}<div class="prose timeline__body">{{ e.body_html|raw }}</div>{% endif %}
+                        {% if e.gallery|length %}
+                            <div class="timeline__gallery" data-zoom-group="hist-{{ e.id }}">
+                                {% for g in e.gallery %}
+                                    <a class="timeline__shot" href="{{ base }}{{ g }}" data-zoom aria-label="Mărește imaginea">
+                                        <img src="{{ base }}{{ g }}" alt="{{ e.title }}" loading="lazy">
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </article>
+                </li>
+            {% endfor %}
+        </ol>
+    </div>
+</section>
+{% endif %}
+{% endblock %}
