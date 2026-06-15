@@ -16,3 +16,6 @@ Thumbs.db
 # Node (doar pentru testare locala — puppeteer-core)
 node_modules/
 package-lock.json
+
+# Claude Code — setări locale/personale (permisiuni aprobate)
+.claude/settings.local.json
