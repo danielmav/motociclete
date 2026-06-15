@@ -1,0 +1,40 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'garage' %}
+{% block title %}Calendar programări{% endblock %}
+{% block actions %}<a class="adm-btn" href="{{ admin_base }}/garage">← Clienți</a>{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:center;gap:1rem;margin-bottom:1rem">
+    <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/garage/calendar?ym={{ prev }}">‹</a>
+    <strong style="font-size:1.1rem;min-width:180px;text-align:center">{{ monthLabel }}</strong>
+    <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/garage/calendar?ym={{ next }}">›</a>
+</div>
+
+<div class="adm-cal">
+    {% for d in ['Lu','Ma','Mi','Jo','Vi','Sâ','Du'] %}<div class="adm-cal__h">{{ d }}</div>{% endfor %}
+    {% for i in 1..lead %}<div class="adm-cal__cell adm-cal__cell--empty"></div>{% endfor %}
+    {% for day in 1..daysInMonth %}
+        <div class="adm-cal__cell{{ today == (ym ~ '-' ~ day) ? ' is-today' }}">
+            <span class="adm-cal__day">{{ day }}</span>
+            {% for r in byDay[day]|default([]) %}
+                <div class="adm-cal__evt adm-cal__evt--{{ r.status }}" title="{{ r.problem }}">
+                    {{ r.owner }}{% if r.model_label %} · {{ r.model_label }}{% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+</div>
+
+<style>
+.adm-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:.5rem}
+.adm-cal__h{font-weight:700;font-size:.75rem;text-transform:uppercase;color:var(--muted);text-align:center;padding:.3rem}
+.adm-cal__cell{background:#fff;border:1px solid var(--line);border-radius:8px;min-height:96px;padding:.35rem;font-size:.78rem}
+.adm-cal__cell--empty{background:transparent;border:0}
+.adm-cal__cell.is-today{border-color:var(--r);box-shadow:0 0 0 1px var(--r) inset}
+.adm-cal__day{font-weight:700;color:var(--muted)}
+.adm-cal__evt{margin-top:.25rem;padding:.2rem .35rem;border-radius:5px;background:#eef;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adm-cal__evt--nou{background:#fff0f0;color:var(--err)}
+.adm-cal__evt--confirmat{background:#e7f6ec;color:var(--ok)}
+.adm-cal__evt--inchis{background:#eee;color:var(--muted)}
+</style>
+{% endblock %}

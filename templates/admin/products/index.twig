@@ -1,0 +1,38 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'products' %}
+{% block title %}Produse{% endblock %}
+{% block actions %}<a class="adm-btn adm-btn--primary" href="{{ admin_base }}/produse/0">+ Produs nou</a>{% endblock %}
+
+{% block content %}
+    <div style="margin-bottom:1rem;display:flex;gap:.5rem;align-items:center">
+        <span class="adm-muted">Filtru:</span>
+        <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/produse">Toate</a>
+        <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/produse?brand=yamaha">Yamaha</a>
+        <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/produse?brand=cfmoto">CFMOTO</a>
+    </div>
+    <table class="adm-table">
+        <thead><tr><th></th><th>Brand</th><th>Model</th><th>Categorie</th><th>An</th><th>Preț €</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for p in products %}
+            <tr>
+                <td>{% if p.cover_image %}<img class="adm-thumb" src="{{ base }}/media/{{ p.brand }}/cover/{{ p.cover_image|url_encode }}" alt="">{% endif %}</td>
+                <td><span class="adm-badge adm-badge--off">{{ p.brand }}</span></td>
+                <td><strong>{{ p.name }}</strong><br><span class="adm-muted">{{ p.slug }}</span></td>
+                <td class="adm-muted">{{ p.cat_name ?: '—' }}</td>
+                <td>{{ p.year }}</td>
+                <td>{{ p.price }}</td>
+                <td>{% if p.is_active %}<span class="adm-badge adm-badge--on">activ</span>{% else %}<span class="adm-badge adm-badge--off">ascuns</span>{% endif %}</td>
+                <td style="white-space:nowrap">
+                    <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/produse/{{ p.id }}">Editează</a>
+                    <form method="post" action="{{ admin_base }}/produse/{{ p.id }}/delete" style="display:inline" onsubmit="return confirm('Ștergi produsul și imaginile lui din DB?')">
+                        <input type="hidden" name="_csrf" value="{{ csrf }}">
+                        <button class="adm-btn adm-btn--sm adm-btn--danger" type="submit">Șterge</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="8" class="adm-muted">Niciun produs.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

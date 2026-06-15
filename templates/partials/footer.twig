@@ -5,10 +5,10 @@
             <img class="site-footer__logo" src="{{ base }}/assets/img/logo.png" alt="Dual Motors" width="240" height="126" loading="lazy">
             <p class="site-footer__tag">23 de ani pe două roți. Dealer autorizat Yamaha & CFMOTO, București — Pipera.</p>
             <div class="site-footer__social">
-                <a href="#" aria-label="Instagram">Instagram</a>
-                <a href="#" aria-label="Facebook">Facebook</a>
-                <a href="#" aria-label="YouTube">YouTube</a>
-                <a href="#" aria-label="TikTok">TikTok</a>
+                {% if site.social.instagram %}<a href="{{ site.social.instagram }}" target="_blank" rel="noopener" aria-label="Instagram">Instagram</a>{% endif %}
+                {% if site.social.facebook %}<a href="{{ site.social.facebook }}" target="_blank" rel="noopener" aria-label="Facebook">Facebook</a>{% endif %}
+                {% if site.social.youtube %}<a href="{{ site.social.youtube }}" target="_blank" rel="noopener" aria-label="YouTube">YouTube</a>{% endif %}
+                {% if site.social.tiktok %}<a href="{{ site.social.tiktok }}" target="_blank" rel="noopener" aria-label="TikTok">TikTok</a>{% endif %}
             </div>
         </div>
 
@@ -38,8 +38,13 @@
                 <a href="{{ base }}/contact">Contact</a>
             </div>
             <div class="fcol">
-                <h4>Showroom</h4>
-                <p class="fcol__text">Șos. Pipera 48<br>București<br>Luni–Vineri 9–18<br>Sâmbătă 10–14</p>
+                <h4>Contact</h4>
+                {% if site.departments|length %}
+                    {% for dpt in site.departments %}
+                        <p class="fcol__text" style="margin:0 0 .4rem">{{ dpt.label }}{% if dpt.email %}<br><a href="mailto:{{ dpt.email }}">{{ dpt.email }}</a>{% endif %}{% if dpt.phone %}<br>{{ dpt.phone }}{% endif %}</p>
+                    {% endfor %}
+                {% endif %}
+                <p class="fcol__text">{{ site.address ?: 'Șos. Pipera 48, București' }}<br>{{ site.schedule ?: 'Luni–Vineri 9–18 · Sâmbătă 10–14' }}</p>
             </div>
         </div>
     </div>
@@ -47,9 +52,12 @@
     <div class="container site-footer__bottom">
         <span>© {{ "now"|date("Y") }} Dual Tours SRL · motociclete.com.ro</span>
         <span class="site-footer__legal">
-            <a href="{{ base }}/termeni">Termeni</a>
-            <a href="{{ base }}/confidentialitate">Confidențialitate</a>
-            <a href="{{ base }}/anpc">ANPC</a>
+            {% if site.legal_pages|length %}
+                {% for pg in site.legal_pages %}<a href="{{ base }}/{{ pg.slug }}">{{ pg.title }}</a>{% endfor %}
+            {% else %}
+                <a href="{{ base }}/termeni-si-conditii">Termeni</a>
+                <a href="{{ base }}/confidentialitate">Confidențialitate</a>
+            {% endif %}
         </span>
     </div>
 </footer>

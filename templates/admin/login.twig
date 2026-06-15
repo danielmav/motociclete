@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ro">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Autentificare · Admin Dual Motors</title>
+    <link rel="stylesheet" href="{{ base }}/assets/css/admin.css?v=1">
+    <link rel="icon" href="{{ base }}/assets/img/logo.png" type="image/png">
+</head>
+<body class="adm adm-login">
+    <form class="adm-loginbox" method="post" action="{{ admin_base }}/login">
+        <img src="{{ base }}/assets/img/logo.png" alt="Dual Motors" height="40">
+        <h1>Administrare</h1>
+        {% if error %}<div class="adm-flash adm-flash--err">Date de autentificare greșite.</div>{% endif %}
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <label>Utilizator
+            <input type="text" name="username" autocomplete="username" autofocus required>
+        </label>
+        <label>Parolă
+            <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <button class="adm-btn adm-btn--primary" type="submit">Intră</button>
+    </form>
+</body>
+</html>

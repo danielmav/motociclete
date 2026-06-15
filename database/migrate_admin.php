@@ -1,0 +1,20 @@
+<?php
+declare(strict_types=1);
+// Applies the admin schema (idempotent) + conditional column adds. Run with Laragon PHP 8.1:
+//   C:/laragon/bin/php/php-8.1.10-Win32-vs16-x64/php.exe database/migrate_admin.php
+
+require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/_dbutil.php';
+if (is_file(__DIR__ . '/../.env')) {
+    Dotenv\Dotenv::createImmutable(__DIR__ . '/..')->safeLoad();
+}
+$settings = require __DIR__ . '/../config/settings.php';
+$pdo = (new App\Database($settings['db']))->local();
+
+run_sql_file($pdo, __DIR__ . '/schema_admin.sql');
+
+// Non-destructive column adds (cross-engine: checked via information_schema).
+ensure_column($pdo, 'news', 'category_id', 'ALTER TABLE `news` ADD COLUMN `category_id` INT UNSIGNED NULL');
+ensure_column($pdo, 'site_messages', 'is_read', 'ALTER TABLE `site_messages` ADD COLUMN `is_read` TINYINT(1) NOT NULL DEFAULT 0');
+
+echo "migrate_admin: done.\n";

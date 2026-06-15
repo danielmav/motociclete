@@ -1,0 +1,81 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'garage' %}
+{% block title %}{{ bike.owner }} — {{ bike.product_name ?: bike.model_label }}{% endblock %}
+{% block actions %}<a class="adm-btn" href="{{ admin_base }}/garage">← Înapoi</a>{% endblock %}
+
+{% block content %}
+<div class="adm-fieldset" style="max-width:980px">
+    <span class="adm-fieldset__t">Profil motocicletă — {{ bike.owner }} ({{ bike.telefon_norm }})</span>
+    <form class="adm-form" method="post" action="{{ admin_base }}/garage/moto/{{ bike.id }}" style="margin-top:.8rem">
+        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="profile">
+        <div class="adm-grid3">
+            <label>Model din catalog
+                <select name="product_id">
+                    <option value="">— ({{ bike.model_label ?: 'nelegat' }})</option>
+                    {% for p in products %}<option value="{{ p.id }}" {{ bike.product_id == p.id ? 'selected' }}>{{ p.brand }} · {{ p.name }}</option>{% endfor %}
+                </select>
+            </label>
+            <label>Poreclă <input type="text" name="nickname" value="{{ bike.nickname }}"></label>
+            <label>An <input type="number" name="year" value="{{ bike.year }}"></label>
+        </div>
+        <div class="adm-grid3">
+            <label>Culoare <input type="text" name="color" value="{{ bike.color }}"></label>
+            <label>Număr înmatriculare <input type="text" name="plate" value="{{ bike.plate }}"></label>
+            <label>Kilometraj <input type="number" name="mileage_km" value="{{ bike.mileage_km }}"></label>
+        </div>
+        <div class="adm-grid3">
+            <label>VIN <input type="text" name="vin" value="{{ bike.vin }}"></label>
+            <label>Data achiziției <input type="date" name="purchase_date" value="{{ bike.purchase_date }}"></label>
+        </div>
+        <label>Note <textarea name="notes" rows="2">{{ bike.notes }}</textarea></label>
+        <div class="adm-actions"><button class="adm-btn adm-btn--primary" type="submit">Salvează profil</button></div>
+    </form>
+</div>
+
+<div class="adm-fieldset" style="max-width:980px;margin-top:1.2rem">
+    <span class="adm-fieldset__t">Revizii / Service</span>
+    <table class="adm-table" style="margin:.8rem 0">
+        <thead><tr><th>Data</th><th>Km</th><th>Tip</th><th>Descriere</th><th>Cost</th><th>Efectuat de</th></tr></thead>
+        <tbody>
+        {% for s in service %}
+            <tr><td>{{ s.service_date }}</td><td>{{ s.mileage_km }}</td><td>{{ s.type }}</td><td class="adm-muted">{{ s.description }}</td><td>{{ s.cost_ron }}</td><td>{{ s.performed_by }}</td></tr>
+        {% else %}
+            <tr><td colspan="6" class="adm-muted">Nicio revizie.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <form method="post" action="{{ admin_base }}/garage/moto/{{ bike.id }}" class="adm-grid3" style="align-items:end">
+        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="service">
+        <label>Data <input type="date" name="service_date"></label>
+        <label>Km <input type="number" name="mileage_km"></label>
+        <label>Tip <input type="text" name="type" placeholder="revizie / reparație"></label>
+        <label>Descriere <input type="text" name="description"></label>
+        <label>Cost (Lei) <input type="text" name="cost_ron"></label>
+        <label>Efectuat de <input type="text" name="performed_by"></label>
+        <button class="adm-btn adm-btn--primary adm-btn--sm" type="submit" style="grid-column:span 3;justify-self:start">+ Adaugă revizie</button>
+    </form>
+</div>
+
+<div class="adm-fieldset" style="max-width:980px;margin-top:1.2rem">
+    <span class="adm-fieldset__t">Incidente</span>
+    <table class="adm-table" style="margin:.8rem 0">
+        <thead><tr><th>Data</th><th>Gravitate</th><th>Descriere</th></tr></thead>
+        <tbody>
+        {% for i in incidents %}
+            <tr><td>{{ i.incident_date }}</td><td>{{ i.severity }}</td><td class="adm-muted">{{ i.description }}</td></tr>
+        {% else %}
+            <tr><td colspan="3" class="adm-muted">Niciun incident.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <form method="post" action="{{ admin_base }}/garage/moto/{{ bike.id }}" class="adm-grid3" style="align-items:end">
+        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="incident">
+        <label>Data <input type="date" name="incident_date"></label>
+        <label>Gravitate
+            <select name="severity"><option value="minor">minor</option><option value="mediu">mediu</option><option value="major">major</option></select>
+        </label>
+        <label>Descriere <input type="text" name="description"></label>
+        <button class="adm-btn adm-btn--primary adm-btn--sm" type="submit" style="grid-column:span 3;justify-self:start">+ Adaugă incident</button>
+    </form>
+</div>
+{% endblock %}

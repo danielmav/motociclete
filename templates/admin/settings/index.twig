@@ -1,0 +1,84 @@
+{% extends 'admin/layout.twig' %}
+{% import 'admin/_widgets.twig' as w %}
+{% set active = 'settings' %}
+{% block title %}Setări{% endblock %}
+{% block actions %}<a class="adm-btn" href="{{ admin_base }}/setari/pagini">Pagini (T&C, etc.)</a>{% endblock %}
+
+{% block content %}
+<form class="adm-form" method="post" action="{{ admin_base }}/setari">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Prețuri</span>
+        <div class="adm-grid3" style="margin-top:.8rem">
+            <label>Curs EUR → RON <input type="text" name="eur_ron_rate" value="{{ cur.rate }}"></label>
+            <label>TVA (%) <input type="number" name="vat_pct" value="{{ cur.vat }}"></label>
+            <label style="flex-direction:row;align-items:center;gap:.5rem;margin-top:1.6rem">
+                <input type="checkbox" name="price_includes_vat" value="1" {{ cur.incl ? 'checked' }} style="width:auto"> Prețurile includ TVA
+            </label>
+        </div>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Finanțare (UniCredit)</span>
+        <div class="adm-grid3" style="margin-top:.8rem">
+            <label>Dobândă nominală (%) <input type="text" name="nominal_rate" value="{{ finance.nominal_rate|default('13') }}"></label>
+            <label>DAE (%) <input type="text" name="dae" value="{{ finance.dae|default('14.5') }}"></label>
+            <label>Comision lunar (Lei) <input type="text" name="admin_fee" value="{{ finance.admin_fee|default('10') }}"></label>
+        </div>
+        <div class="adm-grid2" style="margin-top:.8rem">
+            <label>Rată calcul DAE (%) <input type="text" name="calc_rate" value="{{ finance.calc_rate|default('14.5') }}"></label>
+            <label>Durate (luni, separate prin virgulă) <input type="text" name="terms" value="{{ finance.terms|default('12,18,24,36,48,60') }}"></label>
+        </div>
+        <label style="margin-top:.8rem">Titlu pagină finanțare <input type="text" name="page_title" value="{{ finance.page_title|default('') }}"></label>
+        <div style="margin-top:.6rem"><span class="adm-help">Conținut pagină /finantare</span>{{ w.editor('page_html', finance.page_html|default('')) }}</div>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Social & contact</span>
+        <div class="adm-grid2" style="margin-top:.8rem">
+            <label>Facebook URL <input type="url" name="social_facebook" value="{{ vals.social_facebook }}"></label>
+            <label>Instagram URL <input type="url" name="social_instagram" value="{{ vals.social_instagram }}"></label>
+            <label>YouTube URL <input type="url" name="social_youtube" value="{{ vals.social_youtube }}"></label>
+            <label>TikTok URL <input type="url" name="social_tiktok" value="{{ vals.social_tiktok }}"></label>
+            <label>Telefon general <input type="text" name="phone_general" value="{{ vals.phone_general }}"></label>
+            <label>Link hartă (Google Maps) <input type="url" name="map_url" value="{{ vals.map_url }}"></label>
+        </div>
+        <label style="margin-top:.8rem">Adresă <input type="text" name="address" value="{{ vals.address }}"></label>
+        <label style="margin-top:.8rem">Program <input type="text" name="schedule" value="{{ vals.schedule }}"></label>
+    </div>
+
+    <div class="adm-actions">
+        <button class="adm-btn adm-btn--primary" type="submit">Salvează setările</button>
+    </div>
+</form>
+
+<div class="adm-fieldset" style="margin-top:1.4rem;max-width:980px">
+    <span class="adm-fieldset__t">Departamente (email + telefon)</span>
+    <table class="adm-table" style="margin:.8rem 0">
+        <thead><tr><th>Departament</th><th>Email</th><th>Telefon</th><th></th></tr></thead>
+        <tbody>
+        {% for dpt in departments %}
+            <tr>
+                <td>{{ dpt.label }}</td><td>{{ dpt.email }}</td><td>{{ dpt.phone }}</td>
+                <td style="text-align:right">
+                    <form method="post" action="{{ admin_base }}/setari/departament/{{ dpt.id }}/delete" style="display:inline" onsubmit="return confirm('Ștergi departamentul?')">
+                        <input type="hidden" name="_csrf" value="{{ csrf }}">
+                        <button class="adm-btn adm-btn--sm adm-btn--danger" type="submit">×</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="4" class="adm-muted">Niciun departament.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <form method="post" action="{{ admin_base }}/setari/departament" class="adm-grid3" style="align-items:end">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <label>Departament <input type="text" name="label" placeholder="ex. Vânzări moto" required></label>
+        <label>Email <input type="email" name="email" placeholder="vanzari@..."></label>
+        <label>Telefon <input type="text" name="phone" placeholder="07..."></label>
+        <button class="adm-btn adm-btn--primary adm-btn--sm" type="submit" style="grid-column:span 3;justify-self:start">+ Adaugă departament</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'settings' %}
+{% block title %}Pagini{% endblock %}
+{% block actions %}
+    <a class="adm-btn" href="{{ admin_base }}/setari">← Setări</a>
+    <a class="adm-btn adm-btn--primary" href="{{ admin_base }}/setari/pagini/0">+ Pagină nouă</a>
+{% endblock %}
+
+{% block content %}
+    <table class="adm-table">
+        <thead><tr><th>Titlu</th><th>URL</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for p in pages %}
+            <tr>
+                <td><strong>{{ p.title }}</strong></td>
+                <td class="adm-muted"><a href="{{ base }}/{{ p.slug }}" target="_blank">/{{ p.slug }}</a></td>
+                <td>{% if p.is_active %}<span class="adm-badge adm-badge--on">activ</span>{% else %}<span class="adm-badge adm-badge--off">ascuns</span>{% endif %}</td>
+                <td style="white-space:nowrap">
+                    <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/setari/pagini/{{ p.id }}">Editează</a>
+                    <form method="post" action="{{ admin_base }}/setari/pagini/{{ p.id }}/delete" style="display:inline" onsubmit="return confirm('Ștergi pagina?')">
+                        <input type="hidden" name="_csrf" value="{{ csrf }}">
+                        <button class="adm-btn adm-btn--sm adm-btn--danger" type="submit">Șterge</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="4" class="adm-muted">Nicio pagină. Adaugă Termeni, Confidențialitate, Despre…</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends 'admin/layout.twig' %}
+{% import 'admin/_widgets.twig' as w %}
+{% set active = 'events' %}
+{% block title %}{{ id > 0 ? 'Editează eveniment' : 'Eveniment nou' }}{% endblock %}
+
+{% block content %}
+<form class="adm-form" method="post" action="{{ admin_base }}/evenimente/{{ id }}">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+    <div class="adm-grid2">
+        <label>Titlu
+            <input type="text" id="e-title" name="title" value="{{ event.title|default('') }}" required>
+        </label>
+        <label>Slug <span class="adm-help">gol = generat din titlu</span>
+            <input type="text" id="e-slug" name="slug" data-slug-from="#e-title" value="{{ event.slug|default('') }}">
+        </label>
+    </div>
+
+    <div class="adm-grid3">
+        <label>Locație
+            <input type="text" name="location" value="{{ event.location|default('') }}">
+        </label>
+        <label>Început
+            <input type="datetime-local" name="starts_at" value="{{ event.starts_at ? event.starts_at|date('Y-m-d\\TH:i') }}">
+        </label>
+        <label>Sfârșit
+            <input type="datetime-local" name="ends_at" value="{{ event.ends_at ? event.ends_at|date('Y-m-d\\TH:i') }}">
+        </label>
+    </div>
+
+    <label>Rezumat
+        <textarea name="excerpt" rows="2">{{ event.excerpt|default('') }}</textarea>
+    </label>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Descriere</span>
+        <div style="margin-top:.6rem">{{ w.editor('body_html', event.body_html|default('')) }}</div>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Imagine cover</span>
+        <div style="margin-top:.6rem">{{ w.imgmgr('cover_image', 'event', 'evenimente', true, event.cover_image ? [{filename: event.cover_image}] : []) }}</div>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Galerie</span>
+        <div style="margin-top:.6rem">{{ w.imgmgr('gallery', 'event', 'evenimente', false, gallery|default([])) }}</div>
+    </div>
+
+    <div class="adm-grid2">
+        <label>Poziție
+            <input type="number" name="position" value="{{ event.position|default(0) }}">
+        </label>
+        <label style="flex-direction:row;align-items:center;gap:.5rem;margin-top:1.6rem">
+            <input type="checkbox" name="is_active" value="1" {{ event.is_active is not defined or event.is_active ? 'checked' }} style="width:auto"> Activ (vizibil pe site)
+        </label>
+    </div>
+
+    <div class="adm-actions">
+        <button class="adm-btn adm-btn--primary" type="submit">Salvează</button>
+        <a class="adm-btn" href="{{ admin_base }}/evenimente">Înapoi</a>
+    </div>
+</form>
+{% endblock %}

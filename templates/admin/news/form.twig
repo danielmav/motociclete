@@ -1,0 +1,66 @@
+{% extends 'admin/layout.twig' %}
+{% import 'admin/_widgets.twig' as w %}
+{% set active = 'news' %}
+{% block title %}{{ id > 0 ? 'Editează articol' : 'Articol nou' }}{% endblock %}
+
+{% block content %}
+<form class="adm-form" method="post" action="{{ admin_base }}/blog/{{ id }}">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+    <div class="adm-grid2">
+        <label>Titlu
+            <input type="text" id="n-title" name="title" value="{{ article.title|default('') }}" required>
+        </label>
+        <label>Slug <span class="adm-help">gol = generat din titlu</span>
+            <input type="text" id="n-slug" name="slug" data-slug-from="#n-title" value="{{ article.slug|default('') }}">
+        </label>
+    </div>
+
+    <div class="adm-grid3">
+        <label>Categorie
+            <select name="category_id">
+                <option value="0">—</option>
+                {% for c in categories %}<option value="{{ c.id }}" {{ article.category_id|default(0) == c.id ? 'selected' }}>{{ c.name }}</option>{% endfor %}
+            </select>
+        </label>
+        <label>Brand (opțional)
+            <select name="brand">
+                <option value="">—</option>
+                <option value="yamaha" {{ article.brand|default('') == 'yamaha' ? 'selected' }}>Yamaha</option>
+                <option value="cfmoto" {{ article.brand|default('') == 'cfmoto' ? 'selected' }}>CFMOTO</option>
+            </select>
+        </label>
+        <label>Data publicării
+            <input type="date" name="published_at" value="{{ article.published_at ? article.published_at|date('Y-m-d') }}">
+        </label>
+    </div>
+
+    <label>Rezumat
+        <textarea name="excerpt" rows="2">{{ article.excerpt|default('') }}</textarea>
+    </label>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Conținut articol</span>
+        <div style="margin-top:.6rem">{{ w.editor('body', article.body|default('')) }}</div>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Imagine cover</span>
+        <div style="margin-top:.6rem">{{ w.imgmgr('cover', 'news', 'noutati-moto', true, cover ? [{filename: cover}] : []) }}</div>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Galerie</span>
+        <div style="margin-top:.6rem">{{ w.imgmgr('gallery', 'news', 'noutati-moto', false, gallery|default([])) }}</div>
+    </div>
+
+    <label style="flex-direction:row;align-items:center;gap:.5rem">
+        <input type="checkbox" name="is_active" value="1" {{ article.is_active is not defined or article.is_active ? 'checked' }} style="width:auto"> Activ (publicat)
+    </label>
+
+    <div class="adm-actions">
+        <button class="adm-btn adm-btn--primary" type="submit">Salvează</button>
+        <a class="adm-btn" href="{{ admin_base }}/blog">Înapoi</a>
+    </div>
+</form>
+{% endblock %}

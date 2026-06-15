@@ -1,0 +1,3 @@
+# Fals pozitiv: gitleaks marchează "e.default=void" din biblioteca minificată Quill
+# (assets/vendor/quill/quill.min.js) drept "generic-api-key". Nu e secret.
+assets/vendor/quill/quill.min.js:generic-api-key:7

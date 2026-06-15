@@ -51,22 +51,64 @@ return function (App $app, Twig $twig, array $container): void {
         return $response->withHeader('Content-Type', 'application/json');
     });
 
-    // --- Admin (HTTP Basic protected) ---
-    $admin = function (string $method) use ($twig, $container) {
-        return function ($request, $response, $args) use ($twig, $container, $method) {
-            return (new \App\Controllers\AdminController($twig, $container))->{$method}($request, $response, $args);
+    // --- Admin back-office (hidden path from settings, session auth) ---
+    $adminBase = (string) ($container['settings']['admin']['path'] ?? '/dm-control');
+    $adminCtl = function (string $class, string $method) use ($twig, $container) {
+        return function ($request, $response, $args) use ($twig, $container, $class, $method) {
+            $fq = 'App\\Admin\\' . $class;
+            return (new $fq($twig, $container))->{$method}($request, $response, $args ?? []);
         };
     };
-    $app->get('/admin',              $admin('settings'));
-    $app->post('/admin/setari',      $admin('save'));
-    $app->get('/admin/fitment',      $admin('fitment'));
-    $app->post('/admin/fitment/save', $admin('saveFitment'));
-    // My Garage back-office
-    $app->get('/admin/garage',                    $admin('garage'));
-    $app->get('/admin/garage/moto/{id:[0-9]+}',   $admin('garageBike'));
-    $app->post('/admin/garage/moto/{id:[0-9]+}',  $admin('garageBikeSave'));
-    $app->get('/admin/service-requests',          $admin('serviceRequests'));
-    $app->post('/admin/service-requests',         $admin('serviceRequestSave'));
+    $app->get($adminBase,             $adminCtl('DashboardController', 'index'));
+    $app->get($adminBase . '/login',  $adminCtl('AuthController', 'loginForm'));
+    $app->post($adminBase . '/login', $adminCtl('AuthController', 'login'));
+    $app->get($adminBase . '/logout', $adminCtl('AuthController', 'logout'));
+    $app->post($adminBase . '/upload', $adminCtl('UploadController', 'upload'));
+    // Hero slides
+    $app->get($adminBase . '/hero',                       $adminCtl('HeroController', 'index'));
+    $app->get($adminBase . '/hero/{id:[0-9]+}',           $adminCtl('HeroController', 'form'));
+    $app->post($adminBase . '/hero/{id:[0-9]+}',          $adminCtl('HeroController', 'save'));
+    $app->post($adminBase . '/hero/{id:[0-9]+}/delete',   $adminCtl('HeroController', 'delete'));
+    // Categories
+    $app->get($adminBase . '/categorii',                     $adminCtl('CategoryController', 'index'));
+    $app->get($adminBase . '/categorii/{id:[0-9]+}',         $adminCtl('CategoryController', 'form'));
+    $app->post($adminBase . '/categorii/{id:[0-9]+}',        $adminCtl('CategoryController', 'save'));
+    $app->post($adminBase . '/categorii/{id:[0-9]+}/delete', $adminCtl('CategoryController', 'delete'));
+    // Products
+    $app->get($adminBase . '/produse',                     $adminCtl('ProductController', 'index'));
+    $app->get($adminBase . '/produse/{id:[0-9]+}',         $adminCtl('ProductController', 'form'));
+    $app->post($adminBase . '/produse/{id:[0-9]+}',        $adminCtl('ProductController', 'save'));
+    $app->post($adminBase . '/produse/{id:[0-9]+}/delete', $adminCtl('ProductController', 'delete'));
+    // Blog
+    $app->get($adminBase . '/blog',                          $adminCtl('NewsController', 'index'));
+    $app->post($adminBase . '/blog/categorie',               $adminCtl('NewsController', 'saveCategory'));
+    $app->post($adminBase . '/blog/categorie/{id:[0-9]+}/delete', $adminCtl('NewsController', 'deleteCategory'));
+    $app->get($adminBase . '/blog/{id:[0-9]+}',              $adminCtl('NewsController', 'form'));
+    $app->post($adminBase . '/blog/{id:[0-9]+}',             $adminCtl('NewsController', 'save'));
+    $app->post($adminBase . '/blog/{id:[0-9]+}/delete',      $adminCtl('NewsController', 'delete'));
+    // Events
+    $app->get($adminBase . '/evenimente',                     $adminCtl('EventController', 'index'));
+    $app->get($adminBase . '/evenimente/{id:[0-9]+}',         $adminCtl('EventController', 'form'));
+    $app->post($adminBase . '/evenimente/{id:[0-9]+}',        $adminCtl('EventController', 'save'));
+    $app->post($adminBase . '/evenimente/{id:[0-9]+}/delete', $adminCtl('EventController', 'delete'));
+    // Settings
+    $app->get($adminBase . '/setari',                              $adminCtl('SettingsController', 'index'));
+    $app->post($adminBase . '/setari',                             $adminCtl('SettingsController', 'save'));
+    $app->post($adminBase . '/setari/departament',                $adminCtl('SettingsController', 'saveDepartment'));
+    $app->post($adminBase . '/setari/departament/{id:[0-9]+}/delete', $adminCtl('SettingsController', 'deleteDepartment'));
+    $app->get($adminBase . '/setari/pagini',                       $adminCtl('SettingsController', 'pages'));
+    $app->get($adminBase . '/setari/pagini/{id:[0-9]+}',           $adminCtl('SettingsController', 'pageForm'));
+    $app->post($adminBase . '/setari/pagini/{id:[0-9]+}',          $adminCtl('SettingsController', 'savePage'));
+    $app->post($adminBase . '/setari/pagini/{id:[0-9]+}/delete',   $adminCtl('SettingsController', 'deletePage'));
+    // Messages
+    $app->get($adminBase . '/mesaje',                  $adminCtl('MessageController', 'index'));
+    $app->post($adminBase . '/mesaje/citit',           $adminCtl('MessageController', 'markRead'));
+    $app->post($adminBase . '/mesaje/service-status',  $adminCtl('MessageController', 'serviceStatus'));
+    // Garage
+    $app->get($adminBase . '/garage',                       $adminCtl('GarageController', 'index'));
+    $app->get($adminBase . '/garage/calendar',              $adminCtl('GarageController', 'calendar'));
+    $app->get($adminBase . '/garage/moto/{id:[0-9]+}',      $adminCtl('GarageController', 'bike'));
+    $app->post($adminBase . '/garage/moto/{id:[0-9]+}',     $adminCtl('GarageController', 'bikeSave'));
 
     // --- Blog (Pe Două Roți), backed by the legacy `noutati` table ---
     $blog = function (string $method) use ($twig, $container) {
@@ -76,6 +118,15 @@ return function (App $app, Twig $twig, array $container): void {
     };
     $app->get('/blog', $blog('index'));
     $app->get('/blog/{slug}', $blog('article'));
+
+    // --- Events (public section) ---
+    $ev = function (string $method) use ($twig, $container) {
+        return function ($request, $response, $args) use ($twig, $container, $method) {
+            return (new \App\Controllers\EventController($twig, $container))->{$method}($request, $response, $args);
+        };
+    };
+    $app->get('/evenimente', $ev('index'));
+    $app->get('/evenimente/{slug}', $ev('show'));
 
     // --- Compare models (same brand + same main category) ---
     $app->get('/compara', function ($request, $response, $args) use ($twig, $container) {
@@ -126,4 +177,10 @@ return function (App $app, Twig $twig, array $container): void {
 
     // Legacy SEO URLs (e.g. /scutere-yamaha/sport/...-2026.html) -> 301 canonical.
     $app->get('/{legacy:.+\.html}', $catalog('legacyRedirect'));
+
+    // Static pages (terms/privacy/about…) at /{slug}. Registered LAST so static
+    // routes + brand + legacy take priority; unknown slugs 404 in the controller.
+    $app->get('/{slug:[a-z0-9-]+}', function ($request, $response, $args) use ($twig, $container) {
+        return (new \App\Controllers\PageController($twig, $container))->show($request, $response, $args);
+    });
 };

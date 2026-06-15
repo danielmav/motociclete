@@ -16,8 +16,11 @@ return [
         'testride_url' => $_ENV['TESTRIDE_URL'] ?? 'http://drivetest.test',
     ],
 
-    // Minimal admin (HTTP Basic). Leave pass empty to disable protection (dev).
+    // Admin back-office. `path` = hidden URL prefix (not "admin"), configurable so
+    // it can differ per environment. Auth is DB-based (admin_users); the legacy
+    // HTTP Basic user/pass are kept only for the old fitment guard fallback.
     'admin' => [
+        'path' => '/' . trim($_ENV['ADMIN_PATH'] ?? 'dm-control', '/'),
         'user' => $_ENV['ADMIN_USER'] ?? 'admin',
         'pass' => $_ENV['ADMIN_PASS'] ?? '',
     ],

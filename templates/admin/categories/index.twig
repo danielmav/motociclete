@@ -1,0 +1,34 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'categories' %}
+{% block title %}Categorii{% endblock %}
+{% block actions %}
+    <a class="adm-btn" href="{{ admin_base }}/categorii/0?brand=yamaha">+ Yamaha</a>
+    <a class="adm-btn adm-btn--primary" href="{{ admin_base }}/categorii/0?brand=cfmoto">+ CFMOTO</a>
+{% endblock %}
+
+{% block content %}
+    <table class="adm-table">
+        <thead><tr><th>Brand</th><th>Categorie</th><th>Părinte</th><th>Slug</th><th>Poz.</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for c in categories %}
+            <tr>
+                <td><span class="adm-badge adm-badge--off">{{ c.brand }}</span></td>
+                <td>{{ c.parent_id ? '— ' }}<strong>{{ c.name }}</strong></td>
+                <td class="adm-muted">{{ c.parent_name ?: '(nivel principal)' }}</td>
+                <td class="adm-muted">{{ c.slug }}</td>
+                <td>{{ c.position }}</td>
+                <td>{% if c.is_active %}<span class="adm-badge adm-badge--on">activ</span>{% else %}<span class="adm-badge adm-badge--off">ascuns</span>{% endif %}</td>
+                <td style="white-space:nowrap">
+                    <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/categorii/{{ c.id }}">Editează</a>
+                    <form method="post" action="{{ admin_base }}/categorii/{{ c.id }}/delete" style="display:inline" onsubmit="return confirm('Ștergi categoria? Produsele rămân, dar fără categorie.')">
+                        <input type="hidden" name="_csrf" value="{{ csrf }}">
+                        <button class="adm-btn adm-btn--sm adm-btn--danger" type="submit">Șterge</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="7" class="adm-muted">Nicio categorie.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

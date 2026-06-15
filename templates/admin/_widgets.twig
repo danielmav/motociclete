@@ -1,0 +1,25 @@
+{# Reusable admin form widgets. Import: {% import 'admin/_widgets.twig' as w %} #}
+
+{% macro editor(name, value) %}
+    <div class="adm-editor" data-editor="{{ name }}">{{ value|raw }}</div>
+    <textarea name="{{ name }}" hidden>{{ value }}</textarea>
+{% endmacro %}
+
+{# items: list of {filename}. folder = /media subfolder for thumbnails. context = upload context. #}
+{% macro imgmgr(name, context, folder, single, items) %}
+    <div class="adm-imgmgr" data-imgmgr {{ single ? 'data-single' }} data-context="{{ context }}" data-name="{{ name }}">
+        <div class="adm-drop" data-dropzone>Trage imagini aici sau click</div>
+        <div class="adm-imgs" data-images>
+            {% for it in items %}
+                <div class="adm-img" data-filename="{{ it.filename }}" {{ single ? '' : 'draggable=true' }}>
+                    <img src="{{ base }}/media/{{ folder }}/{{ it.filename|url_encode }}" alt="">
+                    <div class="adm-img__bar">
+                        {{ single ? '' : '<span class="adm-img__btn" data-move>↕</span>' }}
+                        <button type="button" class="adm-img__btn" data-del>Șterge</button>
+                    </div>
+                    <input type="hidden" name="{{ name }}{{ single ? '' : '[]' }}" value="{{ it.filename }}">
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endmacro %}

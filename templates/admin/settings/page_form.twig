@@ -1,0 +1,27 @@
+{% extends 'admin/layout.twig' %}
+{% import 'admin/_widgets.twig' as w %}
+{% set active = 'settings' %}
+{% block title %}{{ id > 0 ? 'Editează pagină' : 'Pagină nouă' }}{% endblock %}
+
+{% block content %}
+<form class="adm-form" method="post" action="{{ admin_base }}/setari/pagini/{{ id }}">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <div class="adm-grid2">
+        <label>Titlu <input type="text" id="pg-title" name="title" value="{{ page.title|default('') }}" required></label>
+        <label>Slug (URL) <span class="adm-help">ex. termeni-si-conditii → /termeni-si-conditii</span>
+            <input type="text" id="pg-slug" name="slug" data-slug-from="#pg-title" value="{{ page.slug|default('') }}">
+        </label>
+    </div>
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Conținut</span>
+        <div style="margin-top:.6rem">{{ w.editor('body_html', page.body_html|default('')) }}</div>
+    </div>
+    <label style="flex-direction:row;align-items:center;gap:.5rem">
+        <input type="checkbox" name="is_active" value="1" {{ page.is_active is not defined or page.is_active ? 'checked' }} style="width:auto"> Activ
+    </label>
+    <div class="adm-actions">
+        <button class="adm-btn adm-btn--primary" type="submit">Salvează</button>
+        <a class="adm-btn" href="{{ admin_base }}/setari/pagini">Înapoi</a>
+    </div>
+</form>
+{% endblock %}

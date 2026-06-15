@@ -1,0 +1,78 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'messages' %}
+{% block title %}Mesaje{% endblock %}
+
+{% block content %}
+<div style="display:flex;gap:.5rem;margin-bottom:1.2rem">
+    <a class="adm-btn{{ source == 'leads' ? ' adm-btn--primary' }}" href="{{ admin_base }}/mesaje?source=leads">Cereri site {% if counts.leads %}<span class="adm-badge adm-badge--on">{{ counts.leads }}</span>{% endif %}</a>
+    <a class="adm-btn{{ source == 'service' ? ' adm-btn--primary' }}" href="{{ admin_base }}/mesaje?source=service">Cereri service {% if counts.service %}<span class="adm-badge adm-badge--on">{{ counts.service }}</span>{% endif %}</a>
+    <a class="adm-btn{{ source == 'email' ? ' adm-btn--primary' }}" href="{{ admin_base }}/mesaje?source=email">Emailuri trimise {% if counts.email %}<span class="adm-badge adm-badge--on">{{ counts.email }}</span>{% endif %}</a>
+</div>
+
+{% if source == 'leads' %}
+    <table class="adm-table">
+        <thead><tr><th>Data</th><th>Tip</th><th>Nume</th><th>Contact</th><th>Model</th><th>Mesaj</th><th></th></tr></thead>
+        <tbody>
+        {% for m in leads %}
+            <tr style="{{ m.is_read ? '' : 'font-weight:600' }}">
+                <td class="adm-muted">{{ m.created_at|date('d.m.Y H:i') }}</td>
+                <td><span class="adm-badge adm-badge--off">{{ m.type == 'test_ride' ? 'test ride' : 'ofertă' }}</span></td>
+                <td>{{ m.name }}</td>
+                <td class="adm-muted">{{ m.email }}<br>{{ m.phone }}</td>
+                <td>{{ m.product_name }}{% if m.brand %} <span class="adm-muted">({{ m.brand }})</span>{% endif %}</td>
+                <td class="adm-muted">{{ m.message ?: (m.licence ? 'Permis ' ~ m.licence) }}</td>
+                <td>{% if not m.is_read %}<form method="post" action="{{ admin_base }}/mesaje/citit"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="table" value="leads"><input type="hidden" name="source" value="leads"><input type="hidden" name="id" value="{{ m.id }}"><button class="adm-btn adm-btn--sm" type="submit">Citit</button></form>{% endif %}</td>
+            </tr>
+        {% else %}
+            <tr><td colspan="7" class="adm-muted">Niciun mesaj.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+{% elseif source == 'service' %}
+    <table class="adm-table">
+        <thead><tr><th>Data</th><th>Client</th><th>Model</th><th>Data dorită</th><th>Problemă</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for r in requests %}
+            <tr>
+                <td class="adm-muted">{{ r.created_at|date('d.m.Y H:i') }}</td>
+                <td class="adm-muted">{{ r.owner }}<br>{{ r.email_norm }} {{ r.telefon_norm }}</td>
+                <td>{{ r.model_label ?: '—' }}{% if r.plate %} <span class="adm-muted">({{ r.plate }})</span>{% endif %}</td>
+                <td>{{ r.preferred_date ? r.preferred_date|date('d.m.Y') }}</td>
+                <td class="adm-muted">{{ r.problem }}</td>
+                <td>
+                    <form method="post" action="{{ admin_base }}/mesaje/service-status" style="display:flex;gap:.3rem">
+                        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ r.id }}">
+                        <select name="status">
+                            {% for st in ['nou','confirmat','inchis'] %}<option value="{{ st }}" {{ r.status == st ? 'selected' }}>{{ st }}</option>{% endfor %}
+                        </select>
+                        <button class="adm-btn adm-btn--sm" type="submit">OK</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="6" class="adm-muted">Nicio cerere.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+{% else %}
+    <table class="adm-table">
+        <thead><tr><th>Data</th><th>Către</th><th>Subiect</th><th>Context</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for e in emails %}
+            <tr style="{{ e.is_read ? '' : 'font-weight:600' }}">
+                <td class="adm-muted">{{ e.created_at|date('d.m.Y H:i') }}</td>
+                <td>{{ e.to_addr }}</td>
+                <td>{{ e.subject }}</td>
+                <td class="adm-muted">{{ e.context ?: '—' }}</td>
+                <td><span class="adm-badge {{ e.status == 'failed' ? 'adm-badge--off' : 'adm-badge--on' }}">{{ e.status }}</span></td>
+                <td>{% if not e.is_read %}<form method="post" action="{{ admin_base }}/mesaje/citit"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="table" value="email"><input type="hidden" name="source" value="email"><input type="hidden" name="id" value="{{ e.id }}"><button class="adm-btn adm-btn--sm" type="submit">Citit</button></form>{% endif %}</td>
+            </tr>
+        {% else %}
+            <tr><td colspan="6" class="adm-muted">Niciun email.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+{% endblock %}

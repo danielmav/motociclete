@@ -168,6 +168,118 @@ final class Repository
         return (int) date('j', $ts) . ' ' . (self::MONTHS[(int) date('n', $ts)] ?? '') . ' ' . date('Y', $ts);
     }
 
+    // ===================== ADMIN CRUD =====================
+
+    private const NEWS_COLS = ['brand', 'category_id', 'title', 'slug', 'excerpt', 'body', 'published_at', 'is_active'];
+
+    /** All articles incl. inactive for the admin list. */
+    public function adminAll(): array
+    {
+        return $this->all(
+            "SELECT n.id, n.title, n.slug, n.published_at, n.is_active, c.name AS cat_name,
+                    " . self::COVER_SUBQUERY . " AS cover
+             FROM news n LEFT JOIN news_categories c ON c.id = n.category_id
+             ORDER BY n.published_at DESC, n.id DESC"
+        );
+    }
+
+    public function adminFind(int $id): ?array
+    {
+        return $this->one("SELECT * FROM news WHERE id = :id", [':id' => $id]);
+    }
+
+    /** Raw image rows for the editor. */
+    public function adminImages(int $id): array
+    {
+        return $this->all(
+            "SELECT id, filename, is_cover, position FROM news_images WHERE news_id = :id ORDER BY is_cover DESC, position, id",
+            [':id' => $id]
+        );
+    }
+
+    /** @param array<string,mixed> $d */
+    public function adminSave(?int $id, array $d): int
+    {
+        $params = [];
+        foreach (self::NEWS_COLS as $c) {
+            $params[':' . $c] = $d[$c] ?? null;
+        }
+        if ($id) {
+            $set = implode(', ', array_map(static fn ($c) => "`$c` = :$c", self::NEWS_COLS));
+            $params[':id'] = $id;
+            $this->pdo->prepare("UPDATE news SET $set WHERE id = :id")->execute($params);
+            return $id;
+        }
+        $names = implode(', ', array_map(static fn ($c) => "`$c`", self::NEWS_COLS));
+        $ph = implode(', ', array_map(static fn ($c) => ":$c", self::NEWS_COLS));
+        $this->pdo->prepare("INSERT INTO news ($names) VALUES ($ph)")->execute($params);
+        return (int) $this->pdo->lastInsertId();
+    }
+
+    public function adminDelete(int $id): void
+    {
+        try {
+            $this->pdo->prepare("DELETE FROM news WHERE id = :id")->execute([':id' => $id]);
+            $this->pdo->prepare("DELETE FROM news_images WHERE news_id = :id")->execute([':id' => $id]);
+        } catch (Throwable) {
+            // ignore
+        }
+    }
+
+    /** Replace the article's images: cover (is_cover=1) + ordered gallery. */
+    public function replaceNewsImages(int $newsId, ?string $cover, array $gallery): void
+    {
+        try {
+            $this->pdo->prepare("DELETE FROM news_images WHERE news_id = :id")->execute([':id' => $newsId]);
+            $ins = $this->pdo->prepare("INSERT INTO news_images (news_id, filename, is_cover, position) VALUES (:n, :f, :c, :p)");
+            $pos = 0;
+            if ($cover !== null && trim($cover) !== '') {
+                $ins->execute([':n' => $newsId, ':f' => $cover, ':c' => 1, ':p' => $pos++]);
+            }
+            foreach ($gallery as $f) {
+                $f = trim((string) $f);
+                if ($f === '' || $f === $cover) {
+                    continue;
+                }
+                $ins->execute([':n' => $newsId, ':f' => $f, ':c' => 0, ':p' => $pos++]);
+            }
+        } catch (Throwable) {
+            // ignore
+        }
+    }
+
+    // -- News categories --
+    public function categories(): array
+    {
+        return $this->all("SELECT * FROM news_categories ORDER BY position, name");
+    }
+
+    public function categoryById(int $id): ?array
+    {
+        return $this->one("SELECT * FROM news_categories WHERE id = :id", [':id' => $id]);
+    }
+
+    public function saveCategory(?int $id, string $name, string $slug, int $position): int
+    {
+        if ($id) {
+            $this->pdo->prepare("UPDATE news_categories SET name = :n, slug = :s, position = :p WHERE id = :id")
+                ->execute([':n' => $name, ':s' => $slug, ':p' => $position, ':id' => $id]);
+            return $id;
+        }
+        $this->pdo->prepare("INSERT INTO news_categories (name, slug, position) VALUES (:n, :s, :p)")
+            ->execute([':n' => $name, ':s' => $slug, ':p' => $position]);
+        return (int) $this->pdo->lastInsertId();
+    }
+
+    public function deleteCategory(int $id): void
+    {
+        try {
+            $this->pdo->prepare("DELETE FROM news_categories WHERE id = :id")->execute([':id' => $id]);
+        } catch (Throwable) {
+            // ignore
+        }
+    }
+
     /** @param array<string,mixed> $params @return array<int,array<string,mixed>> */
     private function all(string $sql, array $params = []): array
     {

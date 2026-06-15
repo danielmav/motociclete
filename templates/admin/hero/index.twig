@@ -1,0 +1,30 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'hero' %}
+{% block title %}Hero{% endblock %}
+{% block actions %}<a class="adm-btn adm-btn--primary" href="{{ admin_base }}/hero/0">+ Slide nou</a>{% endblock %}
+
+{% block content %}
+    <table class="adm-table">
+        <thead><tr><th></th><th>#</th><th>Kicker / Titlu</th><th>Imagine</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for s in slides %}
+            <tr>
+                <td>{% if s.image %}<img class="adm-thumb" src="{{ base }}{{ s.image }}" alt="">{% endif %}</td>
+                <td>{{ s.position }}</td>
+                <td><strong>{{ s.kicker }}</strong><br><span class="adm-muted">{{ s.title_html|striptags }}</span></td>
+                <td class="adm-muted">{{ s.image }}</td>
+                <td>{% if s.is_active %}<span class="adm-badge adm-badge--on">activ</span>{% else %}<span class="adm-badge adm-badge--off">ascuns</span>{% endif %}</td>
+                <td style="white-space:nowrap">
+                    <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/hero/{{ s.id }}">Editează</a>
+                    <form method="post" action="{{ admin_base }}/hero/{{ s.id }}/delete" style="display:inline" onsubmit="return confirm('Ștergi slide-ul?')">
+                        <input type="hidden" name="_csrf" value="{{ csrf }}">
+                        <button class="adm-btn adm-btn--sm adm-btn--danger" type="submit">Șterge</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="6" class="adm-muted">Niciun slide. Adaugă primul.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

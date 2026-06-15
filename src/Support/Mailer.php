@@ -17,20 +17,46 @@ use Throwable;
 final class Mailer
 {
     /** @param array<string,mixed> $cfg the 'mail' settings array */
-    public function __construct(private array $cfg, private string $logDir, private bool $devLog = false) {}
+    public function __construct(private array $cfg, private string $logDir, private bool $devLog = false, private ?\PDO $pdo = null) {}
 
-    /** Send (or log) a plain-text email. Returns true on success/logged. */
-    public function send(string $to, string $subject, string $body): bool
+    /**
+     * Send (or log) a plain-text email. Returns true on success/logged. Every
+     * call is persisted to `email_log` (admin Messages), tagged with $context.
+     */
+    public function send(string $to, string $subject, string $body, string $context = ''): bool
     {
+        $ok = true;
+        $status = 'sent';
         if ($this->devLog || empty($this->cfg['smtp_host'])) {
-            return $this->logMail($to, $subject, $body);
+            $ok = $this->logMail($to, $subject, $body);
+            $status = 'logged';
+        } else {
+            try {
+                $ok = $this->smtpSend($to, $subject, $body);
+                $status = $ok ? 'sent' : 'failed';
+            } catch (Throwable $e) {
+                // Never let a mail failure break the flow; log it and fall back.
+                $this->logMail($to, $subject, $body . "\n\n[SMTP ERROR] " . $e->getMessage());
+                $ok = false;
+                $status = 'failed';
+            }
+        }
+        $this->persist($to, $subject, $body, $context, $status);
+        return $ok;
+    }
+
+    /** Persist the email to email_log; never let it break the mail flow. */
+    private function persist(string $to, string $subject, string $body, string $context, string $status): void
+    {
+        if (!$this->pdo instanceof \PDO) {
+            return;
         }
         try {
-            return $this->smtpSend($to, $subject, $body);
-        } catch (Throwable $e) {
-            // Never let a mail failure break the flow; log it and fall back.
-            $this->logMail($to, $subject, $body . "\n\n[SMTP ERROR] " . $e->getMessage());
-            return false;
+            $this->pdo->prepare(
+                'INSERT INTO email_log (to_addr, subject, body, context, status) VALUES (:t, :s, :b, :c, :st)'
+            )->execute([':t' => $to, ':s' => $subject, ':b' => $body, ':c' => $context ?: null, ':st' => $status]);
+        } catch (Throwable) {
+            // email_log table may not exist yet; ignore.
         }
     }
 

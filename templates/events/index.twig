@@ -1,0 +1,34 @@
+{% extends 'layout.twig' %}
+{% block title %}Evenimente — Dual Motors{% endblock %}
+{% block description %}Evenimente Dual Motors: lansări, test ride days, întâlniri pe două roți Yamaha și CFMOTO.{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <header class="section__head">
+            <div>
+                <span class="kicker">Pe Două Roți</span>
+                <h1 class="section__title">Evenimente</h1>
+            </div>
+        </header>
+
+        {% if events|length %}
+            <div class="grid grid--articles">
+                {% for e in events %}
+                    <a class="card-art" href="{{ base }}{{ e.url }}">
+                        <div class="card-art__media{{ e.image ? '' : ' media-ph' }}">
+                            {% if e.image %}<img src="{{ base }}{{ e.image }}" alt="{{ e.title }}" loading="lazy" width="640" height="400">{% else %}<span class="media-ph__label">Eveniment</span>{% endif %}
+                        </div>
+                        <span class="card-art__cat">
+                            {% if e.starts_at %}{{ e.starts_at|date('d.m.Y') }}{% endif %}{% if e.location %} · {{ e.location }}{% endif %}
+                        </span>
+                        <h3 class="card-art__title">{{ e.title }}</h3>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state"><p>Momentan nu sunt evenimente programate.</p></div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

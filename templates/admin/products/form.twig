@@ -1,0 +1,177 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'products' %}
+{% block title %}{{ id > 0 ? 'Editează produs' : 'Produs nou' }}{% endblock %}
+
+{% macro editor(name, value) %}
+    <div class="adm-editor" data-editor="{{ name }}">{{ value|raw }}</div>
+    <textarea name="{{ name }}" hidden>{{ value }}</textarea>
+{% endmacro %}
+
+{% macro imgmgr(name, type, brand, single, items) %}
+    <div class="adm-imgmgr" data-imgmgr {{ single ? 'data-single' }} data-context="product" data-brand="{{ brand }}" data-type="{{ type }}" data-name="{{ name }}">
+        <div class="adm-drop" data-dropzone>Trage imagini aici sau click</div>
+        <div class="adm-imgs" data-images>
+            {% for it in items %}
+                <div class="adm-img" data-filename="{{ it.filename }}" {{ single ? '' : 'draggable=true' }}>
+                    <img src="{{ base }}/media/{{ brand }}/{{ {'color':'culori','gallery':'motociclete','detail':'detalii','cover':'cover'}[type] }}/{{ it.filename|url_encode }}" alt="">
+                    <div class="adm-img__bar">
+                        {{ single ? '' : '<span class="adm-img__btn" data-move>↕</span>' }}
+                        <button type="button" class="adm-img__btn" data-del>Șterge</button>
+                    </div>
+                    <input type="hidden" name="{{ name }}{{ single ? '' : '[]' }}" value="{{ it.filename }}">
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endmacro %}
+
+{% import _self as f %}
+
+{% block content %}
+<form class="adm-form" method="post" action="{{ admin_base }}/produse/{{ id }}" style="max-width:1100px">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Date de bază</span>
+        <div class="adm-grid3" style="margin-top:.8rem">
+            <label>Brand
+                <select name="brand" id="p-brand">
+                    <option value="yamaha" {{ brand == 'yamaha' ? 'selected' }}>Yamaha</option>
+                    <option value="cfmoto" {{ brand == 'cfmoto' ? 'selected' }}>CFMOTO</option>
+                </select>
+            </label>
+            <label>Categorie
+                <select name="category_id" id="p-cat"><option value="0">—</option></select>
+            </label>
+            <label>An
+                <input type="number" name="year" value="{{ p.year|default('') }}">
+            </label>
+        </div>
+        <div class="adm-grid2" style="margin-top:.8rem">
+            <label>Nume model
+                <input type="text" id="p-name" name="name" value="{{ p.name|default('') }}" required>
+            </label>
+            <label>Slug <span class="adm-help">gol = generat din nume</span>
+                <input type="text" id="p-slug" name="slug" data-slug-from="#p-name" value="{{ p.slug|default('') }}">
+            </label>
+        </div>
+        <label style="margin-top:.8rem">Slogan model
+            <input type="text" name="subtitle" value="{{ p.subtitle|default('') }}">
+        </label>
+        <div class="adm-grid3" style="margin-top:.8rem">
+            <label>Preț (EUR, cu TVA)
+                <input type="number" name="price" value="{{ p.price|default(0) }}">
+            </label>
+            <label>Reducere (%)
+                <input type="text" name="discount_pct" value="{{ p.discount_pct|default(0) }}">
+            </label>
+            <label>Permis <span class="adm-help">A1 / A2 / A</span>
+                <input type="text" name="licence" value="{{ p.licence|default('') }}">
+            </label>
+        </div>
+        <div class="adm-grid2" style="margin-top:.8rem">
+            <label>Video YouTube (ID)
+                <input type="text" name="video" value="{{ p.video|default('') }}">
+            </label>
+            <label>Cuvinte cheie (SEO)
+                <input type="text" name="keywords" value="{{ p.keywords|default('') }}">
+            </label>
+        </div>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Imagine principală (meniu + carduri)</span>
+        <div style="margin-top:.6rem">{{ f.imgmgr('cover_image', 'cover', brand, true, p.cover_image ? [{filename: p.cover_image}] : []) }}</div>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Imagini culori</span>
+        <div style="margin-top:.6rem">{{ f.imgmgr('color', 'color', brand, false, images.color|default([])) }}</div>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Galerie</span>
+        <div style="margin-top:.6rem">{{ f.imgmgr('gallery', 'gallery', brand, false, images.gallery|default([])) }}</div>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Imagini detalii</span>
+        <div style="margin-top:.6rem">{{ f.imgmgr('detail', 'detail', brand, false, images.detail|default([])) }}</div>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Descriere scurtă</span>
+        <div style="margin-top:.6rem">{{ f.editor('excerpt', p.excerpt|default('')) }}</div>
+    </div>
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Descriere lungă</span>
+        <div style="margin-top:.6rem">{{ f.editor('description', p.description|default('')) }}</div>
+    </div>
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Caracteristici cheie</span>
+        <div style="margin-top:.6rem">{{ f.editor('details_html', p.details_html|default('')) }}</div>
+    </div>
+
+    {% for key, label in {'engine':'Motor','chassis':'Șasiu','dimensions':'Dimensiuni','connectivity':'Conectivitate'} %}
+        <div class="adm-fieldset">
+            <span class="adm-fieldset__t">Specificații · {{ label }}</span>
+            <div class="adm-rows" id="spec-{{ key }}" data-rows style="margin-top:.6rem">
+                {% for r in specRows[key]|default([]) %}
+                    <div class="adm-row">
+                        <input type="text" name="spec_{{ key }}_label[]" value="{{ r.label }}" placeholder="Caracteristică">
+                        <input type="text" name="spec_{{ key }}_value[]" value="{{ r.value }}" placeholder="Valoare">
+                        <button type="button" class="adm-row__del" data-row-del>×</button>
+                    </div>
+                {% endfor %}
+                <template data-row-tpl>
+                    <div class="adm-row">
+                        <input type="text" name="spec_{{ key }}_label[]" placeholder="Caracteristică">
+                        <input type="text" name="spec_{{ key }}_value[]" placeholder="Valoare">
+                        <button type="button" class="adm-row__del" data-row-del>×</button>
+                    </div>
+                </template>
+            </div>
+            <button type="button" class="adm-btn adm-btn--sm" data-row-add="#spec-{{ key }}" style="margin-top:.5rem">+ rând</button>
+        </div>
+    {% endfor %}
+
+    <div class="adm-grid2">
+        <label>Poziție
+            <input type="number" name="position" value="{{ p.position|default(0) }}">
+        </label>
+        <label style="flex-direction:row;align-items:center;gap:.5rem;margin-top:1.6rem">
+            <input type="checkbox" name="is_active" value="1" {{ p.is_active is not defined or p.is_active ? 'checked' }} style="width:auto"> Activ
+        </label>
+    </div>
+
+    <div class="adm-actions">
+        <button class="adm-btn adm-btn--primary" type="submit">Salvează</button>
+        <a class="adm-btn" href="{{ admin_base }}/produse">Înapoi</a>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+  var CATS = {{ categories|json_encode|raw }};
+  var CURRENT = {{ p.category_id|default(0) }};
+  var brandSel = document.getElementById('p-brand');
+  var catSel = document.getElementById('p-cat');
+  function fillCats(){
+    var b = brandSel.value;
+    catSel.innerHTML = '<option value="0">—</option>';
+    CATS.filter(function(c){return c.brand===b;}).forEach(function(c){
+      var o=document.createElement('option'); o.value=c.id; o.textContent=c.label;
+      if(c.id==CURRENT) o.selected=true; catSel.appendChild(o);
+    });
+  }
+  // keep upload target folders in sync with the selected brand
+  function syncBrand(){
+    document.querySelectorAll('[data-imgmgr]').forEach(function(m){ m.setAttribute('data-brand', brandSel.value); });
+  }
+  brandSel.addEventListener('change', function(){ fillCats(); syncBrand(); });
+  fillCats();
+})();
+</script>
+{% endblock %}

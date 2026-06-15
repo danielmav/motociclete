@@ -1,0 +1,72 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'categories' %}
+{% block title %}{{ id > 0 ? 'Editează categorie' : 'Categorie nouă' }}{% endblock %}
+
+{% block content %}
+<form class="adm-form" method="post" action="{{ admin_base }}/categorii/{{ id }}">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+    <div class="adm-grid2">
+        <label>Brand
+            <select name="brand" id="cat-brand">
+                <option value="yamaha" {{ brand == 'yamaha' ? 'selected' }}>Yamaha</option>
+                <option value="cfmoto" {{ brand == 'cfmoto' ? 'selected' }}>CFMOTO</option>
+            </select>
+        </label>
+        <label>Categorie părinte <span class="adm-help">gol = categorie principală (nivel 1)</span>
+            <select name="parent_id" id="cat-parent">
+                <option value="0">— (nivel principal)</option>
+            </select>
+        </label>
+    </div>
+
+    <div class="adm-grid2">
+        <label>Nume
+            <input type="text" id="cat-name" name="name" value="{{ cat.name|default('') }}" required>
+        </label>
+        <label>Slug <span class="adm-help">gol = generat din nume</span>
+            <input type="text" id="cat-slug" name="slug" data-slug-from="#cat-name" value="{{ cat.slug|default('') }}">
+        </label>
+    </div>
+
+    <label>Descriere
+        <textarea name="description" rows="3">{{ cat.description|default('') }}</textarea>
+    </label>
+
+    <div class="adm-grid2">
+        <label>Poziție
+            <input type="number" name="position" value="{{ cat.position|default(0) }}">
+        </label>
+        <label style="flex-direction:row;align-items:center;gap:.5rem;margin-top:1.6rem">
+            <input type="checkbox" name="is_active" value="1" {{ cat.is_active is not defined or cat.is_active ? 'checked' }} style="width:auto"> Activ
+        </label>
+    </div>
+
+    <div class="adm-actions">
+        <button class="adm-btn adm-btn--primary" type="submit">Salvează</button>
+        <a class="adm-btn" href="{{ admin_base }}/categorii">Înapoi</a>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+  var TOPS = {{ tops|json_encode|raw }};
+  var CURRENT_PARENT = {{ cat.parent_id|default(0) }};
+  var brandSel = document.getElementById('cat-brand');
+  var parentSel = document.getElementById('cat-parent');
+  function fill(){
+    var b = brandSel.value;
+    parentSel.innerHTML = '<option value="0">— (nivel principal)</option>';
+    (TOPS[b]||[]).forEach(function(t){
+      if (t.id == {{ id }}) return; // can't be own parent
+      var o=document.createElement('option'); o.value=t.id; o.textContent=t.name;
+      if (t.id == CURRENT_PARENT) o.selected=true;
+      parentSel.appendChild(o);
+    });
+  }
+  brandSel.addEventListener('change', fill); fill();
+})();
+</script>
+{% endblock %}

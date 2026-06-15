@@ -1,0 +1,90 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'hero' %}
+{% block title %}{{ id > 0 ? 'Editează slide' : 'Slide nou' }}{% endblock %}
+
+{% block content %}
+<form class="adm-form" method="post" action="{{ admin_base }}/hero/{{ id }}">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+    <div class="adm-grid2">
+        <label>Kicker
+            <input type="text" name="kicker" value="{{ slide.kicker|default('') }}">
+        </label>
+        <label>Cuvânt decorativ (ghost)
+            <input type="text" name="ghost" value="{{ slide.ghost|default('') }}">
+        </label>
+    </div>
+
+    <label>Titlu (HTML permis — folosește &lt;br&gt; și &lt;span class="herov2__accent"&gt;...&lt;/span&gt; pentru accent roșu)
+        <textarea name="title_html" rows="2">{{ slide.title_html|default('') }}</textarea>
+    </label>
+
+    <label>Subtitlu
+        <textarea name="subtitle" rows="2">{{ slide.subtitle|default('') }}</textarea>
+    </label>
+
+    <div class="adm-grid2">
+        <label>Text buton
+            <input type="text" name="cta_label" value="{{ slide.cta_label|default('') }}">
+        </label>
+        <label>Link buton <span class="adm-help">ex. /yamaha/scutere sau /#modele</span>
+            <input type="text" name="cta_href" value="{{ slide.cta_href|default('') }}">
+        </label>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Imagine</span>
+        <div class="adm-imgmgr" data-imgmgr data-single data-store="url" data-context="hero" data-name="image">
+            <div class="adm-drop" data-dropzone>Trage o imagine aici sau click</div>
+            <div class="adm-imgs" data-images>
+                {% if slide.image %}
+                    <div class="adm-img" data-filename="{{ slide.image }}">
+                        <img src="{{ base }}{{ slide.image }}" alt="">
+                        <div class="adm-img__bar"><button type="button" class="adm-img__btn" data-del>Șterge</button></div>
+                        <input type="hidden" name="image" value="{{ slide.image }}">
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <label style="margin-top:.8rem">Text alternativ imagine
+            <input type="text" name="image_alt" value="{{ slide.image_alt|default('') }}">
+        </label>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Statistici (opțional — apar doar pe acest slide)</span>
+        <div class="adm-rows" id="hero-stats" data-rows style="margin-top:.6rem">
+            {% for st in stats %}
+                <div class="adm-row">
+                    <input type="text" name="stat_value[]" value="{{ st.value }}" placeholder="ex. 23">
+                    <input type="text" name="stat_label[]" value="{{ st.label }}" placeholder="ex. ani experiență">
+                    <button type="button" class="adm-row__del" data-row-del>×</button>
+                </div>
+            {% endfor %}
+            <template data-row-tpl>
+                <div class="adm-row">
+                    <input type="text" name="stat_value[]" placeholder="ex. 23">
+                    <input type="text" name="stat_label[]" placeholder="ex. ani experiență">
+                    <button type="button" class="adm-row__del" data-row-del>×</button>
+                </div>
+            </template>
+        </div>
+        <button type="button" class="adm-btn adm-btn--sm" data-row-add="#hero-stats" style="margin-top:.5rem">+ rând</button>
+    </div>
+
+    <div class="adm-grid2">
+        <label>Poziție
+            <input type="number" name="position" value="{{ slide.position|default(0) }}">
+        </label>
+        <label style="flex-direction:row;align-items:center;gap:.5rem;margin-top:1.6rem">
+            <input type="checkbox" name="is_active" value="1" {{ slide.is_active is not defined or slide.is_active ? 'checked' }} style="width:auto">
+            Activ (vizibil pe site)
+        </label>
+    </div>
+
+    <div class="adm-actions">
+        <button class="adm-btn adm-btn--primary" type="submit">Salvează</button>
+        <a class="adm-btn" href="{{ admin_base }}/hero">Înapoi</a>
+    </div>
+</form>
+{% endblock %}

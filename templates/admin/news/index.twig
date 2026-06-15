@@ -1,0 +1,58 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'news' %}
+{% block title %}Blog{% endblock %}
+{% block actions %}<a class="adm-btn adm-btn--primary" href="{{ admin_base }}/blog/0">+ Articol nou</a>{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:1.4rem;align-items:start">
+    <table class="adm-table">
+        <thead><tr><th></th><th>Titlu</th><th>Categorie</th><th>Data</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for a in articles %}
+            <tr>
+                <td>{% if a.cover %}<img class="adm-thumb" src="{{ base }}/media/noutati-moto/{{ a.cover|url_encode }}" alt="">{% endif %}</td>
+                <td><strong>{{ a.title }}</strong><br><span class="adm-muted">{{ a.slug }}</span></td>
+                <td class="adm-muted">{{ a.cat_name ?: '—' }}</td>
+                <td class="adm-muted">{{ a.published_at ? a.published_at|date('d.m.Y') }}</td>
+                <td>{% if a.is_active %}<span class="adm-badge adm-badge--on">activ</span>{% else %}<span class="adm-badge adm-badge--off">ascuns</span>{% endif %}</td>
+                <td style="white-space:nowrap">
+                    <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/blog/{{ a.id }}">Editează</a>
+                    <form method="post" action="{{ admin_base }}/blog/{{ a.id }}/delete" style="display:inline" onsubmit="return confirm('Ștergi articolul?')">
+                        <input type="hidden" name="_csrf" value="{{ csrf }}">
+                        <button class="adm-btn adm-btn--sm adm-btn--danger" type="submit">Șterge</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="6" class="adm-muted">Niciun articol.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="adm-panel">
+        <h2 style="font-size:1.05rem">Categorii blog</h2>
+        <table class="adm-table" style="margin-bottom:1rem">
+            <tbody>
+            {% for c in categories %}
+                <tr>
+                    <td>{{ c.name }}<br><span class="adm-muted">{{ c.slug }}</span></td>
+                    <td style="text-align:right">
+                        <form method="post" action="{{ admin_base }}/blog/categorie/{{ c.id }}/delete" style="display:inline" onsubmit="return confirm('Ștergi categoria?')">
+                            <input type="hidden" name="_csrf" value="{{ csrf }}">
+                            <button class="adm-btn adm-btn--sm adm-btn--danger" type="submit">×</button>
+                        </form>
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td class="adm-muted">Nicio categorie.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <form method="post" action="{{ admin_base }}/blog/categorie" class="adm-form">
+            <input type="hidden" name="_csrf" value="{{ csrf }}">
+            <label>Categorie nouă <input type="text" name="name" placeholder="ex. Review-uri" required></label>
+            <button class="adm-btn adm-btn--primary adm-btn--sm" type="submit">Adaugă</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

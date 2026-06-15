@@ -1,0 +1,33 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'dashboard' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+    <div class="adm-cards">
+        <a class="adm-card" href="{{ admin_base }}/produse">
+            <span class="adm-card__n">{{ stats.products }}</span>
+            <span class="adm-card__l">Produse active</span>
+        </a>
+        <a class="adm-card" href="{{ admin_base }}/blog">
+            <span class="adm-card__n">{{ stats.news }}</span>
+            <span class="adm-card__l">Articole blog</span>
+        </a>
+        <a class="adm-card" href="{{ admin_base }}/evenimente">
+            <span class="adm-card__n">{{ stats.events }}</span>
+            <span class="adm-card__l">Evenimente</span>
+        </a>
+        <a class="adm-card" href="{{ admin_base }}/mesaje">
+            <span class="adm-card__n">{{ stats.messages }}</span>
+            <span class="adm-card__l">Mesaje primite</span>
+        </a>
+        <a class="adm-card" href="{{ admin_base }}/garage">
+            <span class="adm-card__n">{{ stats.requests }}</span>
+            <span class="adm-card__l">Cereri service noi</span>
+        </a>
+    </div>
+
+    <div class="adm-panel">
+        <h2>Bun venit{{ current_user ? ', ' ~ (current_user.name ?: current_user.username) }}.</h2>
+        <p class="adm-muted">Alege o secțiune din meniul din stânga pentru a administra conținutul site-ului.</p>
+    </div>
+{% endblock %}

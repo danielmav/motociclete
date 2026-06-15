@@ -1,0 +1,35 @@
+{% extends 'layout.twig' %}
+{% block title %}{{ event.title }} — Evenimente Dual Motors{% endblock %}
+{% block description %}{{ event.excerpt|striptags|slice(0, 160) }}{% endblock %}
+
+{% block content %}
+<article class="section">
+    <div class="container" style="max-width:900px">
+        <a class="link-arrow" href="{{ base }}/evenimente">← Toate evenimentele</a>
+        <header style="margin:1rem 0 1.5rem">
+            <span class="kicker">
+                {% if event.starts_at %}{{ event.starts_at|date('d.m.Y H:i') }}{% endif %}{% if event.location %} · {{ event.location }}{% endif %}
+            </span>
+            <h1 class="section__title">{{ event.title }}</h1>
+        </header>
+
+        {% if event.image %}
+            <div class="card-art__media" style="border-radius:var(--radius);margin-bottom:1.5rem">
+                <img src="{{ base }}{{ event.image }}" alt="{{ event.title }}" width="1200" height="700" style="width:100%;height:auto">
+            </div>
+        {% endif %}
+
+        {% if event.excerpt %}<p style="font-size:1.15rem;color:var(--ink-2)">{{ event.excerpt }}</p>{% endif %}
+
+        <div class="prose">{{ event.body_html|raw }}</div>
+
+        {% if event.gallery|length %}
+            <div class="grid grid--articles" style="margin-top:2rem">
+                {% for g in event.gallery %}
+                    <div class="card-art__media"><img src="{{ base }}{{ g }}" alt="{{ event.title }}" loading="lazy" width="640" height="400"></div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</article>
+{% endblock %}

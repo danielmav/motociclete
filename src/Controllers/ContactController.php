@@ -116,7 +116,7 @@ final class ContactController
         $lines[] = 'Data: ' . date('Y-m-d H:i:s');
 
         try {
-            $this->mailer->send($this->dealer, $subject, implode("\n", $lines));
+            $this->mailer->send($this->dealer, $subject, implode("\n", $lines), $type === 'test_ride' ? 'test_ride' : 'lead');
         } catch (Throwable) {
             // never let mail failure break the JSON response
         }

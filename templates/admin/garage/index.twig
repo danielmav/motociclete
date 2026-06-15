@@ -1,0 +1,29 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'garage' %}
+{% block title %}Garage — clienți{% endblock %}
+{% block actions %}<a class="adm-btn" href="{{ admin_base }}/garage/calendar">📅 Calendar programări</a>{% endblock %}
+
+{% block content %}
+<form method="get" action="{{ admin_base }}/garage" style="margin-bottom:1rem;display:flex;gap:.5rem;max-width:480px">
+    <input type="text" name="q" value="{{ q }}" placeholder="Caută client, telefon, model, număr...">
+    <button class="adm-btn adm-btn--primary" type="submit">Caută</button>
+</form>
+
+<table class="adm-table">
+    <thead><tr><th>Client</th><th>Contact</th><th>Model</th><th>Nr.</th><th>Km</th><th></th></tr></thead>
+    <tbody>
+    {% for b in bikes %}
+        <tr>
+            <td><strong>{{ b.owner }}</strong></td>
+            <td class="adm-muted">{{ b.email_norm }}<br>{{ b.telefon_norm }}</td>
+            <td>{{ b.product_name ?: b.model_label ?: '—' }}{% if b.year %} <span class="adm-muted">{{ b.year }}</span>{% endif %}</td>
+            <td>{{ b.plate }}</td>
+            <td>{{ b.mileage_km }}</td>
+            <td><a class="adm-btn adm-btn--sm" href="{{ admin_base }}/garage/moto/{{ b.id }}">Detalii</a></td>
+        </tr>
+    {% else %}
+        <tr><td colspan="6" class="adm-muted">Niciun client/motocicletă.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

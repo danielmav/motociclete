@@ -40,6 +40,10 @@ final class Bootstrap
             ]);
             session_name('dm_garage');
             session_start();
+            // CSRF token (per session) used by admin forms.
+            if (empty($_SESSION['csrf'])) {
+                $_SESSION['csrf'] = bin2hex(random_bytes(32));
+            }
         }
 
         // --- Slim app ---
@@ -81,12 +85,15 @@ final class Bootstrap
             'catalog'   => new Catalog\Repository($db),
             'hero'      => new Hero\Repository($db),
             'news'      => new News\Repository($db),
+            'events'    => new Event\Repository($db),
+            'content'   => new Content\Repository($db),
             'finance'   => new Finance\Repository($db),
             'client'    => new Client\Repository($db),
             'mailer'    => new Support\Mailer(
                 $settings['mail'],
                 $root . '/storage/logs',
-                ($settings['app']['env'] ?? 'prod') === 'dev'
+                ($settings['app']['env'] ?? 'prod') === 'dev',
+                $db->local()
             ),
         ];
 
@@ -96,6 +103,21 @@ final class Bootstrap
             'navV2',
             Support\NavigationV2::cached($container['catalog'], $root . '/storage/cache')
         );
+
+        // Footer contact data (admin-managed): socials, address, departments, legal pages.
+        $twig->getEnvironment()->addGlobal('site', [
+            'social' => [
+                'facebook'  => $appSettings->get('social_facebook', ''),
+                'instagram' => $appSettings->get('social_instagram', ''),
+                'youtube'   => $appSettings->get('social_youtube', ''),
+                'tiktok'    => $appSettings->get('social_tiktok', ''),
+            ],
+            'address'     => $appSettings->get('address', ''),
+            'schedule'    => $appSettings->get('schedule', ''),
+            'phone'       => $appSettings->get('phone_general', ''),
+            'departments' => $container['content']->departments(),
+            'legal_pages' => $container['content']->activePages(),
+        ]);
 
         // --- Error handling ---
         $debug = (bool) $settings['app']['debug'];

@@ -1,0 +1,12 @@
+{% extends 'layout.twig' %}
+{% block title %}{{ page.title }} — Dual Motors{% endblock %}
+{% block description %}{{ page.body_html|striptags|slice(0, 160) }}{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container" style="max-width:860px">
+        <h1 class="section__title" style="margin-bottom:1.5rem">{{ page.title }}</h1>
+        <div class="prose">{{ page.body_html|raw }}</div>
+    </div>
+</section>
+{% endblock %}

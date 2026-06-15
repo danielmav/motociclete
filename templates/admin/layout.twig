@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ro">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>{% block title %}Administrare{% endblock %} · Dual Motors</title>
+    <script>window.ADMIN_BASE={{ admin_base|json_encode|raw }};window.CSRF={{ csrf|json_encode|raw }};</script>
+    <link rel="stylesheet" href="{{ base }}/assets/vendor/quill/quill.snow.css">
+    <link rel="stylesheet" href="{{ base }}/assets/css/admin.css?v=1">
+    <link rel="icon" href="{{ base }}/assets/img/logo.png" type="image/png">
+    {% block head %}{% endblock %}
+</head>
+<body class="adm">
+    <aside class="adm-side">
+        <a class="adm-brand" href="{{ admin_base }}">
+            <img src="{{ base }}/assets/img/logo.png" alt="Dual Motors" height="34">
+            <span>Admin</span>
+        </a>
+        {% set nav = [
+            {k:'dashboard', label:'Dashboard', href:''},
+            {k:'hero',      label:'Hero',       href:'/hero'},
+            {k:'categories',label:'Categorii',  href:'/categorii'},
+            {k:'products',  label:'Produse',    href:'/produse'},
+            {k:'news',      label:'Blog',       href:'/blog'},
+            {k:'events',    label:'Evenimente', href:'/evenimente'},
+            {k:'garage',    label:'Garage',     href:'/garage'},
+            {k:'messages',  label:'Mesaje',     href:'/mesaje'},
+            {k:'settings',  label:'Setări',     href:'/setari'}
+        ] %}
+        <nav class="adm-nav">
+            {% for i in nav %}
+                <a class="adm-nav__link{{ active == i.k ? ' is-active' }}" href="{{ admin_base }}{{ i.href }}">{{ i.label }}</a>
+            {% endfor %}
+        </nav>
+        <div class="adm-side__foot">
+            {% if current_user %}<span class="adm-user">{{ current_user.name ?: current_user.username }}</span>{% endif %}
+            <a class="adm-logout" href="{{ admin_base }}/logout">Ieșire</a>
+        </div>
+    </aside>
+
+    <main class="adm-main">
+        <header class="adm-top">
+            <h1 class="adm-top__title">{% block heading %}{{ block('title') }}{% endblock %}</h1>
+            <div class="adm-top__actions">{% block actions %}{% endblock %}</div>
+        </header>
+
+        {% if app.url is defined %}{% endif %}
+        {% block flash %}
+            {% if saved is defined and saved %}<div class="adm-flash adm-flash--ok">Salvat.</div>{% endif %}
+            {% if error is defined and error %}<div class="adm-flash adm-flash--err">{{ error is same as(true) ? 'A apărut o eroare.' : error }}</div>{% endif %}
+        {% endblock %}
+
+        <div class="adm-content">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <script src="{{ base }}/assets/vendor/quill/quill.min.js"></script>
+    <script src="{{ base }}/assets/js/admin.js?v=1" defer></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -92,6 +92,40 @@ Construit pe milestone-uri (vezi planul aprobat). **Milestone 1 livrat = home pa
 - Datele moto (km/culoare/accidente/revizii) sunt întreținute de ADMIN: `/admin/garage`, `/admin/service-requests`. Tabele în `database/schema_garage.sql` (CREATE IF NOT EXISTS, soft-links la `products`): `client_bikes, service_records, incidents, service_requests, client_otp, oem_product_map`.
 - Seed (PHP 8.1 Laragon): `schema_garage.sql` → `normalize_clienti.php` (`telefon_norm`/`email_norm`) → `seed_garage.php` (`unitate`→catalog) → `migrate_bs_models.php` (`bs_product_id`). Re-rulează seed + bs_models după re-migrarea catalogului. `normalize_phone()`/`normalize_email()` în helpers.
 
+## Sistem de administrare (`src/Admin/`)
+
+Back-office complet, multi-user, sub o **cale ascunsă configurabilă** (`ADMIN_PATH` în `.env`,
+default `/dm-control`; citită în `config/settings.php` ca `admin.path`). NU mai există `/admin`.
+
+- **Auth:** tabela `admin_users` (`password_hash`), login pe sesiune (cheie `admin_uid`), CSRF
+  (token în sesiune `$_SESSION['csrf']`, global Twig… de fapt injectat ca `csrf` din `BaseController`).
+  `App\Admin\BaseController` = guard + CSRF + `render()` + `to()` (redirect) + `bustMenuCache()`.
+  Primul user: `database/seed_admin_user.php <user> <parola>`.
+- **Rute:** grup în `src/Routes.php` sub `$adminBase` cu factory `$adminCtl('Class','method')`.
+  Controllere: `Auth, Dashboard, Hero, Category, Product, News, Event, Settings, Message, Garage, Upload`.
+- **Upload imagini:** `POST {base}/upload` (`UploadController` + `App\Admin\Upload`) — multipart, validare
+  (jpg/png/webp, 12MB), context whitelist → subfolder `/media` (`hero`, `noutati-moto`, `evenimente`,
+  `{brand}/{culori|motociclete|detalii|cover}`). JS dropzone + reorder + cover în `assets/js/admin.js`
+  (`[data-imgmgr]`, `data-store=url|filename`).
+- **WYSIWYG:** Quill vendorat local `assets/vendor/quill/` (fără build/CDN), pe `[data-editor="câmp"]` + `<textarea>`.
+  Specs produs (motor/șasiu/dimensiuni/conectivitate) = editor structurat rânduri label→valoare
+  (`[data-rows]`/`[data-row-add]`) → HTML `<table>` în `specs_*` (parse/build în `ProductController`).
+- **Module → tabele:** Hero=`hero_slides`; Categorii/Produse=`categories`/`products`/`product_images`
+  (salvarea **bustează `storage/cache/navv2.cache`**); Blog=`news`/`news_images`/`news_categories`;
+  Evenimente=`events`/`event_images` (+ public `/evenimente`, `/evenimente/{slug}`);
+  Setări=`settings`+`finance`+`contact_departments`+`pages` (pagini legale publice la `/{slug}` via `PageController`,
+  rută înregistrată ULTIMA); Mesaje=`site_messages`+`service_requests`+`email_log`; Garage reutilizează
+  `Client\Repository` + calendar din `service_requests.preferred_date`.
+- **Email → DB:** `Support\Mailer::send($to,$subj,$body,$context)` persistă **fiecare** email în `email_log`
+  (PDO injectat din `Bootstrap`). Footer-ul folosește globalul Twig `site` (socials/adresă/departamente/pagini legale).
+- **Schemă/migrare (cross-engine):** `database/schema_admin.sql` (CREATE IF NOT EXISTS) + `database/migrate_admin.php`
+  (rulează schema split pe `;` via `_dbutil.php` + `ensure_column` prin information_schema — MySQL 8 n-are
+  `ADD COLUMN IF NOT EXISTS`). Seedere: `seed_admin_user.php`, `seed_settings.php` (departamente + pagini legale).
+  ⚠️ După ce adminul gestionează catalogul, **NU mai rula `migrate_catalog.php`** (DROP+RECREATE) în producție.
+  Pe deploy: rulează `migrate_admin.php` + seederele pe server; folderele `/media/*` upload trebuie scriibile.
+- **Fitment** (mapare produs↔BikerShop make/model/year) NU a fost portat în noul admin (vechiul `/admin/fitment`
+  a fost retras); datele rămân populate de scripturile de migrare. De re-adăugat ca modul la nevoie.
+
 ## Convenții
 
 - Toate query-urile = prepared statements. BikerShop NU se scrie niciodată (read-only).

@@ -375,6 +375,137 @@ final class Repository
         return self::productUrl($this->breadcrumbSlugs($row));
     }
 
+    // ===================== ADMIN CRUD =====================
+
+    private const CAT_COLS  = ['brand', 'parent_id', 'name', 'slug', 'description', 'position', 'is_active'];
+    private const PROD_COLS  = [
+        'brand', 'category_id', 'name', 'subtitle', 'slug', 'year', 'price', 'discount_pct', 'licence',
+        'cover_image', 'excerpt', 'description', 'details_html',
+        'specs_engine', 'specs_chassis', 'specs_dimensions', 'specs_connectivity',
+        'video', 'keywords', 'is_active', 'position',
+    ];
+
+    /** All categories (incl. inactive) with parent name, for the admin tree. */
+    public function adminCategories(): array
+    {
+        return $this->all(
+            "SELECT c.*, p.name AS parent_name
+             FROM categories c LEFT JOIN categories p ON p.id = c.parent_id
+             ORDER BY c.brand, COALESCE(c.parent_id, c.id), (c.parent_id IS NOT NULL), c.position, c.name"
+        );
+    }
+
+    public function categoryById(int $id): ?array
+    {
+        return $this->one("SELECT * FROM categories WHERE id = :id", [':id' => $id]);
+    }
+
+    /** Top categories of a brand (incl. inactive) for the parent dropdown. */
+    public function topCategoriesAdmin(string $brand): array
+    {
+        return $this->all(
+            "SELECT id, name FROM categories WHERE brand = :b AND parent_id IS NULL ORDER BY position, name",
+            [':b' => $brand]
+        );
+    }
+
+    /** @param array<string,mixed> $d */
+    public function saveCategory(?int $id, array $d): int
+    {
+        return $this->upsert('categories', self::CAT_COLS, $id, $d);
+    }
+
+    public function deleteCategory(int $id): void
+    {
+        try {
+            $this->pdo->prepare("DELETE FROM categories WHERE id = :id")->execute([':id' => $id]);
+        } catch (Throwable) {
+            // ignore
+        }
+    }
+
+    /** Products for the admin list (optionally filtered by brand). */
+    public function adminProducts(?string $brand = null): array
+    {
+        $where = $brand ? "WHERE p.brand = :b" : "";
+        $params = $brand ? [':b' => $brand] : [];
+        return $this->all(
+            "SELECT p.id, p.brand, p.name, p.slug, p.year, p.price, p.is_active, p.cover_image, c.name AS cat_name
+             FROM products p LEFT JOIN categories c ON c.id = p.category_id
+             {$where}
+             ORDER BY p.brand, p.position, p.name",
+            $params
+        );
+    }
+
+    public function productById(int $id): ?array
+    {
+        return $this->one("SELECT * FROM products WHERE id = :id", [':id' => $id]);
+    }
+
+    /** @param array<string,mixed> $d */
+    public function saveProduct(?int $id, array $d): int
+    {
+        return $this->upsert('products', self::PROD_COLS, $id, $d);
+    }
+
+    public function deleteProduct(int $id): void
+    {
+        try {
+            $this->pdo->prepare("DELETE FROM products WHERE id = :id")->execute([':id' => $id]);
+        } catch (Throwable) {
+            // ignore
+        }
+    }
+
+    /** Image rows of a product+type (color|gallery|detail). */
+    public function productImages(int $productId, string $type): array
+    {
+        return $this->all(
+            "SELECT id, filename, position FROM product_images WHERE product_id = :p AND type = :t ORDER BY position, id",
+            [':p' => $productId, ':t' => $type]
+        );
+    }
+
+    /** Replace all images of a type for a product with the given ordered filenames. */
+    public function replaceImages(int $productId, string $type, array $filenames): void
+    {
+        try {
+            $this->pdo->prepare("DELETE FROM product_images WHERE product_id = :p AND type = :t")
+                ->execute([':p' => $productId, ':t' => $type]);
+            $ins = $this->pdo->prepare("INSERT INTO product_images (product_id, type, filename, position) VALUES (:p, :t, :f, :pos)");
+            $pos = 0;
+            foreach ($filenames as $f) {
+                $f = trim((string) $f);
+                if ($f === '') {
+                    continue;
+                }
+                $ins->execute([':p' => $productId, ':t' => $type, ':f' => $f, ':pos' => $pos++]);
+            }
+        } catch (Throwable) {
+            // ignore
+        }
+    }
+
+    /** Generic INSERT/UPDATE for a whitelisted column set; returns row id. */
+    private function upsert(string $table, array $cols, ?int $id, array $d): int
+    {
+        $params = [];
+        foreach ($cols as $c) {
+            $params[':' . $c] = $d[$c] ?? null;
+        }
+        if ($id) {
+            $set = implode(', ', array_map(static fn ($c) => "`$c` = :$c", $cols));
+            $params[':id'] = $id;
+            $this->pdo->prepare("UPDATE `$table` SET $set WHERE id = :id")->execute($params);
+            return $id;
+        }
+        $names = implode(', ', array_map(static fn ($c) => "`$c`", $cols));
+        $ph = implode(', ', array_map(static fn ($c) => ":$c", $cols));
+        $this->pdo->prepare("INSERT INTO `$table` ($names) VALUES ($ph)")->execute($params);
+        return (int) $this->pdo->lastInsertId();
+    }
+
     // -- Shaping --------------------------------------------------------------
 
     /** Normalize top/sub slug + url onto a row that has cat_slug/cat_parent/top_slug. */
