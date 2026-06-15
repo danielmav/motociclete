@@ -18,7 +18,7 @@ Construit pe milestone-uri (vezi planul aprobat). **Milestone 1 livrat = home pa
   pinează `platform.php = 8.1.10`).
 - **Scripturi CLI cu DB/curl** (migrare, prune, orice PDO): rulează cu binarul Laragon
   `C:/laragon/bin/php/php-8.1.10-Win32-vs16-x64/php.exe` — `php` din PATH (8.2) NU are `pdo_mysql`/`curl`.
-- **Probe/diagnostic DB rapid:** scrie un `tmp_*.php` și rulează-l cu binarul Laragon (apoi șterge-l) — `php -r` inline crapă pe quoting (`$`, `"`, paranteze) în Bash/PowerShell. `database/diagnose_db.php` testează cele 3 conexiuni.
+- **Probe/diagnostic DB rapid:** scrie un `tmp_*.php` (cu `require vendor/autoload.php`) și rulează-l cu binarul Laragon (apoi șterge-l) — `php -r` inline crapă pe quoting (`$`, `"`, paranteze) în Bash/PowerShell ȘI **n-are autoloaderul Composer** (clasele `App\` dau „not found"). `database/diagnose_db.php` testează cele 3 conexiuni.
 - **mysqldump / mysql client** (dump/import DB): `C:/laragon/bin/mysql/mysql-8.0.30-winx64/bin/`.
   Conectare la DB remote: pasează parola via env `MYSQL_PWD` (parolele au caractere speciale → evită `-p`). Dev IP whitelisted în Remote MySQL pe serverele remote.
   Extrage parola din `.env` la runtime ca să NU apară în transcript: `export MYSQL_PWD=$(grep -m1 '^DM_PASS=' .env | cut -d= -f2- | tr -d "'")`. NU seta `MYSQL_PWD` pentru `root` local (n-are parolă → „Access denied").
@@ -125,6 +125,12 @@ default `/dm-control`; citită în `config/settings.php` ca `admin.path`). NU ma
   Pe deploy: rulează `migrate_admin.php` + seederele pe server; folderele `/media/*` upload trebuie scriibile.
 - **Fitment** (mapare produs↔BikerShop make/model/year) NU a fost portat în noul admin (vechiul `/admin/fitment`
   a fost retras); datele rămân populate de scripturile de migrare. De re-adăugat ca modul la nevoie.
+- **Testare admin (curl):** login pe sesiune → cookie jar (`curl -c/-b`), ia CSRF din `window.CSRF="..."` (layout)
+  sau câmpul `_csrf`, apoi POST. Upload multipart: cale **relativă în repo** (`-F "files[]=@storage/..."`),
+  NU `/tmp/...` (curl pe Git Bash dă „Failed to open/read local data").
+- **Twig (gotchas):** funcția `namespace()` NU e disponibilă în acest build → pentru „primul element peste bucle
+  imbricate" folosește `loop.parent.loop.first`. Macro-urile NU văd variabilele apelantului, dar VĂD globalele
+  (`base`, `prices`, `navV2`, `site`) — pasează restul ca argumente.
 
 ## Convenții
 
@@ -153,7 +159,7 @@ După editări `app.css`/`app.js`: bump `?v=N` în `layout.twig` (cache-bust).
 Screenshot: Chrome NU e pe PATH în Bash → cale completă
 `"/c/Program Files/Google/Chrome/Application/chrome.exe" --headless=new --screenshot=<CALE-ABSOLUTĂ>.png --window-size=1440,2600 <url>`
 (calea relativă a fișierului dă „cannot find path"; cale absolută obligatorie).
-Screenshot interactiv / pagini cu sesiune (taburi, login garage): `npm i --no-save puppeteer-core` (folosește Chrome-ul existent prin `executablePath`), injectează cookie-ul de sesiune, apoi `page.screenshot`. **`node_modules/` e gitignored.**
+Screenshot interactiv / pagini cu sesiune (taburi, login garage): `npm i --no-save puppeteer-core` (folosește Chrome-ul existent prin `executablePath`), injectează cookie-ul de sesiune, apoi `page.screenshot`. **`node_modules/` e gitignored.** `puppeteer-core` e **ESM** → script `.mjs` cu `import` (nu `require`), iar `page.goto` cere **URL absolut**.
 
 ## Deploy (staging `/2026/`)
 
@@ -165,6 +171,7 @@ Permisiuni post-clone: `.htaccess`=644, foldere=755.
 
 **Hook pre-commit anti-secrete** (`.githooks/pre-commit`, gitleaks): blochează commit-urile cu secrete.
 Activare după un clone nou: `git config core.hooksPath .githooks` + `scoop install gitleaks`.
+**Fals pozitiv** pe biblioteci vendorate (ex. `quill.min.js` → „generic-api-key"): adaugă fingerprint-ul în `.gitleaksignore` (NU `--no-verify`).
 
 ## Module conexe
 
