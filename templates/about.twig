@@ -4,14 +4,18 @@
 {% block description %}Dual Motors — dealer autorizat Yamaha și CFMOTO, showroom Pipera București. Echipa noastră și peste 23 de ani de poveste pe două roți.{% endblock %}
 
 {% block content %}
+{% include 'partials/page_hero.twig' with {
+    hero_img: '/media/despre/hero.jpg',
+    kicker: 'Despre noi',
+    title: heading,
+    lead: 'Dealer autorizat Yamaha și CFMOTO în București — o echipă pasionată și peste 23 de ani de poveste pe două roți.',
+    modifier: 'page-hero--despre',
+    alt: 'Echipa Dual Motors în fața showroom-ului Yamaha'
+} only %}
+
 {# --- Intro + showroom gallery --- #}
 <section class="section about-intro">
     <div class="container">
-        <header class="page-head">
-            <span class="kicker">Despre noi</span>
-            <h1 class="page-title">{{ heading }}</h1>
-        </header>
-
         <div class="about-intro__grid">
             <div class="prose about-intro__text">
                 {{ intro_html|raw }}

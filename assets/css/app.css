@@ -1041,6 +1041,77 @@ body.modal-open { overflow: hidden; }
 .finance-prose h2, .finance-prose h3 { margin-top: 1.6rem; }
 
 /* ============================================================
+   PAGE HERO — full-bleed banner for content pages
+   (Despre / Service / Blog)
+   ============================================================ */
+.page-hero {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    align-items: flex-end;
+    min-height: clamp(300px, 44vh, 460px);
+    overflow: hidden;
+    background: var(--black);
+}
+.page-hero__media { position: absolute; inset: 0; z-index: -2; }
+.page-hero__media img {
+    width: 100%; height: 100%;
+    object-fit: cover; object-position: center;
+    animation: heroZoom 18s var(--ease) both;
+}
+@keyframes heroZoom { from { transform: scale(1.09); } to { transform: scale(1); } }
+.page-hero__overlay {
+    position: absolute; inset: 0; z-index: -1;
+    background:
+        linear-gradient(102deg, rgba(8,8,10,.86) 0%, rgba(8,8,10,.55) 38%, rgba(8,8,10,.12) 70%, rgba(8,8,10,.34) 100%),
+        linear-gradient(to top, rgba(8,8,10,.80) 0%, rgba(8,8,10,.08) 55%);
+}
+.page-hero__inner { width: 100%; }
+.page-hero__content { max-width: 760px; padding-block: clamp(2rem, 5vw, 3.6rem); }
+.page-hero__kicker { margin-bottom: .85rem; }
+.page-hero__title {
+    font-family: var(--display); font-weight: 900;
+    font-size: clamp(2.2rem, 6vw, 4.2rem); line-height: 1.0;
+    letter-spacing: -.015em; color: #fff;
+    text-shadow: 0 2px 34px rgba(0,0,0,.45);
+}
+.page-hero__title strong { color: var(--red); font-weight: 900; }
+.page-hero__lead {
+    margin-top: 1rem; max-width: 54ch;
+    color: rgba(255,255,255,.86);
+    font-size: clamp(1rem, 1.6vw, 1.18rem); line-height: 1.55;
+    text-shadow: 0 1px 18px rgba(0,0,0,.4);
+}
+/* thin red signature rule at the base of the hero */
+.page-hero::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0;
+    height: 4px; background: var(--red); z-index: 1;
+}
+/* staggered entrance (CSS-only → also works without JS) */
+.page-hero__kicker, .page-hero__title, .page-hero__lead {
+    animation: heroRise .8s var(--ease) both;
+}
+.page-hero__title { animation-delay: .08s; }
+.page-hero__lead { animation-delay: .16s; }
+@keyframes heroRise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+    .page-hero__media img,
+    .page-hero__kicker, .page-hero__title, .page-hero__lead { animation: none; }
+}
+@media (max-width: 720px) {
+    .page-hero { min-height: clamp(240px, 52vh, 360px); }
+}
+/* Despre: keep the team in frame (not the balloons). On wide screens the
+   banner is much wider, so the same anchor reveals the legs — raise the crop. */
+.page-hero--despre .page-hero__media img { object-position: 50% 88%; }
+@media (min-width: 1500px) {
+    .page-hero--despre .page-hero__media img { object-position: 50% 70%; }
+}
+@media (min-width: 1800px) {
+    .page-hero--despre .page-hero__media img { object-position: 50% 62%; }
+}
+
+/* ============================================================
    DESPRE NOI  (intro + gallery, team, history timeline)
    ============================================================ */
 .section--alt { background: var(--surface); }

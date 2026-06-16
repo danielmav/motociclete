@@ -4,13 +4,17 @@
 {% block description %}Service moto autorizat RAR la Dual Motors: revizii, anvelope, suspensii, tuning și diagnoză pentru orice marcă. Listă de prețuri și programare online.{% endblock %}
 
 {% block content %}
+{% include 'partials/page_hero.twig' with {
+    hero_img: '/media/service/hero.jpg',
+    kicker: 'Service autorizat RAR',
+    title: heading,
+    lead: 'Revizii, anvelope, suspensii, tuning și diagnoză pentru orice marcă — în atelierul nostru din Pipera.',
+    pos: '50% 45%',
+    alt: 'Atelierul de service moto Dual Motors'
+} only %}
+
 <section class="section service-page">
     <div class="container">
-        <header class="page-head">
-            <span class="kicker">Service</span>
-            <h1 class="page-title">{{ heading }}</h1>
-        </header>
-
         <div class="service-grid">
             {# --- Description --- #}
             <div class="service-desc">

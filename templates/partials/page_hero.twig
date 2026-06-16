@@ -1,0 +1,33 @@
+{#
+  Reusable full-bleed banner for content pages (Despre / Service / Blog).
+  Params (pass with `... only`):
+    hero_img   - media path under {{ base }} (ex. '/media/despre/hero.jpg')
+    kicker     - small uppercase label
+    title      - h1 text  (plain)
+    title_html - h1 markup (raw, optional; overrides `title`)
+    lead       - optional intro line under the title
+    pos        - optional CSS object-position for the image (ex. '50% 32%')
+    modifier   - optional extra class on the section (ex. 'page-hero--despre')
+                 use this instead of `pos` when the framing must be responsive
+    alt        - optional img alt (defaults to title/kicker)
+#}
+<section class="page-hero{% if modifier is defined %} {{ modifier }}{% endif %}" aria-label="{{ kicker|default(title|default('')) }}">
+    <div class="page-hero__media">
+        <img src="{{ base }}{{ hero_img }}"
+             alt="{{ alt|default(title|default(kicker)) }}"
+             {% if pos is defined %}style="object-position: {{ pos }};"{% endif %}
+             fetchpriority="high" decoding="async">
+    </div>
+    <div class="page-hero__overlay" aria-hidden="true"></div>
+    <div class="container page-hero__inner">
+        <div class="page-hero__content">
+            {% if kicker %}<span class="kicker kicker--light page-hero__kicker">{{ kicker }}</span>{% endif %}
+            {% if title_html is defined %}
+                <h1 class="page-hero__title">{{ title_html|raw }}</h1>
+            {% else %}
+                <h1 class="page-hero__title">{{ title }}</h1>
+            {% endif %}
+            {% if lead is defined and lead %}<p class="page-hero__lead">{{ lead }}</p>{% endif %}
+        </div>
+    </div>
+</section>

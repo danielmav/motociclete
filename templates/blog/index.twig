@@ -5,12 +5,14 @@
 
 {% block content %}
 
-<section class="section catalog-head">
-    <div class="container">
-        <span class="kicker">Pe Două Roți</span>
-        <h1 class="catalog-head__title">Blog</h1>
-    </div>
-</section>
+{% include 'partials/page_hero.twig' with {
+    hero_img: '/media/blog/hero.jpg',
+    kicker: 'Pe Două Roți',
+    title_html: 'Blog',
+    lead: 'Ghiduri, review-uri și noutăți din lumea motocicletelor Yamaha și CFMOTO, echipament și drumuri de povestit.',
+    pos: '50% 50%',
+    alt: 'Gama Yamaha în acțiune'
+} only %}
 
 <section class="section section--tight">
     <div class="container">
