@@ -61,6 +61,7 @@ final class ProductController extends BaseController
             }
         }
 
+        $q = $request->getQueryParams();
         return $this->render($response, 'admin/products/form.twig', [
             'active'     => 'products',
             'p'          => $p,
@@ -69,6 +70,9 @@ final class ProductController extends BaseController
             'categories' => $this->categorySelect(),
             'specRows'   => $specRows,
             'images'     => $images,
+            'saved'      => isset($q['ok']),
+            'sync'       => isset($q['acc']) ? ['fetched' => (int) $q['acc'], 'new' => (int) ($q['accnew'] ?? 0), 'unmatched' => (int) ($q['accunm'] ?? 0)] : null,
+            'syncErr'    => isset($q['accerr']),
         ]);
     }
 
@@ -84,6 +88,7 @@ final class ProductController extends BaseController
         }
         $id = (int) ($args['id'] ?? 0);
         $brand = in_array($body['brand'] ?? '', ['yamaha', 'cfmoto'], true) ? $body['brand'] : 'yamaha';
+        $prevPid = $id > 0 ? (string) ($this->repo()->productById($id)['yamaha_pid'] ?? '') : '';
 
         $data = [
             'brand'        => $brand,
@@ -120,7 +125,38 @@ final class ProductController extends BaseController
         }
 
         $this->bustMenuCache();
-        return $this->to($response, '/produse/' . $pid . '?ok=1');
+
+        // Sincronizează accesoriile originale Yamaha DOAR când PID-ul e nou sau s-a
+        // schimbat (model nou ori PID editat) — evită cereri la Yamaha la fiecare
+        // editare de descriere/preț. Protejat: nu strică salvarea dacă Yamaha pică.
+        $newPid = (string) ($data['yamaha_pid'] ?? '');
+        $sync = '';
+        if ($brand === 'yamaha' && $newPid !== '' && ($id <= 0 || $newPid !== $prevPid)) {
+            $sync = $this->syncQuery($this->container['accessories_importer']->importForModel($pid, true));
+        }
+        return $this->to($response, '/produse/' . $pid . '?ok=1' . $sync);
+    }
+
+    /** POST {base}/produse/{id}/sync-accesorii — resincronizare manuală a accesoriilor. */
+    public function syncAccessories(Request $request, Response $response, array $args): Response
+    {
+        if ($d = $this->requireAuth($response)) {
+            return $d;
+        }
+        if (!$this->csrfOk($this->body($request))) {
+            return $this->to($response, '/produse');
+        }
+        $id = (int) ($args['id'] ?? 0);
+        $sync = $this->syncQuery($this->container['accessories_importer']->importForModel($id, true));
+        return $this->to($response, '/produse/' . $id . '?ok=1' . $sync);
+    }
+
+    /** @param array<string,mixed> $r Build the ?acc=…&accnew=… query for the flash banner. */
+    private function syncQuery(array $r): string
+    {
+        return $r['ok']
+            ? sprintf('&acc=%d&accnew=%d&accunm=%d', $r['fetched'], $r['new'], $r['unmatched'])
+            : '&accerr=1';
     }
 
     /** POST {base}/produse/{id}/delete */

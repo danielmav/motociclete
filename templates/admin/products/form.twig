@@ -27,6 +27,16 @@
 
 {% import _self as f %}
 
+{% block flash %}
+    {{ parent() }}
+    {% if sync is defined and sync %}
+        <div class="adm-flash adm-flash--ok">Accesorii sincronizate: {{ sync.fetched }} ({{ sync.new }} noi{% if sync.unmatched %}, {{ sync.unmatched }} fără produs pe bikershop{% endif %}).</div>
+    {% endif %}
+    {% if syncErr is defined and syncErr %}
+        <div class="adm-flash adm-flash--err">Sincronizarea accesoriilor a eșuat (Yamaha indisponibil?). Produsul a fost salvat oricum.</div>
+    {% endif %}
+{% endblock %}
+
 {% block content %}
 <form class="adm-form" method="post" action="{{ admin_base }}/produse/{{ id }}" style="max-width:1100px">
     <input type="hidden" name="_csrf" value="{{ csrf }}">
@@ -79,9 +89,14 @@
         </div>
         {% if brand == 'yamaha' %}
         <div class="adm-grid2" style="margin-top:.8rem">
-            <label>PID accesorii Yamaha <span class="adm-help">ID-ul din pagina de accesorii Yamaha (ex. 288454). Folosit de importul accesoriilor originale.</span>
+            <label>PID accesorii Yamaha <span class="adm-help">ID-ul din pagina de accesorii Yamaha (ex. 288454). La salvare, dacă PID-ul e nou/schimbat, accesoriile se sincronizează automat.</span>
                 <input type="text" name="yamaha_pid" value="{{ p.yamaha_pid|default('') }}" placeholder="ex. 288454">
             </label>
+            {% if id > 0 and p.yamaha_pid %}
+            <div style="display:flex;align-items:flex-end">
+                <button type="submit" class="btn btn--ghost btn--sm" formaction="{{ admin_base }}/produse/{{ id }}/sync-accesorii" formnovalidate>↻ Resincronizează accesorii</button>
+            </div>
+            {% endif %}
         </div>
         {% endif %}
     </div>

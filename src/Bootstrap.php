@@ -84,6 +84,7 @@ final class Bootstrap
             'bikershop' => new BikerShop\Client($db, $settings['db']['bikershop']),
             'catalog'   => new Catalog\Repository($db),
             'accessories' => new Accessories\Repository($db),
+            'accessories_importer' => new Accessories\Importer($db, new BikerShop\Client($db, $settings['db']['bikershop'])),
             'hero'      => new Hero\Repository($db),
             'news'      => new News\Repository($db),
             'events'    => new Event\Repository($db),
