@@ -967,6 +967,8 @@ a.card-art { display: block; color: inherit; }
 @media (max-width: 1200px) { .grid--acc--5 { grid-template-columns: repeat(4, 1fr); } }
 @media (max-width: 900px)  { .grid--acc--5 { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 600px)  { .grid--acc--5 { grid-template-columns: repeat(2, 1fr); } }
+.card-acc[hidden] { display: none; } /* altfel display:flex de mai sus suprascrie [hidden] */
+.acc-more { display: flex; justify-content: center; margin-top: 1.4rem; }
 
 @media (max-width: 600px) {
     .cmp-tray__actions { width: 100%; }

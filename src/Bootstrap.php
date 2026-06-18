@@ -83,6 +83,7 @@ final class Bootstrap
             'app_settings' => $appSettings,
             'bikershop' => new BikerShop\Client($db, $settings['db']['bikershop']),
             'catalog'   => new Catalog\Repository($db),
+            'accessories' => new Accessories\Repository($db),
             'hero'      => new Hero\Repository($db),
             'news'      => new News\Repository($db),
             'events'    => new Event\Repository($db),

@@ -379,6 +379,48 @@ final class Client
     }
 
     /**
+     * Map product references -> BikerShop id_product (read-only). Used by
+     * database/import_yamaha_accessories.php to resolve a Yamaha accessory
+     * (matched by `reference`) to its purchasable BikerShop product. When several
+     * products share a reference, the active one wins. References with no match
+     * are simply absent from the result.
+     *
+     * @param array<int,string> $refs
+     * @return array<string,int> reference => id_product
+     */
+    public function productIdsByReferences(array $refs): array
+    {
+        $refs = array_values(array_unique(array_filter(array_map('trim', $refs), static fn ($r) => $r !== '')));
+        if (!$refs || !$this->isAvailable()) {
+            return [];
+        }
+        $p = $this->prefix;
+        $shop = $this->shopId; // trusted config int, inlined
+        $in = implode(',', array_fill(0, count($refs), '?'));
+        $sql = "
+            SELECT pr.reference, pr.id_product, COALESCE(ps.active, 0) AS active
+            FROM        {$p}product       pr
+            LEFT JOIN   {$p}product_shop  ps ON ps.id_product = pr.id_product AND ps.id_shop = {$shop}
+            WHERE pr.reference IN ({$in})
+            ORDER BY active DESC, pr.id_product ASC
+        ";
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($refs);
+            $out = [];
+            foreach ($stmt->fetchAll() as $r) {
+                $ref = (string) $r['reference'];
+                if (!isset($out[$ref])) { // first wins (active ordered first)
+                    $out[$ref] = (int) $r['id_product'];
+                }
+            }
+            return $out;
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /**
      * Look up BikerShop LeoPartsFilter IDs for a local product.
      * Used by database/migrate_fitment.php to populate lp_* columns.
      *

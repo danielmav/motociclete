@@ -669,4 +669,28 @@
             else if (e.key === 'ArrowRight') show(idx + 1);
         });
     })();
+
+    /* ---- "Vezi mai multe" pe grile de accesorii (progressive: fără JS se văd toate) ---- */
+    Array.prototype.slice.call(document.querySelectorAll('[data-accmore]')).forEach(function (grid) {
+        var step = parseInt(grid.getAttribute('data-accmore'), 10) || 15;
+        var cards = Array.prototype.slice.call(grid.children);
+        if (cards.length <= step) { return; }
+        var shown = step;
+        var apply = function () { cards.forEach(function (c, i) { c.hidden = i >= shown; }); };
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn--ghost acc-more__btn';
+        var update = function () { btn.textContent = 'Vezi mai multe (' + (cards.length - shown) + ')'; };
+        btn.addEventListener('click', function () {
+            shown = Math.min(cards.length, shown + step);
+            apply();
+            if (shown >= cards.length) { btn.remove(); } else { update(); }
+        });
+        apply();
+        update();
+        var wrap = document.createElement('div');
+        wrap.className = 'acc-more';
+        wrap.appendChild(btn);
+        grid.parentNode.insertBefore(wrap, grid.nextSibling);
+    });
 })();

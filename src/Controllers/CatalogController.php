@@ -19,6 +19,7 @@ use Slim\Views\Twig;
 final class CatalogController
 {
     private Repository $repo;
+    private \App\Accessories\Repository $accessories;
     private BikerShopClient $bikershop;
     private string $base;
     private \App\Finance\Repository $finance;
@@ -28,6 +29,7 @@ final class CatalogController
     public function __construct(private Twig $twig, array $container)
     {
         $this->repo      = $container['catalog'];
+        $this->accessories = $container['accessories'];
         $this->bikershop = $container['bikershop'];
         $this->base      = (string) ($container['settings']['app']['base_path'] ?? '');
         $this->finance = $container['finance'];
@@ -187,9 +189,23 @@ final class CatalogController
         //  - Aftermarket (accesorii & echipament): every other manufacturer.
         $bsId = isset($product['bs_product_id']) ? (int) $product['bs_product_id'] : 0;
         $rel = $this->bikershop->relatedForBike($bsId, $brand, 15);
-        $oemParts = $rel['oem'];
         $accessories = $rel['aftermarket'];
         $bsUrl = $rel['url'];
+
+        // OEM Yamaha: relația accesoriu↔model vine din DB-ul portalului (alimentat din
+        // feedul Yamaha de database/import_yamaha_accessories.php), NU din adv_related.
+        // Cumpărarea rămâne pe BikerShop → preț/imagine/URL live prin bs_product_id.
+        // Fallback la adv_related dacă încă nu există mapare în portal (ex. yamaha_pid neimportat).
+        $oemParts = $rel['oem'];
+        if ($brand === 'yamaha') {
+            // Toate accesoriile originale pentru acest model (cap generos — e catalogul
+            // OEM complet al modelului). Cele neafișate față de feedul Yamaha = accesorii
+            // încă neimportate pe bikershop (productsByIds păstrează doar active/vizibile).
+            $oemIds = $this->accessories->bsProductIdsForModel($id, 120);
+            if ($oemIds) {
+                $oemParts = $this->bikershop->productsByIds($oemIds, count($oemIds));
+            }
+        }
 
         // UniCredit rate calculator: RON (VAT-inclusive) price + per-term instalments.
         $cur = $this->twig->getEnvironment()->getGlobals()['currency'];

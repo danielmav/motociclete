@@ -103,6 +103,8 @@ final class ProductController extends BaseController
             'keywords'     => trim((string) ($body['keywords'] ?? '')),
             'is_active'    => empty($body['is_active']) ? 0 : 1,
             'position'     => (int) ($body['position'] ?? 0),
+            // PID Yamaha (doar cifre) pt. importul accesoriilor originale; gol -> NULL.
+            'yamaha_pid'   => ($brand === 'yamaha' && preg_match('/\d+/', (string) ($body['yamaha_pid'] ?? ''), $mm)) ? $mm[0] : null,
         ];
         foreach (self::SPECS as $key => $col) {
             $data[$col] = $this->buildSpecTable(

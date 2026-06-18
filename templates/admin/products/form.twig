@@ -77,6 +77,13 @@
                 <input type="text" name="keywords" value="{{ p.keywords|default('') }}">
             </label>
         </div>
+        {% if brand == 'yamaha' %}
+        <div class="adm-grid2" style="margin-top:.8rem">
+            <label>PID accesorii Yamaha <span class="adm-help">ID-ul din pagina de accesorii Yamaha (ex. 288454). Folosit de importul accesoriilor originale.</span>
+                <input type="text" name="yamaha_pid" value="{{ p.yamaha_pid|default('') }}" placeholder="ex. 288454">
+            </label>
+        </div>
+        {% endif %}
     </div>
 
     <div class="adm-fieldset">
