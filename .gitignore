@@ -4,6 +4,7 @@
 !.env.example
 /media/
 /documente/
+/tests/yamaha_pids.csv
 *.zip
 /storage/cache/*
 /storage/logs/*
