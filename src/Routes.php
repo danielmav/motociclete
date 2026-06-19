@@ -92,6 +92,11 @@ return function (App $app, Twig $twig, array $container): void {
     $app->get($adminBase . '/evenimente/{id:[0-9]+}',         $adminCtl('EventController', 'form'));
     $app->post($adminBase . '/evenimente/{id:[0-9]+}',        $adminCtl('EventController', 'save'));
     $app->post($adminBase . '/evenimente/{id:[0-9]+}/delete', $adminCtl('EventController', 'delete'));
+    // Announcements (site-wide pop-up)
+    $app->get($adminBase . '/anunturi',                     $adminCtl('AnnouncementController', 'index'));
+    $app->get($adminBase . '/anunturi/{id:[0-9]+}',         $adminCtl('AnnouncementController', 'form'));
+    $app->post($adminBase . '/anunturi/{id:[0-9]+}',        $adminCtl('AnnouncementController', 'save'));
+    $app->post($adminBase . '/anunturi/{id:[0-9]+}/delete', $adminCtl('AnnouncementController', 'delete'));
     // Despre — intro + gallery
     $app->get($adminBase . '/despre',                       $adminCtl('AboutController', 'index'));
     $app->post($adminBase . '/despre',                      $adminCtl('AboutController', 'save'));
@@ -180,6 +185,11 @@ return function (App $app, Twig $twig, array $container): void {
     });
     $app->post('/service/programare', function ($request, $response) use ($twig, $container) {
         return (new \App\Controllers\ServiceController($twig, $container))->book($request, $response);
+    });
+
+    // --- Accesorii originale (portal-owned relation; live price/image from BikerShop) ---
+    $app->get('/accesorii', function ($request, $response) use ($twig, $container) {
+        return (new \App\Controllers\AccessoriesController($twig, $container))->index($request, $response);
     });
 
     // --- My Garage (private client area, passwordless OTP login) ---

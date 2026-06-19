@@ -86,6 +86,7 @@ final class Bootstrap
             'accessories' => new Accessories\Repository($db),
             'accessories_importer' => new Accessories\Importer($db, new BikerShop\Client($db, $settings['db']['bikershop'])),
             'hero'      => new Hero\Repository($db),
+            'announcements' => new Announcement\Repository($db),
             'news'      => new News\Repository($db),
             'events'    => new Event\Repository($db),
             'about'     => new About\Repository($db),
@@ -108,6 +109,9 @@ final class Bootstrap
             'navV2',
             Support\NavigationV2::cached($container['catalog'], $root . '/storage/cache')
         );
+
+        // Site-wide pop-up announcement (admin-managed, within its date window).
+        $twig->getEnvironment()->addGlobal('announcement', $container['announcements']->current());
 
         // Footer contact data (admin-managed): socials, address, departments, legal pages.
         $twig->getEnvironment()->addGlobal('site', [

@@ -1,0 +1,31 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'announcements' %}
+{% block title %}Pop-up{% endblock %}
+{% block actions %}<a class="adm-btn adm-btn--primary" href="{{ admin_base }}/anunturi/0">+ Anunț nou</a>{% endblock %}
+
+{% block content %}
+    <p class="adm-muted" style="margin-bottom:1rem">Anunțul apare ca pop-up pe tot site-ul, în intervalul setat. Dacă sunt mai multe active simultan, se afișează cel cu poziția cea mai mică.</p>
+    <table class="adm-table">
+        <thead><tr><th>Titlu</th><th>Început</th><th>Sfârșit</th><th>Poz.</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for a in announcements %}
+            <tr>
+                <td><strong>{{ a.title ?: '(fără titlu)' }}</strong></td>
+                <td class="adm-muted">{{ a.starts_at ? a.starts_at|date('d.m.Y H:i') : '—' }}</td>
+                <td class="adm-muted">{{ a.ends_at ? a.ends_at|date('d.m.Y H:i') : '—' }}</td>
+                <td class="adm-muted">{{ a.position }}</td>
+                <td>{% if a.is_active %}<span class="adm-badge adm-badge--on">activ</span>{% else %}<span class="adm-badge adm-badge--off">ascuns</span>{% endif %}</td>
+                <td style="white-space:nowrap">
+                    <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/anunturi/{{ a.id }}">Editează</a>
+                    <form method="post" action="{{ admin_base }}/anunturi/{{ a.id }}/delete" style="display:inline" onsubmit="return confirm('Ștergi anunțul?')">
+                        <input type="hidden" name="_csrf" value="{{ csrf }}">
+                        <button class="adm-btn adm-btn--sm adm-btn--danger" type="submit">Șterge</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="6" class="adm-muted">Niciun anunț. Adaugă primul.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

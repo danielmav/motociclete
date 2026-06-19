@@ -1,7 +1,7 @@
 {% extends 'layout.twig' %}
 
 {% block title %}{{ category.name }} {{ brandLabel }} — modele și prețuri | Dual Motors{% endblock %}
-{% block description %}{{ category.description ? (category.description|striptags|trim|slice(0, 155)) : ('Descoperă modelele ' ~ category.name ~ ' ' ~ brandLabel ~ ' la Dual Motors — prețuri, dotări și test ride.') }}{% endblock %}
+{% block description %}{{ category.description ? (category.description|striptags|trim|slice(0, 155)) : ('Descoperă modelele ' ~ category.name ~ ' ' ~ brandLabel ~ ' la Dual Motors — prețuri, dotări și drive test.') }}{% endblock %}
 
 {% block content %}
 

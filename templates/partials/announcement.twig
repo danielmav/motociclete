@@ -1,0 +1,16 @@
+{# Site-wide pop-up announcement (admin-managed, within its date window).
+   Shown once per visitor until dismissed; the key includes updated_at so an
+   edited announcement re-appears. Server already enforces the active window. #}
+{% if announcement %}
+<div class="modal modal--announce" data-announce data-key="{{ announcement.id }}-{{ announcement.updated_at ? announcement.updated_at|date('YmdHis') : '0' }}" hidden>
+    <div class="modal__overlay" data-announce-close></div>
+    <div class="modal__dialog" role="dialog" aria-modal="true" aria-label="{{ announcement.title|default('Anunț') }}">
+        <button type="button" class="modal__x" data-announce-close aria-label="Închide">&times;</button>
+        {% if announcement.title %}<h2 class="modal__title announce__title">{{ announcement.title }}</h2>{% endif %}
+        {% if announcement.body_html %}<div class="prose announce__body">{{ announcement.body_html|raw }}</div>{% endif %}
+        <div class="announce__foot">
+            <button type="button" class="btn btn--primary btn--sm" data-announce-close>Am înțeles</button>
+        </div>
+    </div>
+</div>
+{% endif %}

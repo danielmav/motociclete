@@ -83,6 +83,14 @@
         var results = document.querySelector('[data-fit-results]');
         var titleEl = document.querySelector('[data-fit-title]');
         var statusEl = document.querySelector('[data-fit-status]');
+        var allLink = document.querySelector('[data-fit-bikershop]');
+
+        var slugify = function (s) {
+            return (s || '').toString().toLowerCase()
+                .normalize('NFD').replace(/[̀-ͯ]/g, '') // strip diacritics
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+        };
 
         var fmtPrice = function (n) {
             return Number(n).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Lei';
@@ -174,10 +182,22 @@
                 (yearSel.value ? '&year=' + encodeURIComponent(yearSel.value) : '');
             getJSON(url).then(function (d) {
                 renderProducts(d.items || []);
-                var bike = makeSel.options[makeSel.selectedIndex].text + ' ' + modelSel.options[modelSel.selectedIndex].text +
-                    (yearSel.value ? ' ' + yearSel.options[yearSel.selectedIndex].text : '');
+                var makeText = makeSel.options[makeSel.selectedIndex].text;
+                var modelText = modelSel.options[modelSel.selectedIndex].text;
+                var yearText = yearSel.value ? yearSel.options[yearSel.selectedIndex].text : '';
+                var bike = makeText + ' ' + modelText + (yearText ? ' ' + yearText : '');
                 if (titleEl) titleEl.textContent = 'Compatibil cu ' + bike;
                 if (statusEl) statusEl.textContent = (d.count || 0) + ' produse';
+                // „Vezi toate produsele pe BikerShop" — URL-ul de compatibilitate cere un an.
+                if (allLink) {
+                    if (yearText) {
+                        allLink.href = 'https://bikershop.ro/compatibilitati/' +
+                            slugify(makeText) + '/' + slugify(modelText) + '/' + encodeURIComponent(yearText);
+                        allLink.hidden = false;
+                    } else {
+                        allLink.hidden = true;
+                    }
+                }
             });
         });
     }
@@ -693,4 +713,28 @@
         wrap.appendChild(btn);
         grid.parentNode.insertBefore(wrap, grid.nextSibling);
     });
+
+    /* ---- Site-wide pop-up announcement (shown once per visitor until dismissed) ---- */
+    (function () {
+        var el = document.querySelector('[data-announce]');
+        if (!el) { return; }
+        var key = 'dm_announce_' + (el.getAttribute('data-key') || '0');
+        try { if (window.localStorage && localStorage.getItem(key)) { return; } } catch (e) {}
+        var dismiss = function () {
+            el.hidden = true;
+            document.body.classList.remove('modal-open');
+            try { if (window.localStorage) { localStorage.setItem(key, '1'); } } catch (e) {}
+        };
+        el.querySelectorAll('[data-announce-close]').forEach(function (b) {
+            b.addEventListener('click', dismiss);
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && !el.hidden) { dismiss(); }
+        });
+        // Small delay so it doesn't fight with first paint.
+        setTimeout(function () {
+            el.hidden = false;
+            document.body.classList.add('modal-open');
+        }, 700);
+    })();
 })();

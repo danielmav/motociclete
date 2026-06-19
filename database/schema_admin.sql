@@ -76,6 +76,22 @@ CREATE TABLE IF NOT EXISTS `contact_departments` (
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Site-wide pop-up announcements (program sărbători legale etc.) — admin-managed,
+-- WYSIWYG body, shown within an optional start/end datetime window.
+CREATE TABLE IF NOT EXISTS `announcements` (
+    `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `title`      VARCHAR(255) NOT NULL DEFAULT '',
+    `body_html`  MEDIUMTEXT NULL,
+    `starts_at`  DATETIME NULL,                  -- NULL = fără limită de început
+    `ends_at`    DATETIME NULL,                  -- NULL = fără limită de sfârșit
+    `is_active`  TINYINT(1) NOT NULL DEFAULT 1,
+    `position`   INT NOT NULL DEFAULT 0,         -- la mai multe active simultan, cel mai mic câștigă
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_ann_active` (`is_active`, `starts_at`, `ends_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Every outgoing email sent from the site is persisted here (admin Messages).
 CREATE TABLE IF NOT EXISTS `email_log` (
     `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

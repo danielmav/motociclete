@@ -91,12 +91,13 @@ Construit pe milestone-uri (vezi planul aprobat). **Milestone 1 livrat = home pa
 - Sursa = endpointul public **hyperdrive Yamaha** (fără API/auth): URL cu **GUID categorie CONSTANT** (`1a517708-545a-4094-89e3-ca507def0af3`), doar `yamaha_pid`-ul variază (din pagina de accesorii Yamaha `?product=NNN`). `App\Accessories\Importer` (`importForModel`/`models`) = fetch paginat + match referință→bikershop (`Client::productIdsByReferences`) → `bs_product_id`.
 - **Cumpărarea rămâne pe BikerShop:** preț/imagine/URL vin LIVE prin `bs_product_id` (`productsByIds`); portalul stochează doar relația. NEDISTRUCTIV: doar upsert, accesoriile rămân chiar dacă modelul dispare. Accesoriile „fără bikershop" = de importat în PrestaShop via CSV.
 - Afișare: `App\Accessories\Repository::bsProductIdsForModel()` → `CatalogController::renderProduct` (OEM Yamaha din portal, fallback adv_related dacă lipsește maparea). „Vezi mai multe" = `[data-accmore]` în `app.js` (necesită `.card-acc[hidden]{display:none}` — `display:flex` suprascrie `[hidden]`).
+- **Pagina publică `/accesorii`** (`AccessoriesController` + `accessories.twig`, layout hero ca `/service`): shop cu selector „Ce motocicletă ai?" (`<select onchange=this.form.submit()>` din `modelsWithAccessories()`) + filtre pe categorie (`accessory_type` din `types(?model)`) + paginare (`page(?model,?tip,page,perPage)` în `Repository`, 24/pagină). Prețul/imaginea vin LIVE prin `bikershop->productsByIds()` → numărul de carduri afișate poate fi < total (produse inactive pe bikershop). Stiluri `.acc-*` în `app.css`. Meniul mega „Accesorii" pointează la `/accesorii`.
 - Import: `database/import_yamaha_accessories.php --apply` (toate modelele / cron). Admin: la save cu PID **nou/schimbat** → sync automat (protejat, nu strică salvarea) + buton „Resincronizează" (`ProductController::syncAccessories`). Reîmprospătare modele vechi = **cron** pe server. Setare PID în bloc: `tests/set_yamaha_pids.php` din CSV.
 
 ## My Garage — zonă privată clienți (`/garage`)
 
 - Login **passwordless OTP pe email** (introdu email/telefon din tabela `clienti`). `ClientController` + `App\Client\Repository` + `App\Support\Mailer`. Sesiune PHP nativă pornită în `Bootstrap` (cookie `dm_garage`).
-- **Mailer**: fără SMTP (dev) scrie în `storage/logs/mail.log`; `APP_ENV=dev` arată codul și pe `/garage/verify`. Producție = SMTP (`.env`: `SMTP_*`, `MAIL_FROM`, `MAIL_DEALER`).
+- **Mailer** (`Support\Mailer`, folosește **PHPMailer** `phpmailer/phpmailer` via Composer): fără `SMTP_HOST` sau `APP_ENV=dev` scrie în `storage/logs/mail.log` (codul OTP apare și pe `/garage/verify`); altfel trimite SMTP (TLS/SSL după `SMTP_SECURE`). Fiecare email se persistă în `email_log`. `.env`: `SMTP_HOST/PORT/USER/PASS/SECURE`, `MAIL_FROM` (`noreply@motociclete.com.ro`), `MAIL_FROM_NAME`, `MAIL_DEALER`. Pe prod = cont cPanel (tipic `mail.motociclete.com.ro:465` cu `SMTP_SECURE=ssl`).
 - Datele moto (km/culoare/accidente/revizii) sunt întreținute de ADMIN: `/admin/garage`, `/admin/service-requests`. Tabele în `database/schema_garage.sql` (CREATE IF NOT EXISTS, soft-links la `products`): `client_bikes, service_records, incidents, service_requests, client_otp, oem_product_map`.
 - Seed (PHP 8.1 Laragon): `schema_garage.sql` → `normalize_clienti.php` (`telefon_norm`/`email_norm`) → `seed_garage.php` (`unitate`→catalog) → `migrate_bs_models.php` (`bs_product_id`). Re-rulează seed + bs_models după re-migrarea catalogului. `normalize_phone()`/`normalize_email()` în helpers.
 
@@ -110,7 +111,7 @@ default `/dm-control`; citită în `config/settings.php` ca `admin.path`). NU ma
   `App\Admin\BaseController` = guard + CSRF + `render()` + `to()` (redirect) + `bustMenuCache()`.
   Primul user: `database/seed_admin_user.php <user> <parola>`.
 - **Rute:** grup în `src/Routes.php` sub `$adminBase` cu factory `$adminCtl('Class','method')`.
-  Controllere: `Auth, Dashboard, Hero, Category, Product, News, Event, About, History, Service, Settings, Message, Garage, Upload`.
+  Controllere: `Auth, Dashboard, Hero, Announcement, Category, Product, News, Event, About, History, Service, Settings, Message, Garage, Upload`.
 - **Upload imagini:** `POST {base}/upload` (`UploadController` + `App\Admin\Upload`) — multipart, validare
   (jpg/png/webp, 12MB), context whitelist → subfolder `/media` (`hero`, `noutati-moto`, `evenimente`, `despre` (context `about`),
   `{brand}/{culori|motociclete|detalii|cover}`). JS dropzone + reorder + cover în `assets/js/admin.js`
@@ -118,7 +119,8 @@ default `/dm-control`; citită în `config/settings.php` ca `admin.path`). NU ma
 - **WYSIWYG:** Quill vendorat local `assets/vendor/quill/` (fără build/CDN), pe `[data-editor="câmp"]` + `<textarea>`.
   Specs produs (motor/șasiu/dimensiuni/conectivitate) = editor structurat rânduri label→valoare
   (`[data-rows]`/`[data-row-add]`) → HTML `<table>` în `specs_*` (parse/build în `ProductController`).
-- **Module → tabele:** Hero=`hero_slides`; Categorii/Produse=`categories`/`products`/`product_images`
+- **Pop-up site-wide:** tabela `announcements` (titlu + `body_html` WYSIWYG + fereastră `starts_at`/`ends_at` + `is_active` + `position`). Admin la `{base}/anunturi` (`Admin\AnnouncementController`); `Announcement\Repository::current()` (activ ȘI în fereastră, cel mai mic `position` câștigă) → global Twig `announcement` în `Bootstrap` → `templates/partials/announcement.twig` (modal `.modal--announce`, inclus în `layout.twig`). JS în `app.js` (`[data-announce]`) îl arată o dată per vizitator (dismiss în `localStorage`, cheie = `id-updated_at` → reapare la editare). Degradare grațioasă (null dacă tabela lipsește).
+- **Module → tabele:** Hero=`hero_slides`; Pop-up=`announcements`; Categorii/Produse=`categories`/`products`/`product_images`
   (salvarea **bustează `storage/cache/navv2.cache`**); Blog=`news`/`news_images`/`news_categories`;
   Evenimente=`events`/`event_images` (+ public `/evenimente`, `/evenimente/{slug}`);
   Despre=intro (`settings.about_heading/about_intro_html`)+galerie `about_images`+`team_members`+timeline `history_entries`/`history_images`
@@ -198,6 +200,8 @@ Activare după un clone nou: `git config core.hooksPath .githooks` + `scoop inst
 
 ## Module conexe
 
-- **drivetest** (`c:\laragon\www\drivetest`, `drivetest.test`) — sistem test-ride
+- **drivetest** (`c:\laragon\www\drivetest`, `drivetest.test`) — sistem „drive test"
   existent (PHP procedural + MySQLi, DB `dualmotors_testdrive`). Portalul face deocamdată
-  link spre el (CTA „Programează test ride"); unificare ulterioară (Milestone 4).
+  link spre el (CTA „Programează drive test", URL din `app.testride_url` / `.env` `TESTRIDE_URL`,
+  pe prod `https://www.motociclete.com.ro/drive-test/`); unificare ulterioară (Milestone 4).
+  UI = „drive test" peste tot; rutele/id-urile interne rămân `test-ride`/`test_ride`.

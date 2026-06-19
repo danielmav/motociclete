@@ -1,11 +1,11 @@
-{# Two lead modals (Cere ofertă / Test ride) for the product page.
+{# Two lead modals (Cere ofertă / Drive test) for the product page.
    Hidden by default; opened by JS via [data-modal-open="oferta|test-ride"].
    Each form posts via fetch to /api/lead/*; success swaps to the thank-you panel. #}
 {% set modelName = p.name ~ (p.year ? ' ' ~ p.year : '') %}
 
 {% set forms = [
     { id: 'oferta',    action: '/api/lead/oferta',    title: 'Cere ofertă',           submit: 'Trimite cererea' },
-    { id: 'test-ride', action: '/api/lead/test-ride', title: 'Programează test ride', submit: 'Trimite programarea' }
+    { id: 'test-ride', action: '/api/lead/test-ride', title: 'Programează drive test', submit: 'Trimite programarea' }
 ] %}
 
 {% for f in forms %}

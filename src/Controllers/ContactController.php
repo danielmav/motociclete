@@ -94,7 +94,7 @@ final class ContactController
     /** @param array<string,string> $f */
     private function notify(string $type, array $f): void
     {
-        $label = $type === 'test_ride' ? 'Programare test ride' : 'Cerere ofertă';
+        $label = $type === 'test_ride' ? 'Programare drive test' : 'Cerere ofertă';
         $model = trim(($f['brand'] ? ucfirst($f['brand']) . ' ' : '') . $f['pname']);
         $subject = $label . ($model !== '' ? ': ' . $model : '');
         $lines = [

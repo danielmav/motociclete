@@ -1,0 +1,43 @@
+{% extends 'admin/layout.twig' %}
+{% import 'admin/_widgets.twig' as w %}
+{% set active = 'announcements' %}
+{% block title %}{{ id > 0 ? 'Editează anunț' : 'Anunț nou' }}{% endblock %}
+
+{% block content %}
+<form class="adm-form" method="post" action="{{ admin_base }}/anunturi/{{ id }}">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+    <label>Titlu
+        <input type="text" name="title" value="{{ announcement.title|default('') }}" placeholder="ex. Program de sărbători">
+    </label>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Mesaj</span>
+        <div style="margin-top:.6rem">{{ w.editor('body_html', announcement.body_html|default('')) }}</div>
+    </div>
+
+    <div class="adm-grid2">
+        <label>Apare de la <span class="adm-help">gol = imediat</span>
+            <input type="datetime-local" name="starts_at" value="{{ announcement.starts_at ? announcement.starts_at|date('Y-m-d\\TH:i') }}">
+        </label>
+        <label>Apare până la <span class="adm-help">gol = fără limită</span>
+            <input type="datetime-local" name="ends_at" value="{{ announcement.ends_at ? announcement.ends_at|date('Y-m-d\\TH:i') }}">
+        </label>
+    </div>
+
+    <div class="adm-grid2">
+        <label>Poziție <span class="adm-help">la mai multe active, cel mai mic câștigă</span>
+            <input type="number" name="position" value="{{ announcement.position|default(0) }}">
+        </label>
+        <label style="flex-direction:row;align-items:center;gap:.5rem;margin-top:1.6rem">
+            <input type="checkbox" name="is_active" value="1" {{ announcement.is_active is not defined or announcement.is_active ? 'checked' }} style="width:auto">
+            Activ (vizibil pe site)
+        </label>
+    </div>
+
+    <div class="adm-actions">
+        <button class="adm-btn adm-btn--primary" type="submit">Salvează</button>
+        <a class="adm-btn" href="{{ admin_base }}/anunturi">Înapoi</a>
+    </div>
+</form>
+{% endblock %}

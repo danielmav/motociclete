@@ -145,11 +145,16 @@ final class NavigationV2
         // Brand pills only make sense when the panel spans more than one brand.
         $pills = count($brands) > 1 ? array_merge(['all'], array_keys($brands)) : [];
 
+        // "Toată gama …" points to the top-category landing page of the first source
+        // (e.g. /yamaha/motociclete), NOT its first subcategory.
+        $src0 = $def['sources'][0];
+        $href = '/' . $src0['brand'] . '/' . ($src0['top'] ?? $src0['tops'][0]);
+
         return [
             'type'   => 'products',
             'key'    => $key,
             'label'  => $def['label'],
-            'href'   => $groups[0]['subcats'][0]['url'] ?? '/',
+            'href'   => $href,
             'pills'  => $pills,
             'groups' => $groups,
         ];
@@ -254,19 +259,12 @@ final class NavigationV2
             'type'  => 'mega',
             'key'   => 'accesorii',
             'label' => 'Accesorii',
-            'href'  => '/piese',
+            'href'  => '/accesorii',
             'columns' => [
-                ['title' => 'Originale (OEM)', 'links' => [
-                    ['Accesorii Yamaha', '/piese?tip=oem'],
-                    ['Accesorii CFMOTO', '/piese?tip=oem'],
-                    ['Piese de schimb', '/piese'],
-                    ['Întreținere & ulei', '/piese/intretinere'],
-                ]],
-                ['title' => 'Aftermarket', 'links' => [
-                    ['Evacuări & performanță', '/piese?tip=aftermarket'],
-                    ['Bagaje & suporturi', '/piese/bagaje'],
-                    ['Frânare', '/piese/franare'],
-                    ['Anvelope', '/piese/anvelope'],
+                ['title' => 'Accesorii originale', 'links' => [
+                    ['Toate accesoriile', '/accesorii'],
+                    ['Accesorii Yamaha', '/accesorii'],
+                    ['Caută după model', '/accesorii'],
                 ]],
             ],
             'feature' => [

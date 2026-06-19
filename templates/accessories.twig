@@ -1,0 +1,103 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Accesorii originale Yamaha — Dual Motors | motociclete.com.ro{% endblock %}
+{% block description %}Accesorii originale Yamaha la Dual Motors: alege-ți modelul de motocicletă sau filtrează după categorie. Comandă rapid prin BikerShop.{% endblock %}
+
+{% block content %}
+{% include 'partials/page_hero.twig' with {
+    hero_img: '/media/accesorii/hero.jpg',
+    kicker: 'Accesorii originale',
+    title: 'Accesorii Yamaha',
+    lead: 'Accesorii originale pentru motocicleta ta — alege modelul sau filtrează după categorie. Prețurile și disponibilitatea vin live din BikerShop.',
+    pos: '50% 50%',
+    alt: 'Accesorii originale Yamaha'
+} only %}
+
+{% set qModel = active_model_id ? '&model=' ~ active_model_id : '' %}
+
+<section class="section acc-page">
+    <div class="container">
+        <div class="acc-layout">
+            {# --- Sidebar filters --- #}
+            <aside class="acc-sidebar">
+                <form method="get" action="{{ base }}/accesorii" class="acc-filter">
+                    <label class="acc-filter__label" for="acc-model">Ce motocicletă ai?</label>
+                    <select id="acc-model" name="model" onchange="this.form.submit()">
+                        <option value="">Toate modelele</option>
+                        {% for m in models %}
+                            <option value="{{ m.id }}" {{ active_model_id == m.id ? 'selected' : '' }}>{{ m.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <noscript><button type="submit" class="btn btn--ghost btn--sm">Filtrează</button></noscript>
+                </form>
+
+                {% if types|length %}
+                    <nav class="acc-cats" aria-label="Categorii accesorii">
+                        <h2 class="acc-cats__title">Categorii</h2>
+                        <ul>
+                            <li>
+                                <a href="{{ base }}/accesorii{{ active_model_id ? '?model=' ~ active_model_id : '' }}"
+                                   class="{{ active_type is null ? 'is-active' : '' }}">Toate</a>
+                            </li>
+                            {% for t in types %}
+                                <li>
+                                    <a href="{{ base }}/accesorii?tip={{ t.type|url_encode }}{{ qModel }}"
+                                       class="{{ active_type == t.type ? 'is-active' : '' }}">
+                                        {{ t.type }} <span class="acc-cats__count">{{ t.count }}</span>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            </aside>
+
+            {# --- Results --- #}
+            <div class="acc-main">
+                <div class="acc-main__head">
+                    <h2 class="acc-main__title">
+                        {% if active_model %}Accesorii pentru {{ active_model.name }}{% else %}Toate accesoriile{% endif %}
+                        {% if active_type %} · {{ active_type }}{% endif %}
+                    </h2>
+                    <span class="acc-main__count">{{ total }} {{ total == 1 ? 'produs' : 'produse' }}</span>
+                </div>
+
+                {% if items|length %}
+                    <div class="grid grid--acc grid--acc--5">
+                        {% for a in items %}
+                            <a class="card-acc" href="{{ a.url }}" target="_blank" rel="noopener">
+                                <div class="card-acc__media media-ph media-ph--sm">
+                                    {% if a.image %}<img loading="lazy" src="{{ a.image }}" alt="{{ a.name }}" width="300" height="300">{% else %}<span class="media-ph__label">{{ a.manufacturer ?: 'Yamaha' }}</span>{% endif %}
+                                </div>
+                                <span class="card-acc__brand">{{ a.manufacturer ?: 'Yamaha' }}</span>
+                                <span class="card-acc__name">{{ a.name }}</span>
+                                <span class="card-acc__price">{{ a.price|number_format(2, ',', '.') }} Lei</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+
+                    {% if total_pages > 1 %}
+                        {% set qBase = '?' ~ (active_type ? 'tip=' ~ active_type|url_encode ~ '&' : '') ~ (active_model_id ? 'model=' ~ active_model_id ~ '&' : '') %}
+                        <nav class="acc-pager" aria-label="Paginare">
+                            {% if page > 1 %}
+                                <a class="acc-pager__btn" href="{{ base }}/accesorii{{ qBase }}page={{ page - 1 }}">← Anterior</a>
+                            {% endif %}
+                            <span class="acc-pager__info">Pagina {{ page }} din {{ total_pages }}</span>
+                            {% if page < total_pages %}
+                                <a class="acc-pager__btn" href="{{ base }}/accesorii{{ qBase }}page={{ page + 1 }}">Următor →</a>
+                            {% endif %}
+                        </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="empty-state">
+                        <p>Nu am găsit accesorii pentru această selecție.</p>
+                        {% if active_model_id or active_type %}
+                            <a class="btn btn--ghost btn--sm" href="{{ base }}/accesorii">Resetează filtrele</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,7 +1,7 @@
 {% extends 'layout.twig' %}
 
 {% block title %}Dual Motors — Motociclete Yamaha & CFMOTO, echipament moto | motociclete.com.ro{% endblock %}
-{% block description %}Dealer autorizat Yamaha și CFMOTO și importator oficial Arai, Dainese, AGV, TCX, MOMO, Putoline, Twin Air. Showroom Pipera București, test ride online și piese filtrate pe motocicleta ta.{% endblock %}
+{% block description %}Dealer autorizat Yamaha și CFMOTO și importator oficial Arai, Dainese, AGV, TCX, MOMO, Putoline, Twin Air. Showroom Pipera București, drive test online și piese filtrate pe motocicleta ta.{% endblock %}
 
 {% block content %}
 
@@ -19,7 +19,7 @@
                         <p class="herov2__sub" data-hero-anim>{{ s.sub }}</p>
                         <div class="herov2__cta" data-hero-anim>
                             <a class="btn btn--primary btn--lg" href="{{ base }}{{ s.cta.href }}">{{ s.cta.label }}</a>
-                            <a class="btn btn--ghost btn--lg" href="{{ testride_url }}">Programează test ride <span aria-hidden="true">→</span></a>
+                            <a class="btn btn--ghost btn--lg" href="{{ testride_url }}">Programează drive test <span aria-hidden="true">→</span></a>
                         </div>
                         {% if s.stats %}
                             <dl class="herov2__stats" data-hero-anim>
@@ -168,6 +168,8 @@
                     {% endfor %}
                 {% endif %}
             </div>
+
+            <a class="btn btn--ghost fitbike__all" data-fit-bikershop target="_blank" rel="noopener" hidden>Vezi toate produsele pe BikerShop <span aria-hidden="true">→</span></a>
         </div>
     </div>
 </section>
@@ -220,15 +222,15 @@
     </div>
 </section>
 
-{# ============ TEST RIDE BAND ============ #}
+{# ============ DRIVE TEST BAND ============ #}
 <section class="ride">
     <div class="container ride__inner">
         <div class="ride__copy">
-            <span class="kicker kicker--light">Test ride online</span>
+            <span class="kicker kicker--light">Drive test online</span>
             <h2 class="ride__title">Alege ziua, modelul și ora.<br>Te urci pe ea.</h2>
             <p class="ride__text">Rezervare în câțiva pași, confirmare pe e-mail și SMS. Vino în showroom și condu modelul care îți place.</p>
         </div>
-        <a class="btn btn--primary btn--lg" href="{{ testride_url }}">Programează test ride <span aria-hidden="true">→</span></a>
+        <a class="btn btn--primary btn--lg" href="{{ testride_url }}">Programează drive test <span aria-hidden="true">→</span></a>
     </div>
 </section>
 

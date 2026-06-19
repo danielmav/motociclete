@@ -17,7 +17,7 @@
         {% for m in leads %}
             <tr style="{{ m.is_read ? '' : 'font-weight:600' }}">
                 <td class="adm-muted">{{ m.created_at|date('d.m.Y H:i') }}</td>
-                <td><span class="adm-badge adm-badge--off">{{ m.type == 'test_ride' ? 'test ride' : 'ofertă' }}</span></td>
+                <td><span class="adm-badge adm-badge--off">{{ m.type == 'test_ride' ? 'drive test' : 'ofertă' }}</span></td>
                 <td>{{ m.name }}</td>
                 <td class="adm-muted">{{ m.email }}<br>{{ m.phone }}</td>
                 <td>{{ m.product_name }}{% if m.brand %} <span class="adm-muted">({{ m.brand }})</span>{% endif %}</td>

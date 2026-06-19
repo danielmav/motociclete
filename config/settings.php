@@ -12,8 +12,8 @@ return [
         'url'          => rtrim($_ENV['APP_URL'] ?? 'http://motociclete.test', '/'),
         // Sub-folder the app is served from, e.g. "/2026". Empty = site root.
         'base_path'    => rtrim($_ENV['BASE_PATH'] ?? '', '/'),
-        // Where the "Test ride" buttons point (drivetest module / placeholder).
-        'testride_url' => $_ENV['TESTRIDE_URL'] ?? 'http://drivetest.test',
+        // Where the "Drive test" buttons point (drivetest module).
+        'testride_url' => $_ENV['TESTRIDE_URL'] ?? 'https://www.motociclete.com.ro/drive-test/',
     ],
 
     // Admin back-office. `path` = hidden URL prefix (not "admin"), configurable so
@@ -29,9 +29,9 @@ return [
     // Mailer logs to storage/logs/mail.log instead of sending (dev). Address that
     // receives service-request notifications = MAIL_DEALER.
     'mail' => [
-        'from'      => $_ENV['MAIL_FROM'] ?? 'no-reply@motociclete.com.ro',
+        'from'      => $_ENV['MAIL_FROM'] ?? 'noreply@motociclete.com.ro',
         'from_name' => $_ENV['MAIL_FROM_NAME'] ?? 'Dual Motors',
-        'dealer'    => $_ENV['MAIL_DEALER'] ?? ($_ENV['MAIL_FROM'] ?? 'contact@motociclete.com.ro'),
+        'dealer'    => $_ENV['MAIL_DEALER'] ?? ($_ENV['MAIL_FROM'] ?? 'info@motociclete.com.ro'),
         'smtp_host' => $_ENV['SMTP_HOST'] ?? '',
         'smtp_port' => (int) ($_ENV['SMTP_PORT'] ?? 587),
         'smtp_user' => $_ENV['SMTP_USER'] ?? '',
