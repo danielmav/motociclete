@@ -1277,6 +1277,7 @@ html:not(.js) .about-carousel__slide + .about-carousel__slide { margin-top: .5re
 .acc-filter { display: grid; gap: .5rem; }
 .acc-filter__label { font-family: var(--head); font-weight: 800; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
 .acc-filter select { width: 100%; padding: .6rem .7rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); font: inherit; }
+.acc-reset { justify-self: start; }
 .acc-cats__title { font-family: var(--head); font-weight: 800; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--red); margin-bottom: .6rem; }
 .acc-cats ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .15rem; }
 .acc-cats a { display: flex; justify-content: space-between; gap: .5rem; align-items: center; padding: .45rem .6rem; border-radius: 10px; color: var(--ink); text-decoration: none; font-size: .92rem; }

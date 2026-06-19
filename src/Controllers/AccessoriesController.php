@@ -42,6 +42,11 @@ final class AccessoriesController
 
         $models = $this->accessories->modelsWithAccessories();
         $types  = $this->accessories->types($model);
+        // Fără model selectat, lista globală de categorii e lungă → arătăm doar
+        // categoriile cu mai mult de 3 produse. Per model le arătăm pe toate.
+        if (!$model) {
+            $types = array_values(array_filter($types, static fn (array $t): bool => $t['count'] > 3));
+        }
 
         $pageData = $this->accessories->page($model, $tip, $page, self::PER_PAGE);
         $items    = $this->bikershop->productsByIds($pageData['bs_ids'], self::PER_PAGE);

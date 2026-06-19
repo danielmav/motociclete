@@ -29,6 +29,9 @@
                         {% endfor %}
                     </select>
                     <noscript><button type="submit" class="btn btn--ghost btn--sm">Filtrează</button></noscript>
+                    {% if active_model_id or active_type %}
+                        <a class="btn btn--ghost btn--sm acc-reset" href="{{ base }}/accesorii">↺ Resetează</a>
+                    {% endif %}
                 </form>
 
                 {% if types|length %}
