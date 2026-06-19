@@ -168,10 +168,26 @@
     });
   }
 
+  /* ---------- Yamaha import modal ---------- */
+  function initYamahaModal() {
+    var modal = document.querySelector('[data-yamaha-modal]');
+    if (!modal) return;
+    function open() { modal.hidden = false; var u = modal.querySelector('input[name="yamaha_url"]'); if (u) u.focus(); }
+    function close() { modal.hidden = true; }
+    document.querySelectorAll('[data-yamaha-open]').forEach(function (b) { b.addEventListener('click', open); });
+    modal.querySelectorAll('[data-yamaha-close]').forEach(function (b) { b.addEventListener('click', close); });
+    modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hidden) close(); });
+    // show "se preia..." state while the fetch runs (full POST → redirect)
+    var form = modal.querySelector('form');
+    if (form) form.addEventListener('submit', function () { modal.classList.add('is-busy'); });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     initEditors();
     initImageManagers();
     initRows();
     initSlug();
+    initYamahaModal();
   });
 })();

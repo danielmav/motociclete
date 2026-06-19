@@ -30,13 +30,18 @@ final class ProductController extends BaseController
         if ($d = $this->requireAuth($response)) {
             return $d;
         }
-        $brand = (string) ($request->getQueryParams()['brand'] ?? '');
+        $qp = $request->getQueryParams();
+        $brand = (string) ($qp['brand'] ?? '');
         $brand = in_array($brand, ['yamaha', 'cfmoto'], true) ? $brand : null;
+        $categoryId = ((int) ($qp['category_id'] ?? 0)) ?: null;
         return $this->render($response, 'admin/products/index.twig', [
-            'active'   => 'products',
-            'brand'    => $brand,
-            'products' => $this->repo()->adminProducts($brand),
-            'saved'    => isset($request->getQueryParams()['ok']),
+            'active'      => 'products',
+            'brand'       => $brand,
+            'category_id' => $categoryId,
+            'products'    => $this->repo()->adminProducts($brand, $categoryId),
+            'categories'  => $this->categorySelect(),
+            'saved'       => isset($qp['ok']),
+            'yerr'        => isset($qp['yerr']),
         ]);
     }
 
@@ -47,8 +52,9 @@ final class ProductController extends BaseController
             return $d;
         }
         $id = (int) ($args['id'] ?? 0);
+        $q = $request->getQueryParams();
         $p = $id > 0 ? $this->repo()->productById($id) : null;
-        $brand = $p['brand'] ?? ($request->getQueryParams()['brand'] ?? 'yamaha');
+        $brand = $p['brand'] ?? ($q['brand'] ?? 'yamaha');
 
         $specRows = [];
         foreach (self::SPECS as $key => $col) {
@@ -61,7 +67,43 @@ final class ProductController extends BaseController
             }
         }
 
-        $q = $request->getQueryParams();
+        // Draft pre-completat din importul Yamaha (vezi importYamaha()). Se consumă o
+        // singură dată; pre-completează formularul gol, operatorul verifică + salvează.
+        $fromYamaha = false;
+        if ($id === 0 && isset($q['from_yamaha']) && !empty($_SESSION['yamaha_draft'])) {
+            $d = $_SESSION['yamaha_draft'];
+            unset($_SESSION['yamaha_draft']);
+            $fromYamaha = true;
+            $brand = 'yamaha';
+            $p = [
+                'brand'         => 'yamaha',
+                'category_id'   => $d['category_id'] ?? null,
+                'name'          => $d['name'] ?? '',
+                'subtitle'      => $d['subtitle'] ?? '',
+                'slug'          => $d['slug'] ?? '',
+                'year'          => $d['year'] ?? null,
+                'price'         => $d['price'] ?? 0,
+                'discount_pct'  => $d['discount_pct'] ?? 0,
+                'licence'       => $d['licence'] ?? '',
+                'cover_image'   => $d['cover_image'] ?? '',
+                'excerpt'       => $d['excerpt'] ?? '',
+                'description'   => $d['description'] ?? '',
+                'details_html'  => $d['details_html'] ?? '',
+                'video'         => $d['video'] ?? '',
+                'keywords'      => $d['keywords'] ?? '',
+                'yamaha_pid'    => $d['yamaha_pid'] ?? '',
+                'bs_product_id' => $d['bs_product_id'] ?? null,
+                'is_active'     => 1,
+                'position'      => 0,
+            ];
+            foreach (self::SPECS as $key => $col) {
+                $specRows[$key] = $d['specs'][$key] ?? [];
+            }
+            foreach (['color', 'gallery', 'detail'] as $t) {
+                $images[$t] = array_map(static fn ($f) => ['filename' => $f], $d['images'][$t] ?? []);
+            }
+        }
+
         return $this->render($response, 'admin/products/form.twig', [
             'active'     => 'products',
             'p'          => $p,
@@ -70,10 +112,43 @@ final class ProductController extends BaseController
             'categories' => $this->categorySelect(),
             'specRows'   => $specRows,
             'images'     => $images,
+            'fromYamaha' => $fromYamaha,
             'saved'      => isset($q['ok']),
             'sync'       => isset($q['acc']) ? ['fetched' => (int) $q['acc'], 'new' => (int) ($q['accnew'] ?? 0), 'unmatched' => (int) ($q['accunm'] ?? 0)] : null,
             'syncErr'    => isset($q['accerr']),
         ]);
+    }
+
+    /**
+     * POST {base}/produse/import-yamaha — preia un model de pe yamaha-motor.eu și
+     * pre-completează formularul de produs (nu scrie în DB; operatorul salvează).
+     */
+    public function importYamaha(Request $request, Response $response): Response
+    {
+        if ($d = $this->requireAuth($response)) {
+            return $d;
+        }
+        $body = $this->body($request);
+        if (!$this->csrfOk($body)) {
+            return $this->to($response, '/produse');
+        }
+        $url = trim((string) ($body['yamaha_url'] ?? ''));
+        if ($url === '') {
+            return $this->to($response, '/produse?yerr=1');
+        }
+        $year  = ((int) ($body['year'] ?? 0)) ?: null;
+        $catId = ((int) ($body['category_id'] ?? 0)) ?: null;
+
+        $importer = $this->container['yamaha_model_importer'];
+        $res = $importer->fetch($url, $year);
+        if (!$res['ok']) {
+            return $this->to($response, '/produse?yerr=1');
+        }
+        $draft = $importer->downloadImages($res['draft']);
+        $draft['category_id'] = $catId;
+        $draft['year'] = $year ?? ($draft['year'] ?? null);
+        $_SESSION['yamaha_draft'] = $draft;
+        return $this->to($response, '/produse/0?from_yamaha=1');
     }
 
     /** POST {base}/produse/{id} */
@@ -110,6 +185,9 @@ final class ProductController extends BaseController
             'position'     => (int) ($body['position'] ?? 0),
             // PID Yamaha (doar cifre) pt. importul accesoriilor originale; gol -> NULL.
             'yamaha_pid'   => ($brand === 'yamaha' && preg_match('/\d+/', (string) ($body['yamaha_pid'] ?? ''), $mm)) ? $mm[0] : null,
+            // Produsul-motocicletă de pe BikerShop (tab OEM). Câmp ascuns pre-completat
+            // → se păstrează la editări; setat de import sau de migrate_bs_models.php.
+            'bs_product_id' => ((int) ($body['bs_product_id'] ?? 0)) ?: null,
         ];
         foreach (self::SPECS as $key => $col) {
             $data[$col] = $this->buildSpecTable(

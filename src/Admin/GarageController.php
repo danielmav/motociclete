@@ -33,11 +33,22 @@ final class GarageController extends BaseController
         if ($d = $this->requireAuth($response)) {
             return $d;
         }
-        $q = trim((string) ($request->getQueryParams()['q'] ?? ''));
+        $qp = $request->getQueryParams();
+        $q = trim((string) ($qp['q'] ?? ''));
+        $filters = [
+            'judet'   => trim((string) ($qp['judet'] ?? '')),
+            'unitate' => trim((string) ($qp['unitate'] ?? '')),
+            'an'      => trim((string) ($qp['an'] ?? '')),
+        ];
+        $opts = $this->client()->adminBikeFilters();
         return $this->render($response, 'admin/garage/index.twig', [
-            'active' => 'garage',
-            'q'      => $q,
-            'bikes'  => $this->client()->adminBikes($q !== '' ? $q : null),
+            'active'  => 'garage',
+            'q'       => $q,
+            'filters' => $filters,
+            'judete'  => $opts['judete'],
+            'modele'  => $opts['modele'],
+            'ani'     => $opts['ani'],
+            'bikes'   => $this->client()->adminBikes($q !== '' ? $q : null, array_filter($filters)),
         ]);
     }
 

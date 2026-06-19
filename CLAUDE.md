@@ -94,6 +94,12 @@ Construit pe milestone-uri (vezi planul aprobat). **Milestone 1 livrat = home pa
 - **Pagina publică `/accesorii`** (`AccessoriesController` + `accessories.twig`, layout hero ca `/service`): shop cu selector „Ce motocicletă ai?" (`<select onchange=this.form.submit()>` din `modelsWithAccessories()`) + filtre pe categorie (`accessory_type` din `types(?model)`) + paginare (`page(?model,?tip,page,perPage)` în `Repository`, 24/pagină). Prețul/imaginea vin LIVE prin `bikershop->productsByIds()` → numărul de carduri afișate poate fi < total (produse inactive pe bikershop). Stiluri `.acc-*` în `app.css`. Meniul mega „Accesorii" pointează la `/accesorii`.
 - Import: `database/import_yamaha_accessories.php --apply` (toate modelele / cron). Admin: la save cu PID **nou/schimbat** → sync automat (protejat, nu strică salvarea) + buton „Resincronizează" (`ProductController::syncAccessories`). Reîmprospătare modele vechi = **cron** pe server. Setare PID în bloc: `tests/set_yamaha_pids.php` din CSV.
 
+## Import model Yamaha (admin) — pre-completare formular
+
+- Buton „+ Adaugă produs Yamaha" în lista de produse (modal în `templates/admin/products/index.twig`) → POST `{base}/produse/import-yamaha` (`ProductController::importYamaha`): preia un MODEL din hyperdrive, descarcă imaginile în `/media/yamaha/...`, pune un draft în `$_SESSION['yamaha_draft']`, redirect la `/produse/0?from_yamaha=1` unde `form()` îl fuzionează în formular. **NU scrie în DB** — operatorul verifică + salvează (reutilizează `save()`). Cod: `src/Yamaha/ModelImporter.php`, container `yamaha_model_importer`. POC: `tests/poc_yamaha_model.php`.
+- Endpointuri (≠ cele de accesorii): **produs** `https://hyperdrive.yamaha-motor.eu/products/yme-prod-ro/slug=<slug>?locale=ro-RO` → `key`=PID accesorii, `variants[0].images` (label Studio/Static/Action/360/Detail → cover/color/gallery; 360 ignorat), `variants[0].attributes.techSpecifications` (grupuri specs multi-locale, citește `ro-RO` → mapate pe engine/chassis/dimensions/connectivity), `attributes.features` (chei text), `prices` gol = POA → **prețul se completează manual**. **Text** `.../custom-objects/yme-prod-ro/keys=<features join cu %7C>?locale=ro-RO` → blocuri `header/body/images` (→ `details_html`). Slug = ultimul segment din `/pdp/<slug>/`; `.model.json` al paginii (AEM) are `hyperdriveEndpoint` ca fallback.
+- `products.bs_product_id` e acum în `PROD_COLS` (Repository) + câmp ascuns în formularul de produs → se păstrează la editări; maparea fină pe nume rămâne `database/migrate_bs_models.php`.
+
 ## My Garage — zonă privată clienți (`/garage`)
 
 - Login **passwordless OTP pe email** (introdu email/telefon din tabela `clienti`). `ClientController` + `App\Client\Repository` + `App\Support\Mailer`. Sesiune PHP nativă pornită în `Bootstrap` (cookie `dm_garage`).
@@ -151,16 +157,20 @@ default `/dm-control`; citită în `config/settings.php` ca `admin.path`). NU ma
 - **Fitment** (mapare produs↔BikerShop make/model/year) NU a fost portat în noul admin (vechiul `/admin/fitment`
   a fost retras); datele rămân populate de scripturile de migrare. De re-adăugat ca modul la nevoie.
 - **Testare admin (curl):** login pe sesiune → cookie jar (`curl -c/-b`), ia CSRF din `window.CSRF="..."` (layout)
-  sau câmpul `_csrf`, apoi POST. Upload multipart: cale **relativă în repo** (`-F "files[]=@storage/..."`),
+  sau câmpul `_csrf`, apoi POST. Pagina `/login` NU are `window.CSRF` (layout minimal) → ia tokenul din câmpul `_csrf`.
+  Cookie-ul de sesiune `dm_garage` e `HttpOnly` → în jar apare ca linie `#HttpOnly_…` (NU o filtra cu `grep -v '^#'`).
+  User de test: `database/seed_admin_user.php __tmp <pass>` (șterge-l după). Upload multipart: cale **relativă în repo** (`-F "files[]=@storage/..."`),
   NU `/tmp/...` (curl pe Git Bash dă „Failed to open/read local data").
 - **Twig (gotchas):** funcția `namespace()` NU e disponibilă în acest build → pentru „primul element peste bucle
   imbricate" folosește `loop.parent.loop.first`. Macro-urile NU văd variabilele apelantului, dar VĂD globalele
-  (`base`, `prices`, `navV2`, `site`) — pasează restul ca argumente.
+  (`base`, `prices`, `navV2`, `site`) — pasează restul ca argumente. Sintaxa `{% for x in y if … %}` a fost scoasă
+  în Twig 3 → folosește `|filter(x => …)`. Nu există filtrul `string` → stringifică prin concatenare (`(a ~ '') == b`).
+  Compilare rapidă fără auth: încarcă template-ul cu `$twig->getEnvironment()->load('…')` (înregistrează `money`/`prices` ca stub-uri).
 
 ## Convenții
 
 - Toate query-urile = prepared statements. BikerShop NU se scrie niciodată (read-only).
-- **PDO native prepares (emulate=false): un placeholder numit NU se poate repeta.** `id_shop`/`id_lang` (int-uri din config, de încredere) sunt inline în SQL; doar inputul user rămâne bound.
+- **PDO native prepares (emulate=false): un placeholder numit NU se poate repeta.** `id_shop`/`id_lang` (int-uri din config, de încredere) sunt inline în SQL; doar inputul user rămâne bound. ⚠️ Helperele de repo `all()`/`one()` prind `Throwable` → întorc `[]`/`null`, deci un placeholder repetat (eroare `HY093`) apare ca **rezultat gol, fără eroare** (vezi bug-ul de căutare din garage). Pt. căutare multi-coloană generează placeholdere unice (ex. `:s{i}_{j}`).
 - Cumpărarea rămâne pe BikerShop: produsele fac link la `bikershop.ro/{id}-{slug}.html`; imagini `bikershop.ro/{id_image}-large_default/{slug}.jpg` (servite public, 200).
 - Prețuri BikerShop = **RON (Lei)** (moneda default a shopului, `PS_CURRENCY_DEFAULT=1`; EUR secundar la rate ~0.19). `ps_product_shop.price` e **fără TVA**; `Client::shapeProduct` aplică cota reală din `tax_rules_group` (de regulă 21%) → brut, afișat „Lei" cu 2 zecimale. Prețurile **motocicletelor** sunt în EUR (alt flux). Reducerile `specific_price` NU sunt citite (preț standard).
 - Reveal animations: gated pe `.js` (setat inline în `<head>`) → conținut vizibil fără JS.

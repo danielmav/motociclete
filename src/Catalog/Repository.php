@@ -382,7 +382,7 @@ final class Repository
         'brand', 'category_id', 'name', 'subtitle', 'slug', 'year', 'price', 'discount_pct', 'licence',
         'cover_image', 'excerpt', 'description', 'details_html',
         'specs_engine', 'specs_chassis', 'specs_dimensions', 'specs_connectivity',
-        'video', 'keywords', 'is_active', 'position', 'yamaha_pid',
+        'video', 'keywords', 'is_active', 'position', 'yamaha_pid', 'bs_product_id',
     ];
 
     /** All categories (incl. inactive) with parent name, for the admin tree. */
@@ -424,16 +424,25 @@ final class Repository
         }
     }
 
-    /** Products for the admin list (optionally filtered by brand). */
-    public function adminProducts(?string $brand = null): array
+    /** Products for the admin list (optionally filtered by brand + category). Newest first. */
+    public function adminProducts(?string $brand = null, ?int $categoryId = null): array
     {
-        $where = $brand ? "WHERE p.brand = :b" : "";
-        $params = $brand ? [':b' => $brand] : [];
+        $conds = [];
+        $params = [];
+        if ($brand) {
+            $conds[] = 'p.brand = :b';
+            $params[':b'] = $brand;
+        }
+        if ($categoryId) {
+            $conds[] = 'p.category_id = :c';
+            $params[':c'] = $categoryId;
+        }
+        $where = $conds ? ('WHERE ' . implode(' AND ', $conds)) : '';
         return $this->all(
-            "SELECT p.id, p.brand, p.name, p.slug, p.year, p.price, p.is_active, p.cover_image, c.name AS cat_name
+            "SELECT p.id, p.brand, p.name, p.slug, p.year, p.price, p.is_active, p.cover_image, p.created_at, c.name AS cat_name
              FROM products p LEFT JOIN categories c ON c.id = p.category_id
              {$where}
-             ORDER BY p.brand, p.position, p.name",
+             ORDER BY p.created_at DESC, p.id DESC",
             $params
         );
     }

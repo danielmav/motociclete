@@ -1,17 +1,35 @@
 {% extends 'admin/layout.twig' %}
 {% set active = 'products' %}
 {% block title %}Produse{% endblock %}
-{% block actions %}<a class="adm-btn adm-btn--primary" href="{{ admin_base }}/produse/0">+ Produs nou</a>{% endblock %}
+{% block actions %}
+    <button type="button" class="adm-btn adm-btn--primary" data-yamaha-open>+ Adaugă produs Yamaha</button>
+    <a class="adm-btn" href="{{ admin_base }}/produse/0">+ Produs nou</a>
+{% endblock %}
 
 {% block content %}
-    <div style="margin-bottom:1rem;display:flex;gap:.5rem;align-items:center">
-        <span class="adm-muted">Filtru:</span>
-        <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/produse">Toate</a>
-        <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/produse?brand=yamaha">Yamaha</a>
-        <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/produse?brand=cfmoto">CFMOTO</a>
-    </div>
+    {% if yerr is defined and yerr %}
+        <div class="adm-flash adm-flash--err">Nu am putut prelua modelul de la Yamaha. Verifică linkul (pagina modelului de pe yamaha-motor.eu) și încearcă din nou.</div>
+    {% endif %}
+    <form method="get" action="{{ admin_base }}/produse" style="margin-bottom:1rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+        <span class="adm-muted">Brand:</span>
+        <select name="brand" onchange="this.form.submit()">
+            <option value="">Toate</option>
+            <option value="yamaha" {{ brand == 'yamaha' ? 'selected' }}>Yamaha</option>
+            <option value="cfmoto" {{ brand == 'cfmoto' ? 'selected' }}>CFMOTO</option>
+        </select>
+        <span class="adm-muted">Categorie:</span>
+        <select name="category_id" onchange="this.form.submit()">
+            <option value="0">Toate</option>
+            {% for c in categories|default([]) %}
+                {% if not brand or c.brand == brand %}
+                    <option value="{{ c.id }}" {{ category_id == c.id ? 'selected' }}>{{ c.label }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+        {% if brand or category_id %}<a class="adm-btn adm-btn--sm" href="{{ admin_base }}/produse">Reset</a>{% endif %}
+    </form>
     <table class="adm-table">
-        <thead><tr><th></th><th>Brand</th><th>Model</th><th>Categorie</th><th>An</th><th>Preț €</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th></th><th>Brand</th><th>Model</th><th>Categorie</th><th>An</th><th>Preț €</th><th>Adăugat</th><th>Status</th><th></th></tr></thead>
         <tbody>
         {% for p in products %}
             <tr>
@@ -21,6 +39,7 @@
                 <td class="adm-muted">{{ p.cat_name ?: '—' }}</td>
                 <td>{{ p.year }}</td>
                 <td>{{ p.price }}</td>
+                <td class="adm-muted">{{ p.created_at ? p.created_at|date('d.m.Y') : '—' }}</td>
                 <td>{% if p.is_active %}<span class="adm-badge adm-badge--on">activ</span>{% else %}<span class="adm-badge adm-badge--off">ascuns</span>{% endif %}</td>
                 <td style="white-space:nowrap">
                     <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/produse/{{ p.id }}">Editează</a>
@@ -31,8 +50,39 @@
                 </td>
             </tr>
         {% else %}
-            <tr><td colspan="8" class="adm-muted">Niciun produs.</td></tr>
+            <tr><td colspan="9" class="adm-muted">Niciun produs.</td></tr>
         {% endfor %}
         </tbody>
     </table>
+
+    <div class="adm-modal" data-yamaha-modal hidden>
+        <div class="adm-modal__box">
+            <h3>Adaugă produs Yamaha</h3>
+            <p class="adm-muted" style="margin:.2rem 0 1rem">Lipește linkul paginii modelului de pe <strong>yamaha-motor.eu</strong>. Datele (nume, descriere, specificații, imagini, PID accesorii) se preiau automat și pre-completează formularul — verifici și salvezi.</p>
+            <form method="post" action="{{ admin_base }}/produse/import-yamaha">
+                <input type="hidden" name="_csrf" value="{{ csrf }}">
+                <label>Link model Yamaha
+                    <input type="url" name="yamaha_url" required placeholder="https://www.yamaha-motor.eu/ro/ro/motorcycles/.../pdp/...">
+                </label>
+                <div class="adm-grid2" style="margin-top:.8rem">
+                    <label>Categorie
+                        <select name="category_id">
+                            <option value="0">—</option>
+                            {% for c in categories|default([])|filter(c => c.brand == 'yamaha') %}
+                                <option value="{{ c.id }}">{{ c.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>An fabricație
+                        <input type="number" name="year" placeholder="{{ 'now'|date('Y') }}">
+                    </label>
+                </div>
+                <div class="adm-actions" style="margin-top:1.2rem">
+                    <button type="submit" class="adm-btn adm-btn--primary">Preia datele</button>
+                    <button type="button" class="adm-btn" data-yamaha-close>Anulează</button>
+                </div>
+                <p class="adm-muted" style="margin-top:.6rem;font-size:.85em">Preluarea durează câteva secunde (descarcă și imaginile de pe Yamaha).</p>
+            </form>
+        </div>
+    </div>
 {% endblock %}

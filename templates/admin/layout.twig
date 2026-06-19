@@ -7,7 +7,7 @@
     <title>{% block title %}Administrare{% endblock %} · Dual Motors</title>
     <script>window.ADMIN_BASE={{ admin_base|json_encode|raw }};window.CSRF={{ csrf|json_encode|raw }};</script>
     <link rel="stylesheet" href="{{ base }}/assets/vendor/quill/quill.snow.css">
-    <link rel="stylesheet" href="{{ base }}/assets/css/admin.css?v=2">
+    <link rel="stylesheet" href="{{ base }}/assets/css/admin.css?v=3">
     <link rel="icon" href="{{ base }}/assets/img/logo.png" type="image/png">
     {% block head %}{% endblock %}
 </head>
@@ -60,7 +60,7 @@
     </main>
 
     <script src="{{ base }}/assets/vendor/quill/quill.min.js"></script>
-    <script src="{{ base }}/assets/js/admin.js?v=1" defer></script>
+    <script src="{{ base }}/assets/js/admin.js?v=2" defer></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

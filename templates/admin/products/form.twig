@@ -29,6 +29,9 @@
 
 {% block flash %}
     {{ parent() }}
+    {% if fromYamaha is defined and fromYamaha %}
+        <div class="adm-flash adm-flash--ok">Date pre-completate de la Yamaha. <strong>Verifică</strong> totul (mai ales prețul — nu vine de la Yamaha) și ordonează/șterge imaginile, apoi apasă <strong>Salvează</strong>. Nimic nu e salvat până nu salvezi.</div>
+    {% endif %}
     {% if sync is defined and sync %}
         <div class="adm-flash adm-flash--ok">Accesorii sincronizate: {{ sync.fetched }} ({{ sync.new }} noi{% if sync.unmatched %}, {{ sync.unmatched }} fără produs pe bikershop{% endif %}).</div>
     {% endif %}
@@ -40,6 +43,8 @@
 {% block content %}
 <form class="adm-form" method="post" action="{{ admin_base }}/produse/{{ id }}" style="max-width:1100px">
     <input type="hidden" name="_csrf" value="{{ csrf }}">
+    {# Produsul-motocicletă BikerShop (tab OEM). Pre-completat → păstrat la editări. #}
+    <input type="hidden" name="bs_product_id" value="{{ p.bs_product_id|default('') }}">
 
     <div class="adm-fieldset">
         <span class="adm-fieldset__t">Date de bază</span>
@@ -98,6 +103,9 @@
             </div>
             {% endif %}
         </div>
+        <p class="adm-muted" style="margin-top:.4rem;font-size:.85em">
+            {% if p.bs_product_id|default(0) %}Fitment BikerShop (piese OEM): legat de produsul #{{ p.bs_product_id }}.{% else %}Fitment BikerShop: nelegat. Rulează <code>migrate_bs_models.php</code> pentru maparea pe nume.{% endif %}
+        </p>
         {% endif %}
     </div>
 

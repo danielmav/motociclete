@@ -76,6 +76,7 @@ return function (App $app, Twig $twig, array $container): void {
     $app->post($adminBase . '/categorii/{id:[0-9]+}/delete', $adminCtl('CategoryController', 'delete'));
     // Products
     $app->get($adminBase . '/produse',                     $adminCtl('ProductController', 'index'));
+    $app->post($adminBase . '/produse/import-yamaha',      $adminCtl('ProductController', 'importYamaha'));
     $app->get($adminBase . '/produse/{id:[0-9]+}',         $adminCtl('ProductController', 'form'));
     $app->post($adminBase . '/produse/{id:[0-9]+}',        $adminCtl('ProductController', 'save'));
     $app->post($adminBase . '/produse/{id:[0-9]+}/delete', $adminCtl('ProductController', 'delete'));

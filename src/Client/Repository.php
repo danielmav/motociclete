@@ -210,27 +210,81 @@ final class Repository
 
     // -- Admin (back-office, dealer-maintained) -------------------------------
 
-    /** Bikes + owner, optionally filtered by a search term. @return array<int,array<string,mixed>> */
-    public function adminBikes(?string $q = null, int $limit = 200): array
+    /** Coloane în care caută bara de căutare din garage (text liber, multi-term). */
+    private const SEARCH_COLS = [
+        'cl.client', 'cl.vin', 'b.vin', 'cl.unitate', 'b.model_label', 'p.name',
+        'cl.oras', 'cl.telefon_norm', 'cl.telefon', 'cl.email_norm', 'cl.email',
+    ];
+
+    /**
+     * Motociclete + proprietar, cu căutare text liber (multi-term, AND între cuvinte)
+     * și filtre exacte (judeţ / model „unitate" / an de vânzare). Ordine cronologică
+     * (cele mai noi întâi).
+     *
+     * NB: PDO emulate=false → un placeholder numit NU se poate repeta; de aceea fiecare
+     * (termen × coloană) primește un placeholder unic.
+     *
+     * @param array{judet?:string,unitate?:string,an?:string|int} $filters
+     * @return array<int,array<string,mixed>>
+     */
+    public function adminBikes(?string $q = null, array $filters = [], int $limit = 200): array
     {
-        $where = '';
+        $conds = [];
         $params = [];
-        if ($q !== null && trim($q) !== '') {
-            $where = "WHERE cl.client LIKE :q OR cl.email_norm LIKE :q OR cl.telefon_norm LIKE :q
-                      OR b.model_label LIKE :q OR b.plate LIKE :q OR b.vin LIKE :q OR p.name LIKE :q";
-            $params[':q'] = '%' . trim($q) . '%';
+
+        $terms = preg_split('/\s+/', trim((string) $q), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        foreach ($terms as $i => $term) {
+            $ors = [];
+            foreach (self::SEARCH_COLS as $j => $col) {
+                $ph = ":s{$i}_{$j}";
+                $ors[] = "{$col} LIKE {$ph}";
+                $params[$ph] = '%' . $term . '%';
+            }
+            $conds[] = '(' . implode(' OR ', $ors) . ')';
         }
+
+        if (!empty($filters['judet'])) {
+            $conds[] = 'cl.judet = :f_judet';
+            $params[':f_judet'] = (string) $filters['judet'];
+        }
+        if (!empty($filters['unitate'])) {
+            $conds[] = 'cl.unitate = :f_unitate';
+            $params[':f_unitate'] = (string) $filters['unitate'];
+        }
+        if (!empty($filters['an'])) {
+            $conds[] = 'cl.an = :f_an';
+            $params[':f_an'] = (int) $filters['an'];
+        }
+
+        $where = $conds ? ('WHERE ' . implode(' AND ', $conds)) : '';
         return $this->all(
-            "SELECT b.id, b.model_label, b.year, b.plate, b.mileage_km, b.product_id,
-                    p.name AS product_name, cl.client AS owner, cl.email_norm, cl.telefon_norm
+            "SELECT b.id, b.model_label, b.year, b.plate, b.mileage_km, b.product_id, b.created_at,
+                    p.name AS product_name, cl.client AS owner, cl.email_norm, cl.telefon_norm,
+                    cl.oras, cl.judet, cl.unitate, cl.an
              FROM client_bikes b
              JOIN clienti cl ON cl.id = b.clienti_id
              LEFT JOIN products p ON p.id = b.product_id
              {$where}
-             ORDER BY cl.client, b.id
+             ORDER BY b.created_at DESC, b.id DESC
              LIMIT " . (int) $limit,
             $params
         );
+    }
+
+    /**
+     * Valori distincte pentru dropdown-urile de filtrare din garage.
+     * @return array{judete:array<int,string>,modele:array<int,string>,ani:array<int,int>}
+     */
+    public function adminBikeFilters(): array
+    {
+        $judete = $this->all("SELECT DISTINCT judet FROM clienti WHERE judet IS NOT NULL AND judet <> '' ORDER BY judet");
+        $modele = $this->all("SELECT DISTINCT unitate FROM clienti WHERE unitate IS NOT NULL AND unitate <> '' ORDER BY unitate");
+        $ani    = $this->all("SELECT DISTINCT an FROM clienti WHERE an IS NOT NULL AND an <> 0 ORDER BY an DESC");
+        return [
+            'judete' => array_map(static fn ($r) => (string) $r['judet'], $judete),
+            'modele' => array_map(static fn ($r) => (string) $r['unitate'], $modele),
+            'ani'    => array_map(static fn ($r) => (int) $r['an'], $ani),
+        ];
     }
 
     /** Bike row + owner for the admin edit page. @return array<string,mixed>|null */

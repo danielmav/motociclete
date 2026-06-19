@@ -4,25 +4,40 @@
 {% block actions %}<a class="adm-btn" href="{{ admin_base }}/garage/calendar">📅 Calendar programări</a>{% endblock %}
 
 {% block content %}
-<form method="get" action="{{ admin_base }}/garage" style="margin-bottom:1rem;display:flex;gap:.5rem;max-width:480px">
-    <input type="text" name="q" value="{{ q }}" placeholder="Caută client, telefon, model, număr...">
+<form method="get" action="{{ admin_base }}/garage" style="margin-bottom:1rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+    <input type="text" name="q" value="{{ q }}" placeholder="Caută: nume, VIN, model, oraș, telefon, email..." style="min-width:280px;flex:1">
+    <select name="judet" onchange="this.form.submit()">
+        <option value="">Toate județele</option>
+        {% for j in judete|default([]) %}<option value="{{ j }}" {{ filters.judet == j ? 'selected' }}>{{ j }}</option>{% endfor %}
+    </select>
+    <select name="unitate" onchange="this.form.submit()">
+        <option value="">Toate modelele</option>
+        {% for m in modele|default([]) %}<option value="{{ m }}" {{ filters.unitate == m ? 'selected' }}>{{ m }}</option>{% endfor %}
+    </select>
+    <select name="an" onchange="this.form.submit()">
+        <option value="">Toți anii</option>
+        {% for a in ani|default([]) %}<option value="{{ a }}" {{ (a ~ '') == filters.an ? 'selected' }}>{{ a }}</option>{% endfor %}
+    </select>
     <button class="adm-btn adm-btn--primary" type="submit">Caută</button>
+    {% if q or filters.judet or filters.unitate or filters.an %}<a class="adm-btn adm-btn--sm" href="{{ admin_base }}/garage">Reset</a>{% endif %}
 </form>
 
 <table class="adm-table">
-    <thead><tr><th>Client</th><th>Contact</th><th>Model</th><th>Nr.</th><th>Km</th><th></th></tr></thead>
+    <thead><tr><th>Client</th><th>Oraș</th><th>Contact</th><th>Model</th><th>An vânzare</th><th>Nr.</th><th>Km</th><th></th></tr></thead>
     <tbody>
     {% for b in bikes %}
         <tr>
             <td><strong>{{ b.owner }}</strong></td>
+            <td class="adm-muted">{{ b.oras ?: '—' }}{% if b.judet %}<br><span style="font-size:.85em">{{ b.judet }}</span>{% endif %}</td>
             <td class="adm-muted">{{ b.email_norm }}<br>{{ b.telefon_norm }}</td>
-            <td>{{ b.product_name ?: b.model_label ?: '—' }}{% if b.year %} <span class="adm-muted">{{ b.year }}</span>{% endif %}</td>
+            <td>{{ b.product_name ?: b.model_label ?: b.unitate ?: '—' }}{% if b.year %} <span class="adm-muted">{{ b.year }}</span>{% endif %}</td>
+            <td>{{ b.an ?: '—' }}</td>
             <td>{{ b.plate }}</td>
             <td>{{ b.mileage_km }}</td>
             <td><a class="adm-btn adm-btn--sm" href="{{ admin_base }}/garage/moto/{{ b.id }}">Detalii</a></td>
         </tr>
     {% else %}
-        <tr><td colspan="6" class="adm-muted">Niciun client/motocicletă.</td></tr>
+        <tr><td colspan="8" class="adm-muted">Niciun client/motocicletă.</td></tr>
     {% endfor %}
     </tbody>
 </table>
