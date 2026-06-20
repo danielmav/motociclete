@@ -24,7 +24,8 @@ final class FinanceController
     {
         $cfg = $this->finance->config();
         return $this->twig->render($response, 'finance.twig', [
-            'finance' => $cfg,
+            'finance'        => $cfg,
+            'canonical_path' => '/finantare',
         ]);
     }
 }

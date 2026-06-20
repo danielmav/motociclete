@@ -33,10 +33,11 @@ final class NewsController
         $page    = min($page, $pages);
 
         return $this->twig->render($response, 'blog/index.twig', [
-            'articles' => $this->news->page($page, $perPage),
-            'page'     => $page,
-            'pages'    => $pages,
-            'total'    => $total,
+            'articles'       => $this->news->page($page, $perPage),
+            'page'           => $page,
+            'pages'          => $pages,
+            'total'          => $total,
+            'canonical_path' => '/blog',
         ]);
     }
 
@@ -49,9 +50,10 @@ final class NewsController
             throw new HttpNotFoundException($request);
         }
         return $this->twig->render($response, 'blog/article.twig', [
-            'a'        => $article,
-            'og_image' => $article['image'],
-            'more'     => $this->news->latest(6),
+            'a'              => $article,
+            'og_image'       => $article['image'],
+            'more'           => $this->news->latest(6),
+            'canonical_path' => $article['url'],
         ]);
     }
 }

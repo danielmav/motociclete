@@ -5,17 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>window.BASE={{ base|json_encode|raw }};document.documentElement.classList.add('js');</script>
 
+    {# Google Analytics (GA4). Cloudflare injects email-decode.min.js automatically — not added here. #}
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VTV11ZJ0P9"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-VTV11ZJ0P9');
+    </script>
+
     {% set canonical = app.url ~ (canonical_path|default('/')) %}
     {% set og_image_url = app.url ~ (og_image|default('/assets/img/og-default.jpg')) %}
 
     <title>{% block title %}Dual Motors — Motociclete Yamaha & CFMOTO | motociclete.com.ro{% endblock %}</title>
     <meta name="description" content="{% block description %}Dealer autorizat Yamaha și CFMOTO, importator oficial de echipament moto. Showroom Pipera, București.{% endblock %}">
     <link rel="canonical" href="{{ canonical }}">
-    <meta name="robots" content="index,follow,max-image-preview:large">
+    <meta name="robots" content="{% block meta_robots %}index,follow,max-image-preview:large{% endblock %}">
     <meta name="theme-color" content="#0E0E10">
 
     {# Open Graph #}
-    <meta property="og:type" content="website">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
     <meta property="og:site_name" content="Dual Motors">
     <meta property="og:locale" content="ro_RO">
     <meta property="og:title" content="{{ block('title') }}">
@@ -37,7 +46,7 @@
       "@context": "https://schema.org",
       "@type": "MotorcycleDealer",
       "name": "Dual Motors",
-      "image": "{{ og_image }}",
+      "image": "{{ og_image_url }}",
       "url": "{{ app.url }}",
       "description": "Dealer autorizat Yamaha și CFMOTO și importator oficial de echipament moto (Arai, Dainese, AGV, TCX, MOMO, Putoline, Twin Air) în România.",
       "address": { "@type": "PostalAddress", "streetAddress": "Șos. Pipera 48", "addressLocality": "București", "addressCountry": "RO" },
@@ -62,6 +71,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Archivo+Expanded:wght@700;800;900&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    {% block head_extra %}{% endblock %}
 
     <link rel="stylesheet" href="{{ base }}/assets/css/app.css?v=38">
     <link rel="stylesheet" href="{{ base }}/assets/css/app-v2.css?v=3">

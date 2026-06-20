@@ -45,11 +45,12 @@ final class SearchController
         $total = count($models) + count($accessories) + count($articles);
 
         return $this->twig->render($response, 'search.twig', [
-            'q'           => $q,
-            'models'      => $models,
-            'accessories' => $accessories,
-            'articles'    => $articles,
-            'total'       => $total,
+            'q'              => $q,
+            'models'         => $models,
+            'accessories'    => $accessories,
+            'articles'       => $articles,
+            'total'          => $total,
+            'canonical_path' => '/cauta',
         ]);
     }
 }

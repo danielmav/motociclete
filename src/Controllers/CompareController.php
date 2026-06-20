@@ -46,9 +46,10 @@ final class CompareController
         }
 
         return $this->twig->render($response, 'catalog/compare.twig', [
-            'brand'      => $brand,
-            'brandLabel' => $this->brandLabels[$brand],
-            'products'   => $products,
+            'brand'          => $brand,
+            'brandLabel'     => $this->brandLabels[$brand],
+            'products'       => $products,
+            'canonical_path' => '/compara',
         ]);
     }
 }

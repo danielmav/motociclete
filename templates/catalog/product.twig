@@ -2,6 +2,31 @@
 
 {% block title %}{{ p.name }}{% if p.year %} {{ p.year }}{% endif %} — {{ brandLabel }} | Dual Motors{% endblock %}
 {% block description %}{{ p.excerpt ? (p.excerpt|striptags|trim|slice(0, 155)) : (p.name ~ ' ' ~ brandLabel ~ ' la Dual Motors — preț, dotări, culori și drive test.') }}{% endblock %}
+{% block og_type %}product{% endblock %}
+
+{% block head_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": {{ (p.name ~ (p.year ? ' ' ~ p.year : ''))|json_encode|raw }},
+  {% if p.cover %}"image": "{{ app.url ~ base ~ p.cover }}",{% endif %}
+  "description": {{ (p.excerpt ? (p.excerpt|striptags|trim) : (p.name ~ ' ' ~ brandLabel ~ ' la Dual Motors.'))|json_encode|raw }},
+  "brand": { "@type": "Brand", "name": {{ brandLabel|json_encode|raw }} },
+  "category": {{ (p.top_name ?? brandLabel)|json_encode|raw }}
+  {%- if financePriceRon > 0 %},
+  "offers": {
+    "@type": "Offer",
+    "priceCurrency": "RON",
+    "price": "{{ financePriceRon }}",
+    "availability": "https://schema.org/InStock",
+    "url": "{{ app.url ~ base ~ p.url }}",
+    "seller": { "@type": "Organization", "name": "Dual Motors" }
+  }
+  {%- endif %}
+}
+</script>
+{% endblock %}
 
 {% block content %}
 

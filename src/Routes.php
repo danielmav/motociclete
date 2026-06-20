@@ -7,6 +7,7 @@ use App\Controllers\CatalogController;
 use App\Controllers\CompareController;
 use App\Controllers\HomeController;
 use App\Controllers\NewsController;
+use App\Controllers\SeoController;
 use Slim\App;
 use Slim\Views\Twig;
 
@@ -50,6 +51,44 @@ return function (App $app, Twig $twig, array $container): void {
         ], JSON_PRETTY_PRINT));
         return $response->withHeader('Content-Type', 'application/json');
     });
+
+    // --- SEO: robots.txt + sitemap.xml (live from catalog/blog/events/pages) ---
+    $seo = function (string $method) use ($container) {
+        return function ($request, $response) use ($container, $method) {
+            return (new SeoController($container))->{$method}($request, $response);
+        };
+    };
+    $app->get('/robots.txt',  $seo('robots'));
+    $app->get('/sitemap.xml', $seo('sitemap'));
+
+    // --- Legacy old-site URLs -> 301 (preserve SEO rank on relaunch) ---
+    // Blog: /stiri.php?id=N -> /blog/{id}-{slug} (match on news.legacy_id).
+    $app->get('/stiri.php', $seo('legacyStiri'));
+    // Static .php pages + old index paths -> their new canonical routes.
+    $legacyMap = [
+        '/noutati.php'           => '/blog',
+        '/motociclete.php'       => '/yamaha/motociclete',
+        '/scutere.php'           => '/yamaha/scutere',
+        '/atvuri.php'            => '/yamaha/atvuri',
+        '/marine.php'            => '/yamaha/marine',
+        '/waverunners.php'       => '/yamaha/waverunners',
+        '/snowmobile.php'        => '/yamaha/snowmobile',
+        '/service.php'           => '/service',
+        '/finantare.php'         => '/finantare',
+        '/accesorii.php'         => '/accesorii',
+        '/cfmoto/'               => '/cfmoto',
+        '/cfmoto/index.php'      => '/cfmoto',
+        '/cfmoto/motociclete.php' => '/cfmoto',
+        // No second-hand section on the new site -> keep equity on the homepage.
+        '/second-hand.php'       => '/',
+        '/second-hand-item.php'  => '/',
+    ];
+    foreach ($legacyMap as $old => $new) {
+        $app->get($old, function ($request, $response) use ($container, $new) {
+            $base = (string) ($container['settings']['app']['base_path'] ?? '');
+            return $response->withHeader('Location', $base . $new)->withStatus(301);
+        });
+    }
 
     // --- Admin back-office (hidden path from settings, session auth) ---
     $adminBase = (string) ($container['settings']['admin']['path'] ?? '/dm-control');
@@ -210,7 +249,7 @@ return function (App $app, Twig $twig, array $container): void {
     $app->get('/garage/moto/{id:[0-9]+}', $garage('bike'));
     // /cont alias -> garage
     $app->get('/cont', function ($request, $response) use ($container) {
-        return $response->withHeader('Location', ($container['settings']['app']['base_path'] ?? '') . '/garage')->withStatus(302);
+        return $response->withHeader('Location', ($container['settings']['app']['base_path'] ?? '') . '/garage')->withStatus(301);
     });
 
     // --- Catalog (Yamaha + CFMOTO), backed by the local DB ---

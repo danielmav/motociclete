@@ -2,6 +2,13 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Post-relaunch: the staging lived at /2026. Once this app is the docroot
+    # root, 301 any leftover /2026/* request (indexed staging URLs) to the root.
+    # In the /2026 subfolder context this segment is stripped, so staging is
+    # unaffected while it still exists.
+    RewriteRule ^2026/(.*)$ /$1 [R=301,L]
+    RewriteRule ^2026/?$ / [R=301,L]
+
     # Block direct access to application internals
     # (.git + database adăugate: la deploy prin cPanel Git, .git ajunge în docroot)
     RewriteRule ^(src|templates|config|storage|vendor|documente|node_modules|database|\.git)/ - [F,L]

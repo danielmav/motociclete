@@ -39,6 +39,7 @@ final class HomeController
         $accessories = $this->bikershop->featuredProducts(6);
 
         return $this->twig->render($response, 'home.twig', [
+            'canonical_path'  => '/',
             'heroSlides'      => $this->hero->slides(),
             'brands'          => $this->brands(),
             'models'          => $this->catalog->randomModels(8),

@@ -51,9 +51,10 @@ final class CatalogController
         unset($c);
 
         return $this->twig->render($response, 'catalog/brand.twig', [
-            'brand'      => $brand,
-            'brandLabel' => $this->brandLabels[$brand] ?? ucfirst($brand),
-            'categories' => $cats,
+            'brand'          => $brand,
+            'brandLabel'     => $this->brandLabels[$brand] ?? ucfirst($brand),
+            'categories'     => $cats,
+            'canonical_path' => '/' . $brand,
         ]);
     }
 
@@ -94,13 +95,56 @@ final class CatalogController
         return $this->renderProduct($request, $response, $args['brand'], $args['slug']);
     }
 
-    /** Legacy {anything}.html — 301 to the new canonical URL, or 404. */
+    /** Old top-category URL segment (legacy site) -> new brand/category path. */
+    private const LEGACY_CATEGORY_MAP = [
+        'motociclete-yamaha'  => '/yamaha/motociclete',
+        'scutere-yamaha'      => '/yamaha/scutere',
+        'atvuri-yamaha'       => '/yamaha/atvuri',
+        'marine-yamaha'       => '/yamaha/marine',
+        'waverunners-yamaha'  => '/yamaha/waverunners',
+        'snowmobile-yamaha'   => '/yamaha/snowmobile',
+        'cfmoto'              => '/cfmoto',
+    ];
+
+    /**
+     * Legacy {anything}.html — 301 to the new canonical URL. Discontinued models
+     * (no product match) fall back to their category page so link equity is kept
+     * instead of returning a hard 404.
+     */
     public function legacyRedirect(Request $request, Response $response, array $args): Response
     {
         $legacy = ltrim($args['legacy'], '/');
-        $canonical = $this->repo->canonicalForLegacy($legacy);
+        $canonical = $this->repo->canonicalForLegacyLoose($legacy);
+        if (!$canonical) {
+            $canonical = $this->legacyCategoryFallback($legacy);
+        }
         if (!$canonical) {
             throw new HttpNotFoundException($request);
+        }
+        return $response->withHeader('Location', $this->base . $canonical)->withStatus(301);
+    }
+
+    /** Map the first path segment of a legacy URL to a current category, or null. */
+    private function legacyCategoryFallback(string $legacy): ?string
+    {
+        $first = explode('/', $legacy)[0] ?? '';
+        return self::LEGACY_CATEGORY_MAP[$first] ?? null;
+    }
+
+    /**
+     * Build a 301 from the current request's full path treated as a legacy URL
+     * (used when a brand-first route swallowed a `.html` URL). Null if unmapped.
+     */
+    private function legacyRedirectFromPath(Request $request, Response $response): ?Response
+    {
+        $path = $request->getUri()->getPath();
+        if ($this->base !== '' && str_starts_with($path, $this->base)) {
+            $path = substr($path, strlen($this->base));
+        }
+        $legacy = ltrim($path, '/');
+        $canonical = $this->repo->canonicalForLegacyLoose($legacy) ?? $this->legacyCategoryFallback($legacy);
+        if (!$canonical) {
+            return null;
         }
         return $response->withHeader('Location', $this->base . $canonical)->withStatus(301);
     }
@@ -154,6 +198,11 @@ final class CatalogController
             $crumbs[] = ['label' => $current['name'], 'url' => null];
         }
 
+        // Canonical = the category's clean path (drops the ?permis / ?an facets).
+        $canonicalPath = $isTop
+            ? '/' . $brand . '/' . $top['slug']
+            : '/' . $brand . '/' . $top['slug'] . '/' . $current['slug'];
+
         return $this->twig->render($response, 'catalog/category.twig', [
             'brand'         => $brand,
             'brandLabel'    => $this->brandLabels[$brand] ?? ucfirst($brand),
@@ -165,6 +214,7 @@ final class CatalogController
             'facets'        => ['licences' => $licences, 'years' => $years],
             'filters'       => ['permis' => $selPermis, 'an' => $selAn],
             'crumbs'        => $crumbs,
+            'canonical_path' => $canonicalPath,
         ]);
     }
 
@@ -172,6 +222,14 @@ final class CatalogController
     {
         $product = $this->repo->product($brand, $slug);
         if (!$product) {
+            // Old CFMOTO URLs are brand-first with a `.html` suffix, so they match
+            // this product route before the legacy `.html` route — redirect here.
+            if (str_ends_with($slug, '.html')) {
+                $redirect = $this->legacyRedirectFromPath($request, $response);
+                if ($redirect) {
+                    return $redirect;
+                }
+            }
             throw new HttpNotFoundException($request);
         }
         $id = (int) $product['id'];
@@ -219,6 +277,7 @@ final class CatalogController
             'brandLabel'   => $this->brandLabels[$brand] ?? ucfirst($brand),
             'p'            => $product,
             'og_image'     => $product['cover'],
+            'canonical_path' => $product['url'],
             'colors'       => $this->repo->images($brand, $id, 'color'),
             'gallery'      => $this->repo->images($brand, $id, 'gallery'),
             'details'      => $this->repo->images($brand, $id, 'detail'),

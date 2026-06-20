@@ -375,6 +375,65 @@ final class Repository
         return self::productUrl($this->breadcrumbSlugs($row));
     }
 
+    /**
+     * Best-effort canonical for a legacy `*.html` path. Tries the exact stored
+     * `legacy_url` first; for CFMOTO the stored value omits the `cfmoto/` prefix
+     * present in the live old URL, so retry without it.
+     */
+    public function canonicalForLegacyLoose(string $legacyUrl): ?string
+    {
+        $hit = $this->canonicalForLegacy($legacyUrl);
+        if ($hit) {
+            return $hit;
+        }
+        if (str_starts_with($legacyUrl, 'cfmoto/')) {
+            return $this->canonicalForLegacy(substr($legacyUrl, strlen('cfmoto/')));
+        }
+        return null;
+    }
+
+    // -- Sitemap --------------------------------------------------------------
+
+    /** Active products as sitemap rows: ['path'=>..., 'lastmod'=>?]. */
+    public function sitemapProducts(): array
+    {
+        $rows = $this->all(
+            "SELECT p.brand, p.slug, p.updated_at, c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
+             " . self::PROD_JOIN . "
+             WHERE p.is_active = 1"
+        );
+        $out = [];
+        foreach ($rows as $r) {
+            $r = $this->breadcrumbSlugs($r);
+            $out[] = ['path' => self::productUrl($r), 'lastmod' => $r['updated_at'] ?? null];
+        }
+        return $out;
+    }
+
+    /** Active category paths (brand landing + top + sub) as sitemap rows. */
+    public function sitemapCategories(): array
+    {
+        $rows = $this->all(
+            "SELECT c.brand, c.slug, c.parent_id, t.slug AS parent_slug
+             FROM categories c
+             LEFT JOIN categories t ON t.id = c.parent_id
+             WHERE c.is_active = 1
+             ORDER BY c.brand, c.position"
+        );
+        $brands = [];
+        $out = [];
+        foreach ($rows as $r) {
+            $brands[$r['brand']] = true;
+            $out[] = $r['parent_id'] === null
+                ? ['path' => '/' . $r['brand'] . '/' . $r['slug'], 'lastmod' => null]
+                : ['path' => '/' . $r['brand'] . '/' . $r['parent_slug'] . '/' . $r['slug'], 'lastmod' => null];
+        }
+        foreach (array_keys($brands) as $b) {
+            array_unshift($out, ['path' => '/' . $b, 'lastmod' => null]);
+        }
+        return $out;
+    }
+
     // ===================== ADMIN CRUD =====================
 
     private const CAT_COLS  = ['brand', 'parent_id', 'name', 'slug', 'description', 'position', 'is_active'];

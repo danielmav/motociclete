@@ -11,3 +11,15 @@
         </ol>
     </div>
 </nav>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Acasă", "item": "{{ app.url ~ base }}/" }
+    {%- for c in crumbs -%}
+    ,{ "@type": "ListItem", "position": {{ loop.index + 1 }}, "name": {{ c.label|json_encode|raw }}{% if c.url %}, "item": "{{ app.url ~ base ~ c.url }}"{% endif %} }
+    {%- endfor -%}
+  ]
+}
+</script>

@@ -126,6 +126,37 @@ final class Repository
         return $card;
     }
 
+    /**
+     * Canonical blog path for a legacy `stiri.php?id=N` article (match on
+     * `legacy_id`), or null. Used for 301 redirects from the old site.
+     */
+    public function pathForLegacyId(int $legacyId, string $brand = 'yamaha'): ?string
+    {
+        $row = $this->one(
+            "SELECT id, slug FROM news WHERE is_active = 1 AND legacy_id = :lid AND brand = :brand LIMIT 1",
+            [':lid' => $legacyId, ':brand' => $brand]
+        );
+        if (!$row) {
+            return null;
+        }
+        return '/blog/' . (int) $row['id'] . '-' . ($row['slug'] ?: 'articol');
+    }
+
+    /** Active articles as sitemap rows: ['path'=>..., 'lastmod'=>?]. */
+    public function sitemapArticles(): array
+    {
+        $rows = $this->all(
+            "SELECT id, slug, published_at FROM news WHERE is_active = 1 ORDER BY published_at DESC, id DESC"
+        );
+        return array_map(static function ($r) {
+            $id = (int) $r['id'];
+            return [
+                'path'    => '/blog/' . $id . '-' . ($r['slug'] ?: 'articol'),
+                'lastmod' => $r['published_at'] ?? null,
+            ];
+        }, $rows);
+    }
+
     /** Non-cover images for the article gallery. @return array<int,string> web paths */
     private function galleryImages(int $id): array
     {
@@ -142,11 +173,14 @@ final class Repository
     private function shapeCard(array $r): array
     {
         $id = (int) $r['id'];
+        $pub = (string) ($r['published_at'] ?? '');
+        $pubTs = $pub !== '' ? strtotime($pub) : false;
         return [
             'id'      => $id,
             'title'   => (string) $r['title'],
             'excerpt' => (string) $r['excerpt'],
-            'date'    => $this->roDate((string) ($r['published_at'] ?? '')),
+            'date'    => $this->roDate($pub),
+            'date_iso' => $pubTs !== false ? date('c', $pubTs) : '',
             'image'   => $this->imgPath($r['cover'] ?? null),
             'url'     => '/blog/' . $id . '-' . ($r['slug'] ?: 'articol'),
         ];

@@ -2,6 +2,27 @@
 
 {% block title %}{{ a.title }} | Blog Dual Motors{% endblock %}
 {% block description %}{{ a.excerpt }}{% endblock %}
+{% block og_type %}article{% endblock %}
+
+{% block head_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": {{ a.title|json_encode|raw }},
+  "description": {{ a.excerpt|json_encode|raw }},
+  {% if a.image %}"image": "{{ app.url ~ a.image }}",{% endif %}
+  {% if a.date_iso %}"datePublished": "{{ a.date_iso }}",{% endif %}
+  "mainEntityOfPage": "{{ app.url ~ base ~ a.url }}",
+  "author": { "@type": "Organization", "name": "Dual Motors" },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Dual Motors",
+    "logo": { "@type": "ImageObject", "url": "{{ app.url ~ base }}/assets/img/logo.png" }
+  }
+}
+</script>
+{% endblock %}
 
 {% block content %}
 
