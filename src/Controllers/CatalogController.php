@@ -234,8 +234,12 @@ final class CatalogController
         }
         $id = (int) $product['id'];
 
+        // For CFMOTO (flat categories) the product sits directly on a top category,
+        // so `top_name` (the parent join) is NULL — fall back to the product's own
+        // category name, else the breadcrumb label is empty (broken JSON-LD).
+        $topLabel = $product['top_name'] ?: $product['cat_name'];
         $crumbs = [['label' => $this->brandLabels[$brand] ?? ucfirst($brand), 'url' => '/' . $brand]];
-        $crumbs[] = ['label' => $product['top_name'], 'url' => '/' . $brand . '/' . $product['top_slug']];
+        $crumbs[] = ['label' => $topLabel, 'url' => '/' . $brand . '/' . $product['top_slug']];
         if ($product['sub_slug']) {
             $crumbs[] = ['label' => $product['cat_name'], 'url' => '/' . $brand . '/' . $product['top_slug'] . '/' . $product['sub_slug']];
         }

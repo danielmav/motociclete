@@ -5,6 +5,9 @@
 {% block og_type %}product{% endblock %}
 
 {% block head_extra %}
+{# Product schema only when we have a price: Google requires offers/review/
+   aggregateRating, so POA models (price 0) would otherwise be flagged invalid. #}
+{% if financePriceRon > 0 %}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -13,8 +16,7 @@
   {% if p.cover %}"image": "{{ app.url ~ base ~ p.cover }}",{% endif %}
   "description": {{ (p.excerpt ? (p.excerpt|striptags|trim) : (p.name ~ ' ' ~ brandLabel ~ ' la Dual Motors.'))|json_encode|raw }},
   "brand": { "@type": "Brand", "name": {{ brandLabel|json_encode|raw }} },
-  "category": {{ (p.top_name ?? brandLabel)|json_encode|raw }}
-  {%- if financePriceRon > 0 %},
+  "category": {{ (p.top_name ?? p.cat_name ?? brandLabel)|json_encode|raw }},
   "offers": {
     "@type": "Offer",
     "priceCurrency": "RON",
@@ -23,9 +25,9 @@
     "url": "{{ app.url ~ base ~ p.url }}",
     "seller": { "@type": "Organization", "name": "Dual Motors" }
   }
-  {%- endif %}
 }
 </script>
+{% endif %}
 {% endblock %}
 
 {% block content %}
