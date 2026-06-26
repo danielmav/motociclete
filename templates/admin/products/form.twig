@@ -138,6 +138,10 @@
         <div style="margin-top:.6rem">{{ f.editor('description', p.description|default('')) }}</div>
     </div>
     <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Promoții <span class="adm-help">apare în tabul „Descriere”, după text, într-o casetă evidențiată „Nu rata această promoție”. Gol = nu se afișează.</span></span>
+        <div style="margin-top:.6rem">{{ f.editor('promo_html', p.promo_html|default('')) }}</div>
+    </div>
+    <div class="adm-fieldset">
         <span class="adm-fieldset__t">Caracteristici cheie</span>
         <div style="margin-top:.6rem">{{ f.editor('details_html', p.details_html|default('')) }}</div>
     </div>
@@ -164,6 +168,29 @@
             <button type="button" class="adm-btn adm-btn--sm" data-row-add="#spec-{{ key }}" style="margin-top:.5rem">+ rând</button>
         </div>
     {% endfor %}
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Prețuri variante <span class="adm-help">apare ca tabul „Preturi” doar la modelele cu mai multe variante (ex. putere/transmisie). Prețul = EUR cu TVA; se afișează EUR + RON (la curs). Gol = fără tab.</span></span>
+        <div class="adm-rows" id="variant-rows" data-rows style="margin-top:.6rem">
+            {% for r in variantRows|default([]) %}
+                <div class="adm-row adm-row--3">
+                    <input type="text" name="var_version[]" value="{{ r.version }}" placeholder="Versiune (ex. Maxima / 35kW A2)">
+                    <input type="text" name="var_transmission[]" value="{{ r.transmission }}" placeholder="Transmisie (ex. Y-AMT)">
+                    <input type="number" name="var_price[]" value="{{ r.price }}" placeholder="Preț EUR">
+                    <button type="button" class="adm-row__del" data-row-del>×</button>
+                </div>
+            {% endfor %}
+            <template data-row-tpl>
+                <div class="adm-row adm-row--3">
+                    <input type="text" name="var_version[]" placeholder="Versiune (ex. Maxima / 35kW A2)">
+                    <input type="text" name="var_transmission[]" placeholder="Transmisie (ex. Y-AMT)">
+                    <input type="number" name="var_price[]" placeholder="Preț EUR">
+                    <button type="button" class="adm-row__del" data-row-del>×</button>
+                </div>
+            </template>
+        </div>
+        <button type="button" class="adm-btn adm-btn--sm" data-row-add="#variant-rows" style="margin-top:.5rem">+ variantă</button>
+    </div>
 
     <div class="adm-grid2">
         <label>Poziție

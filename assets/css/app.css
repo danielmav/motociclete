@@ -719,6 +719,22 @@ a.card-moto { display: block; color: inherit; }
 /* dual-currency prices */
 .price__ron { display: block; font-weight: 600; font-size: .78rem; color: var(--muted); letter-spacing: 0; text-transform: none; }
 .price__ron s { color: var(--muted); }
+/* promo: old price struck (thin red) next to current (cards, menu) */
+.price__old-mini { font-weight: 400; color: var(--red); text-decoration: line-through; font-size: .82em; margin-right: .35rem; }
+
+/* product page: promotion callout (in Descriere tab) */
+.promo-box { margin-top: 1.8rem; background: #f4f4f5; border: 1px solid var(--line); border-left: 4px solid var(--red); border-radius: var(--radius-sm); padding: 1.3rem 1.5rem; }
+.promo-box__title { font-family: var(--head); font-weight: 800; font-size: 1.1rem; text-transform: uppercase; letter-spacing: .03em; color: var(--red); margin: 0 0 .6rem; }
+.promo-box__body { color: var(--ink); }
+.promo-box__body :last-child { margin-bottom: 0; }
+
+/* product page: variant prices table (Preturi tab) */
+.variant-table-wrap { overflow-x: auto; margin-top: 1.2rem; }
+.variant-table { width: 100%; border-collapse: collapse; min-width: 420px; }
+.variant-table th { text-align: left; font-family: var(--head); font-weight: 700; font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); padding: .6rem .8rem; border-bottom: 2px solid var(--line); }
+.variant-table td { padding: .7rem .8rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.variant-table__price { font-family: var(--head); font-weight: 800; white-space: nowrap; }
+.variant-table__ron { display: block; font-weight: 600; font-size: .8rem; color: var(--muted); }
 .badge--tr { left: auto; right: .8rem; background: var(--red); }
 .price__main { display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
 .price__now-ron { font-family: var(--head); font-weight: 700; font-size: 1.05rem; color: var(--muted); }

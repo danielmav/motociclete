@@ -60,6 +60,7 @@ final class ProductController extends BaseController
         foreach (self::SPECS as $key => $col) {
             $specRows[$key] = $p ? $this->specRows($p[$col] ?? '') : [];
         }
+        $variantRows = $p ? $this->variantRows($p['variants_json'] ?? '') : [];
         $images = [];
         if ($p) {
             foreach (['color', 'gallery', 'detail'] as $t) {
@@ -88,7 +89,9 @@ final class ProductController extends BaseController
                 'cover_image'   => $d['cover_image'] ?? '',
                 'excerpt'       => $d['excerpt'] ?? '',
                 'description'   => $d['description'] ?? '',
+                'promo_html'    => $d['promo_html'] ?? '',
                 'details_html'  => $d['details_html'] ?? '',
+                'variants_json' => $d['variants_json'] ?? '',
                 'video'         => $d['video'] ?? '',
                 'keywords'      => $d['keywords'] ?? '',
                 'yamaha_pid'    => $d['yamaha_pid'] ?? '',
@@ -99,6 +102,7 @@ final class ProductController extends BaseController
             foreach (self::SPECS as $key => $col) {
                 $specRows[$key] = $d['specs'][$key] ?? [];
             }
+            $variantRows = $this->variantRows($d['variants_json'] ?? '');
             foreach (['color', 'gallery', 'detail'] as $t) {
                 $images[$t] = array_map(static fn ($f) => ['filename' => $f], $d['images'][$t] ?? []);
             }
@@ -111,6 +115,7 @@ final class ProductController extends BaseController
             'brand'      => $brand,
             'categories' => $this->categorySelect(),
             'specRows'   => $specRows,
+            'variantRows' => $variantRows,
             'images'     => $images,
             'fromYamaha' => $fromYamaha,
             'saved'      => isset($q['ok']),
@@ -178,7 +183,13 @@ final class ProductController extends BaseController
             'cover_image'  => trim((string) ($body['cover_image'] ?? '')) ?: null,
             'excerpt'      => trim((string) ($body['excerpt'] ?? '')),
             'description'  => trim((string) ($body['description'] ?? '')),
+            'promo_html'   => trim((string) ($body['promo_html'] ?? '')),
             'details_html' => trim((string) ($body['details_html'] ?? '')),
+            'variants_json' => $this->buildVariantsJson(
+                (array) ($body['var_version'] ?? []),
+                (array) ($body['var_transmission'] ?? []),
+                (array) ($body['var_price'] ?? [])
+            ),
             'video'        => trim((string) ($body['video'] ?? '')) ?: null,
             'keywords'     => trim((string) ($body['keywords'] ?? '')),
             'is_active'    => empty($body['is_active']) ? 0 : 1,
@@ -307,5 +318,42 @@ final class ProductController extends BaseController
             $out .= '<tr><th>' . htmlspecialchars($l, ENT_QUOTES, 'UTF-8') . '</th><td>' . htmlspecialchars($v, ENT_QUOTES, 'UTF-8') . '</td></tr>';
         }
         return $out === '' ? '' : '<table>' . $out . '</table>';
+    }
+
+    /** Decode variants_json into editor rows [{version,transmission,price}]. */
+    private function variantRows(?string $json): array
+    {
+        $rows = json_decode((string) $json, true);
+        if (!is_array($rows)) {
+            return [];
+        }
+        $out = [];
+        foreach ($rows as $r) {
+            if (!is_array($r)) {
+                continue;
+            }
+            $out[] = [
+                'version'      => (string) ($r['version'] ?? ''),
+                'transmission' => (string) ($r['transmission'] ?? ''),
+                'price'        => (int) ($r['price'] ?? 0),
+            ];
+        }
+        return $out;
+    }
+
+    /** Build variants_json from the parallel editor arrays (empty -> ''). */
+    private function buildVariantsJson(array $versions, array $transmissions, array $prices): string
+    {
+        $rows = [];
+        foreach ($versions as $i => $v) {
+            $version = trim((string) $v);
+            $trans   = trim((string) ($transmissions[$i] ?? ''));
+            $price   = (int) preg_replace('/\D/', '', (string) ($prices[$i] ?? ''));
+            if ($version === '' && $trans === '' && $price === 0) {
+                continue;
+            }
+            $rows[] = ['version' => $version, 'transmission' => $trans, 'price' => $price];
+        }
+        return $rows === [] ? '' : (string) json_encode($rows, JSON_UNESCAPED_UNICODE);
     }
 }

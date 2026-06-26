@@ -153,9 +153,10 @@
     {% set hasGalerie = galImages|length or p.video %}
 
     {% set tabs = [] %}
-    {% if p.description %}{% set tabs = tabs|merge([{ id: 'descriere', label: 'Descriere' }]) %}{% endif %}
+    {% if p.description or p.promo_html|trim is not empty %}{% set tabs = tabs|merge([{ id: 'descriere', label: 'Descriere' }]) %}{% endif %}
     {% if p.details_html|trim is not empty %}{% set tabs = tabs|merge([{ id: 'caracteristici', label: 'Caracteristici cheie' }]) %}{% endif %}
     {% if specs|length %}{% set tabs = tabs|merge([{ id: 'specificatii', label: 'Specificații' }]) %}{% endif %}
+    {% if variantRows|default([])|length %}{% set tabs = tabs|merge([{ id: 'preturi', label: 'Preturi' }]) %}{% endif %}
     {% if hasGalerie %}{% set tabs = tabs|merge([{ id: 'galerie', label: 'Galerie' }]) %}{% endif %}
     {% if accCount %}{% set tabs = tabs|merge([{ id: 'accesorii', label: 'Piese & accesorii', count: accCount }]) %}{% endif %}
     {% set activeTab = tabs|length ? tabs[0].id : '' %}
@@ -175,11 +176,19 @@
     {% endif %}
 
     {# ---------------- Descriere ---------------- #}
-    {% if p.description %}
+    {% if p.description or p.promo_html|trim is not empty %}
         <div class="ptabs__panel{{ 'descriere' == activeTab ? ' is-active' : '' }}" data-ppanel="descriere">
             <section class="section product-section"><div class="container"><div class="product-prose">
-                <h2 class="section__title">Despre {{ p.name }}</h2>
-                {{ p.description|raw }}
+                {% if p.description %}
+                    <h2 class="section__title">Despre {{ p.name }}</h2>
+                    {{ p.description|raw }}
+                {% endif %}
+                {% if p.promo_html|trim is not empty %}
+                    <div class="promo-box">
+                        <h3 class="promo-box__title">Nu rata această promoție</h3>
+                        <div class="promo-box__body">{{ p.promo_html|raw }}</div>
+                    </div>
+                {% endif %}
             </div></div></section>
         </div>
     {% endif %}
@@ -212,6 +221,33 @@
                     {% endfor %}
                 </div>
             </div></section>
+        </div>
+    {% endif %}
+
+    {# ---------------- Preturi (variante: putere / transmisie) ---------------- #}
+    {% if variantRows|default([])|length %}
+        <div class="ptabs__panel{{ 'preturi' == activeTab ? ' is-active' : '' }}" data-ppanel="preturi">
+            <section class="section product-section"><div class="container"><div class="product-prose">
+                <h2 class="section__title">Variante și prețuri</h2>
+                <p class="muted">Prețuri orientative cu TVA, în funcție de versiune. Cursul de schimb: {{ currency.rate }} lei/€.</p>
+                <div class="variant-table-wrap">
+                    <table class="variant-table">
+                        <thead>
+                            <tr><th>Versiune</th><th>Transmisie</th><th>Preț</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for v in variantRows %}
+                                {% set vp = v.price ? prices(v.price) : null %}
+                                <tr>
+                                    <td>{{ v.version|default('—') }}</td>
+                                    <td>{{ v.transmission|default('—') }}</td>
+                                    <td class="variant-table__price">{% if vp %}{{ vp.eur }} <span class="variant-table__ron">{{ vp.ron }}</span>{% else %}La cerere{% endif %}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div></div></section>
         </div>
     {% endif %}
 

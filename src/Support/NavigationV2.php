@@ -21,7 +21,7 @@ use App\Catalog\Repository as Catalog;
 final class NavigationV2
 {
     /** Max model cards rendered eagerly per subcategory pane. */
-    private const CARDS_PER_PANE = 8;
+    private const CARDS_PER_PANE = 16;
 
     /**
      * Product-type panels. Each source describes where a sidebar group comes from:

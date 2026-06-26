@@ -54,7 +54,9 @@ CREATE TABLE `products` (
     `cover_image`        VARCHAR(255) NULL,              -- imagine_principala (color filename)
     `excerpt`            TEXT NULL,                      -- descriere_scurta (HTML)
     `description`        LONGTEXT NULL,                  -- descriere_lunga (HTML)
+    `promo_html`         LONGTEXT NULL,                  -- promotie (HTML, caseta in tab Descriere)
     `details_html`       LONGTEXT NULL,                  -- detalii (HTML w/ CDN imgs)
+    `variants_json`      TEXT NULL,                      -- variante pret (JSON: [{version,transmission,price}]) -> tab Preturi
     `specs_engine`       LONGTEXT NULL,                  -- motor (HTML table)
     `specs_chassis`      LONGTEXT NULL,                  -- sasiu
     `specs_dimensions`   LONGTEXT NULL,                  -- dimensiuni

@@ -20,7 +20,7 @@
             <h3 class="card-moto__name">{{ m.name }}</h3>
             <div class="card-moto__foot">
                 {% set pr = prices(m.price) %}
-                <span class="price"><small>de la</small> {{ pr.eur }}<span class="price__ron">{{ pr.ron }}</span></span>
+                <span class="price">{% if m.old_price %}{% set op = prices(m.old_price) %}<s class="price__old-mini">{{ op.eur }}</s> {% endif %}<small>de la</small> {{ pr.eur }}<span class="price__ron">{{ pr.ron }}</span></span>
                 <span class="link-arrow link-arrow--sm">Detalii <span aria-hidden="true">→</span></span>
             </div>
         </div>

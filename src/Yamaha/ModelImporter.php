@@ -94,10 +94,11 @@ final class ModelImporter
         $pid = (string) ($product['key'] ?? '');
         $specs = $this->shapeSpecs($attrs['techSpecifications'] ?? null);
 
-        // Blocuri de text (descrieri) + imaginile lor de detaliu.
+        // Blocuri de text (descrieri) cu imaginile lor INLINE + lista de URL-uri de descărcat.
         [$detailsHtml, $featureImages] = $this->fetchFeatures($attrs['features'] ?? []);
 
-        $images = $this->shapeImages($variant['images'] ?? [], $featureImages);
+        // Imaginile de feature NU mai merg în galerie (detail) — apar inline în „Caracteristici".
+        $images = $this->shapeImages($variant['images'] ?? [], []);
 
         $out['ok'] = true;
         $out['draft'] = [
@@ -110,13 +111,16 @@ final class ModelImporter
             'licence'      => '',
             'excerpt'      => '',
             'description'  => '',
+            'promo_html'   => '',
             'details_html' => $detailsHtml,
+            'variants_json' => $this->shapeVariants($product['variants'] ?? []),
             'video'        => '',
             'keywords'     => '',
             'yamaha_pid'   => preg_match('/\d+/', $pid, $m) ? $m[0] : '',
             'bs_product_id' => $this->resolveBs($slug, (string) $product['name'], $year),
             'specs'        => $specs,                  // [engine|chassis|dimensions|connectivity => [[label,value],...]]
             'images'       => $images,                 // URL-uri în acest stadiu; downloadImages() le face nume de fișier
+            'feature_images' => $featureImages,        // URL-uri remote din details_html; downloadImages() le localizează
         ];
         return $out;
     }
@@ -145,6 +149,19 @@ final class ModelImporter
             $draft['images'][$t] = $files;
         }
         unset($draft['images']['cover']);
+
+        // Imaginile inline din „Caracteristici": descarcă-le în /media/yamaha/detalii/ și
+        // rescrie URL-urile remote din details_html cu calea publică locală.
+        $html = (string) ($draft['details_html'] ?? '');
+        foreach ((array) ($draft['feature_images'] ?? []) as $url) {
+            $url = (string) $url;
+            $f = $this->grab($url, 'detail');
+            if ($f !== null) {
+                $html = str_replace($url, '/media/yamaha/' . self::FOLDER['detail'] . '/' . $f, $html);
+            }
+        }
+        $draft['details_html'] = $html;
+        unset($draft['feature_images']);
         return $draft;
     }
 
@@ -249,6 +266,53 @@ final class ModelImporter
     }
 
     /**
+     * Variantele de putere/transmisie → JSON pt. tabul „Preturi" (doar dacă există
+     * ≥2 combinații distincte versiune+transmisie). Culorile NU contează (același preț).
+     * Fiecare variantă: attributes[{name,value}] + prices[{amount,currencyCode}].
+     * @param array<int,array<string,mixed>> $variants
+     * @return string JSON [{version,transmission,price}] sau '' dacă o singură variantă.
+     */
+    private function shapeVariants(array $variants): string
+    {
+        $rows = [];
+        foreach ($variants as $variant) {
+            if (!is_array($variant)) {
+                continue;
+            }
+            $attrs = [];
+            foreach (($variant['attributes'] ?? []) as $a) {
+                if (isset($a['name'])) {
+                    $attrs[(string) $a['name']] = $a['value'] ?? null;
+                }
+            }
+            $version = $this->clean((string) ($attrs['productMotorcyclePowerVersion'] ?? ''));
+            $trans   = $this->clean((string) ($attrs['productMotorcycleTransmission'] ?? ''));
+            if ($version === '' && $trans === '') {
+                continue;
+            }
+            $price = 0;
+            foreach ((array) ($variant['prices'] ?? []) as $pr) {
+                $cc = strtoupper((string) ($pr['currencyCode'] ?? ''));
+                if ($cc === '' || $cc === 'EUR') {
+                    $price = (int) round((float) ($pr['amount'] ?? 0));
+                    break;
+                }
+            }
+            // Dedup pe combinația versiune+transmisie (culorile = sub-variante).
+            $key = $version . '|' . $trans;
+            if (!isset($rows[$key])) {
+                $rows[$key] = ['version' => $version, 'transmission' => $trans, 'price' => $price];
+            } elseif ($rows[$key]['price'] === 0 && $price > 0) {
+                $rows[$key]['price'] = $price;
+            }
+        }
+        if (count($rows) < 2) {
+            return '';
+        }
+        return (string) json_encode(array_values($rows), JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
      * Blocurile de text (custom-objects) → HTML pt. „Caracteristici cheie" + imaginile lor.
      * @param array<int,mixed> $keys
      * @return array{0:string,1:array<int,string>}
@@ -288,9 +352,13 @@ final class ModelImporter
             }
             foreach ((array) ($v['images'] ?? []) as $img) {
                 $img = (string) $img;
-                if ($img !== '') {
-                    $images[] = $img;
+                if ($img === '') {
+                    continue;
                 }
+                $images[] = $img;
+                // Imaginea apare INLINE în „Caracteristici". URL-ul remote e rescris cu
+                // calea locală în downloadImages() (după descărcare în /media/yamaha/detalii/).
+                $html .= '<figure><img src="' . htmlspecialchars($img, ENT_QUOTES, 'UTF-8') . '" alt="' . htmlspecialchars($header, ENT_QUOTES, 'UTF-8') . '" loading="lazy"></figure>';
             }
         }
         return [$html, $images];

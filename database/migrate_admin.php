@@ -27,5 +27,7 @@ if ($col !== false && strtolower((string) $col) !== 'text') {
 // Non-destructive column adds (cross-engine: checked via information_schema).
 ensure_column($pdo, 'news', 'category_id', 'ALTER TABLE `news` ADD COLUMN `category_id` INT UNSIGNED NULL');
 ensure_column($pdo, 'site_messages', 'is_read', 'ALTER TABLE `site_messages` ADD COLUMN `is_read` TINYINT(1) NOT NULL DEFAULT 0');
+ensure_column($pdo, 'products', 'promo_html', 'ALTER TABLE `products` ADD COLUMN `promo_html` LONGTEXT NULL AFTER `description`');
+ensure_column($pdo, 'products', 'variants_json', 'ALTER TABLE `products` ADD COLUMN `variants_json` TEXT NULL AFTER `details_html`');
 
 echo "migrate_admin: done.\n";

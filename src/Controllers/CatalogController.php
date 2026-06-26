@@ -276,6 +276,15 @@ final class CatalogController
         $financeRates = $priceRon > 0 ? $this->finance->ratesFor((float) $priceRon) : [];
         $financeCfg = $this->finance->config();
 
+        // Variante de preț (putere/transmisie) → tabul „Preturi" (doar dacă modelul are mai multe).
+        $variantRows = [];
+        if (!empty($product['variants_json'])) {
+            $decoded = json_decode((string) $product['variants_json'], true);
+            if (is_array($decoded)) {
+                $variantRows = $decoded;
+            }
+        }
+
         return $this->twig->render($response, 'catalog/product.twig', [
             'brand'        => $brand,
             'brandLabel'   => $this->brandLabels[$brand] ?? ucfirst($brand),
@@ -288,6 +297,7 @@ final class CatalogController
             'related'      => $this->repo->related($product, 4),
             'oemParts'     => $oemParts,
             'accessories'  => $accessories,
+            'variantRows'  => $variantRows,
             'bsUrl'        => $bsUrl,
             'crumbs'        => $crumbs,
             'financePriceRon' => $priceRon,
