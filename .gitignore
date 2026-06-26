@@ -14,6 +14,10 @@
 .DS_Store
 Thumbs.db
 
+# Pe server (sub docroot): artefacte/aplicatii care NU fac parte din repo
+.duckversions/
+/drive-test/
+
 # Node (doar pentru testare locala — puppeteer-core)
 node_modules/
 package-lock.json
