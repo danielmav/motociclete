@@ -55,6 +55,7 @@ Construit pe milestone-uri (vezi planul aprobat). **Milestone 1 livrat = home pa
 ## Catalog (M2) — pagini categorie + produs
 
 - `src/Catalog/Repository.php` = singurul loc care citește catalogul local (prepared statements, degradare grațioasă). `src/Controllers/CatalogController.php` randează `catalog/{brand,category,product}.twig`.
+  - ⚠️ Query-urile de carduri publice (`productsInCategory` — folosit ȘI de meniu ȘI de pagina categorie —, `related`, `subcategories.product_count`) TREBUIE să filtreze `p.is_active = 1`; doar adminul (`adminProducts`) vede produse inactive.
 - **URL curat, brand-first:** `/{brand}/{cat}` (categorie), `/{brand}/{cat}/{sub}` (subcategorie), produs `/{brand}/{cat}/{sub}/{slug}` (Yamaha, cat 2 niveluri) sau `/{brand}/{cat}/{slug}` (CFMOTO, cat plate). Ruta de 3 segmente rezolvă dinamic subcategorie-vs-produs.
 - **Filtre categorie:** pagina categorie acceptă `?permis=` + `?an=` (facete calculate din setul complet, filtrare în PHP în `CatalogController::renderCategory`; UI = `<select>`-uri care auto-submit GET).
 - **Comparație modele:** doar același brand + aceeași categorie principală (top). Toggle „Compară" pe carduri (JS în `app.js`, tava sticky) → `/compara?brand=&models=slug,slug` (`CompareController` + `catalog/compare.twig`); backstop server-side păstrează doar produsele cu același `top_slug` ca primul. `Repository::productsBySlugs()`.
@@ -204,13 +205,17 @@ Screenshot: Chrome NU e pe PATH în Bash → cale completă
 (calea relativă a fișierului dă „cannot find path"; cale absolută obligatorie).
 Screenshot interactiv / pagini cu sesiune (taburi, login garage): `npm i --no-save puppeteer-core` (folosește Chrome-ul existent prin `executablePath`), injectează cookie-ul de sesiune, apoi `page.screenshot`. **`node_modules/` e gitignored.** `puppeteer-core` e **ESM** → script `.mjs` cu `import` (nu `require`), iar `page.goto` cere **URL absolut**.
 
-## Deploy (staging `/2026/`)
+## Deploy (LIVE la root; fostul staging `/2026/` retras)
 
 Vezi `DEPLOY.md`. **Repo GitHub `danielmav/motociclete` e PUBLIC** → nu comite niciodată secrete;
-`.env` (în orice folder) + `documente/` sunt gitignored. Clonat prin cPanel Git **direct în docroot**
-`public_html/motociclete.com.ro/2026` → „Update from Remote" = `git pull` pe loc (suficient pentru cod).
-`vendor/` (gitignored) se pune via `vendor.zip` + FTP + Extract. `.env` creat manual pe server (`BASE_PATH=/2026`).
+`.env` (în orice folder) + `documente/` sunt gitignored. Clonat prin cPanel Git **direct în docroot live**
+`/home/dualmotors/public_html/motociclete.com.ro` (cont cPanel **`dualmotors`**, fără underscore);
+„Update from Remote" / `git pull` pe loc = suficient pentru cod. `vendor/` (gitignored) via `vendor.zip` + FTP.
 Permisiuni post-clone: `.htaccess`=644, foldere=755.
+- **PHP server = alt-php 8.1:** binar `/opt/alt/php81/usr/bin/php` (are pdo_mysql+curl); `composer` = `/opt/cpanel/composer/bin/composer` (rulat de `.cpanel.yml` la „Deploy HEAD Commit").
+- **`.htaccess` are un bloc PHP generat de cPanel** (MultiPHP) → apare mereu „modified" și blochează „Deploy" din cPanel. NU-l comite (strică PHP pe Laragon local). Pe server o singură dată: `git update-index --skip-worktree .htaccess`. `drive-test/` (app separată sub docroot) + `.duckversions/` (artefact File Manager) sunt gitignored.
+- **Cron-uri (alt-php81):** accesorii Yamaha lunar (`import_yamaha_accessories.php --apply`); curs valutar zilnic 07:00 (`update_currency.php`); loguri în `/home/dualmotors/`.
+- **Post-deploy:** la coloane/schemă noi rulează `database/migrate_admin.php`; după schimbări catalog/meniu șterge `storage/cache/navv2.cache`.
 
 **Hook pre-commit anti-secrete** (`.githooks/pre-commit`, gitleaks): blochează commit-urile cu secrete.
 Activare după un clone nou: `git config core.hooksPath .githooks` + `scoop install gitleaks`.
