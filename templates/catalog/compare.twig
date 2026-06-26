@@ -49,7 +49,7 @@
                         <tr>
                             <th class="compare__rowhead">Preț</th>
                             {% for p in products %}
-                                <td>{% set pr = prices(p.price) %}<strong>{{ pr.eur }}</strong><br><span class="price__ron">{{ pr.ron }}</span></td>
+                                <td>{% set pr = prices(p.price, p.brand) %}<strong>{{ pr.eur }}</strong><br><span class="price__ron">{{ pr.ron }}</span></td>
                             {% endfor %}
                         </tr>
                         <tr>

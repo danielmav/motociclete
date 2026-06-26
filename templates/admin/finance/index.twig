@@ -1,0 +1,29 @@
+{% extends 'admin/layout.twig' %}
+{% import 'admin/_widgets.twig' as w %}
+{% set active = 'finance' %}
+{% block title %}Finanțare{% endblock %}
+
+{% block content %}
+<form class="adm-form" method="post" action="{{ admin_base }}/finantare" style="max-width:980px">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Finanțare (UniCredit)</span>
+        <div class="adm-grid3" style="margin-top:.8rem">
+            <label>Dobândă nominală (%) <input type="text" name="nominal_rate" value="{{ finance.nominal_rate|default('13') }}"></label>
+            <label>DAE (%) <input type="text" name="dae" value="{{ finance.dae|default('14.5') }}"></label>
+            <label>Comision lunar (Lei) <input type="text" name="admin_fee" value="{{ finance.admin_fee|default('10') }}"></label>
+        </div>
+        <div class="adm-grid2" style="margin-top:.8rem">
+            <label>Rată calcul DAE (%) <input type="text" name="calc_rate" value="{{ finance.calc_rate|default('14.5') }}"></label>
+            <label>Durate (luni, separate prin virgulă) <input type="text" name="terms" value="{{ finance.terms|default('12,18,24,36,48,60') }}"></label>
+        </div>
+        <label style="margin-top:.8rem">Titlu pagină finanțare <input type="text" name="page_title" value="{{ finance.page_title|default('') }}"></label>
+        <div style="margin-top:.6rem"><span class="adm-help">Conținut pagină /finantare</span>{{ w.editor('page_html', finance.page_html|default('')) }}</div>
+    </div>
+
+    <div class="adm-actions">
+        <button class="adm-btn adm-btn--primary" type="submit">Salvează</button>
+    </div>
+</form>
+{% endblock %}

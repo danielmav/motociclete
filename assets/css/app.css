@@ -293,6 +293,16 @@ ul { list-style: none; padding: 0; }
     font-size: .68rem; letter-spacing: .08em; text-transform: uppercase;
     padding: .35rem .6rem; border-radius: 6px;
 }
+/* diagonal "Promoție" corner ribbon on model cards (top-right) */
+.ribbon-promo {
+    position: absolute; z-index: 3; top: 14px; right: -38px;
+    transform: rotate(45deg); transform-origin: center;
+    background: var(--red); color: #fff;
+    font-family: var(--head); font-weight: 800; font-size: .66rem;
+    letter-spacing: .08em; text-transform: uppercase;
+    padding: .32rem 2.6rem; box-shadow: 0 2px 6px rgba(0,0,0,.22);
+    pointer-events: none;
+}
 .card-moto__body { padding: 1.1rem 1.2rem 1.3rem; }
 .card-moto__meta { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .7rem; }
 .chip {

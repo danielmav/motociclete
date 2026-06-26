@@ -71,9 +71,10 @@ final class Bootstrap
         $twig->getEnvironment()->addFilter(
             new \Twig\TwigFilter('money', fn ($v) => money_ron((float) $v))
         );
-        // EUR amount -> {eur, ron} VAT-inclusive display strings.
+        // EUR amount -> {eur, ron} VAT-inclusive display strings. Optional brand
+        // picks the per-brand RON rate (Yamaha=BNR, CFMOTO=BRD).
         $twig->getEnvironment()->addFunction(
-            new \Twig\TwigFunction('prices', fn ($eur) => price_dual((float) $eur, $currency))
+            new \Twig\TwigFunction('prices', fn ($eur, $brand = null) => price_dual((float) $eur, $currency, $brand))
         );
         $app->add(TwigMiddleware::create($app, $twig));
 

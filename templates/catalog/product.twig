@@ -82,9 +82,10 @@
                 {% if p.licence %}<span class="chip chip--permis">Permis {{ p.licence }}</span>{% endif %}
             </div>
 
+            {% set brandRate = brand == 'cfmoto' ? currency.rate_cfmoto : (brand == 'yamaha' ? currency.rate_yamaha : currency.rate) %}
             {% if p.price %}
             <div class="product__price-row">
-                {% set now = prices(p.price) %}
+                {% set now = prices(p.price, brand) %}
                 <div class="product__price">
                     {% if p.old_price %}<span class="badge badge--sale">−{{ p.discount_pct|round }}%</span>{% endif %}
                     <div class="price__main">
@@ -92,10 +93,10 @@
                         <span class="price__now-ron">{{ now.ron }}</span>
                     </div>
                     {% if p.old_price %}
-                        {% set old = prices(p.old_price) %}
+                        {% set old = prices(p.old_price, brand) %}
                         <s class="price__old">{{ old.eur }} · {{ old.ron }}</s>
                     {% endif %}
-                    <span class="product__price-note">preț cu TVA {{ currency.vat }}% · curs {{ currency.rate }} lei/€</span>
+                    <span class="product__price-note">preț cu TVA {{ currency.vat }}% · curs {{ brandRate }} lei/€</span>
                 </div>
 
                 {% if financePriceRon and financeRates|length %}
@@ -229,7 +230,7 @@
         <div class="ptabs__panel{{ 'preturi' == activeTab ? ' is-active' : '' }}" data-ppanel="preturi">
             <section class="section product-section"><div class="container"><div class="product-prose">
                 <h2 class="section__title">Variante și prețuri</h2>
-                <p class="muted">Prețuri orientative cu TVA, în funcție de versiune. Cursul de schimb: {{ currency.rate }} lei/€.</p>
+                <p class="muted">Prețuri orientative cu TVA, în funcție de versiune. Cursul de schimb: {{ brandRate }} lei/€.</p>
                 <div class="variant-table-wrap">
                     <table class="variant-table">
                         <thead>
@@ -237,7 +238,7 @@
                         </thead>
                         <tbody>
                             {% for v in variantRows %}
-                                {% set vp = v.price ? prices(v.price) : null %}
+                                {% set vp = v.price ? prices(v.price, brand) : null %}
                                 <tr>
                                     <td>{{ v.version|default('—') }}</td>
                                     <td>{{ v.transmission|default('—') }}</td>
@@ -353,6 +354,7 @@
                         <a class="card-moto" href="{{ base }}{{ m.url }}">
                             <div class="card-moto__media{{ m.image ? '' : ' media-ph' }}">
                                 {% if m.year %}<span class="badge">{{ m.year }}</span>{% endif %}
+                                {% if m.promo %}<span class="ribbon-promo">Promoție</span>{% endif %}
                                 {% if m.image %}
                                     <img src="{{ base }}{{ m.image }}" alt="{{ m.name }}" loading="lazy" width="900" height="600"
                                          onerror="this.closest('.card-moto__media').classList.add('media-ph');this.remove()">
@@ -361,8 +363,10 @@
                             <div class="card-moto__body">
                                 <h3 class="card-moto__name">{{ m.name }}</h3>
                                 <div class="card-moto__foot">
-                                    {% set rp = prices(m.price) %}
-                                    <span class="price"><small>de la</small> {{ rp.eur }}<span class="price__ron">{{ rp.ron }}</span></span>
+                                    {% if m.price %}
+                                        {% set rp = prices(m.price, m.brand) %}
+                                        <span class="price"><small>de la</small> {{ rp.eur }}<span class="price__ron">{{ rp.ron }}</span></span>
+                                    {% endif %}
                                     <span class="link-arrow link-arrow--sm">Detalii <span aria-hidden="true">→</span></span>
                                 </div>
                             </div>

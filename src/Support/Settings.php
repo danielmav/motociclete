@@ -89,15 +89,31 @@ final class Settings
     }
 
     /**
-     * Currency config for price display.
-     * @return array{rate:float,vat:int,incl:bool}
+     * Currency config for price display. `rate` = fallback; per-brand rates are
+     * auto-updated from BNR (Yamaha) / BRD (CFMOTO) by database/update_currency.php.
+     * @return array{rate:float,rate_yamaha:float,rate_cfmoto:float,vat:int,incl:bool}
      */
     public function currency(): array
     {
+        $base = $this->float('eur_ron_rate', 5.0);
         return [
-            'rate' => $this->float('eur_ron_rate', 5.0),
-            'vat'  => $this->int('vat_pct', 21),
-            'incl' => $this->bool('price_includes_vat', false),
+            'rate'        => $base,
+            'rate_yamaha' => $this->float('eur_ron_rate_yamaha', $base),
+            'rate_cfmoto' => $this->float('eur_ron_rate_cfmoto', $base),
+            'vat'         => $this->int('vat_pct', 21),
+            'incl'        => $this->bool('price_includes_vat', false),
         ];
+    }
+
+    /** Pick the display rate for a brand (falls back to the generic `eur_ron_rate`). */
+    public static function rateForBrand(array $cur, ?string $brand): float
+    {
+        if ($brand === 'yamaha' && !empty($cur['rate_yamaha'])) {
+            return (float) $cur['rate_yamaha'];
+        }
+        if ($brand === 'cfmoto' && !empty($cur['rate_cfmoto'])) {
+            return (float) $cur['rate_cfmoto'];
+        }
+        return (float) ($cur['rate'] ?? 5.0);
     }
 }

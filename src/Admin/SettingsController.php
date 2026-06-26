@@ -8,7 +8,6 @@ use App\Content\Repository as Content;
 use App\Support\Settings;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Throwable;
 
 /**
  * Admin Settings: currency/VAT (settings table), financing (finance row),
@@ -42,7 +41,6 @@ final class SettingsController extends BaseController
         return $this->render($response, 'admin/settings/index.twig', [
             'active'      => 'settings',
             'cur'         => $this->settings()->currency(),
-            'finance'     => $this->financeRow(),
             'vals'        => $vals,
             'departments' => $this->content()->departments(),
             'saved'       => isset($request->getQueryParams()['ok']),
@@ -61,10 +59,8 @@ final class SettingsController extends BaseController
         }
         $s = $this->settings();
 
-        $rate = (float) str_replace(',', '.', (string) ($body['eur_ron_rate'] ?? ''));
-        if ($rate > 0) {
-            $s->set('eur_ron_rate', rtrim(rtrim(number_format($rate, 4, '.', ''), '0'), '.'));
-        }
+        // Cursurile valutare (eur_ron_rate_yamaha / _cfmoto) sunt AUTO din BNR/BRD
+        // (database/update_currency.php) → read-only aici; nu se scriu din formular.
         $vat = (int) ($body['vat_pct'] ?? 0);
         if ($vat >= 0 && $vat <= 100) {
             $s->set('vat_pct', (string) $vat);
@@ -73,25 +69,6 @@ final class SettingsController extends BaseController
 
         foreach (self::SOCIAL_KEYS as $k) {
             $s->set($k, trim((string) ($body[$k] ?? '')));
-        }
-
-        // Finance row (id = 1)
-        try {
-            $this->pdo->prepare(
-                "INSERT INTO finance (id, nominal_rate, dae, admin_fee, calc_rate, terms, page_title, page_html)
-                 VALUES (1, :nr, :dae, :fee, :calc, :terms, :pt, :ph)
-                 ON DUPLICATE KEY UPDATE nominal_rate=:nr, dae=:dae, admin_fee=:fee, calc_rate=:calc, terms=:terms, page_title=:pt, page_html=:ph"
-            )->execute([
-                ':nr'    => (float) str_replace(',', '.', (string) ($body['nominal_rate'] ?? '13')),
-                ':dae'   => (float) str_replace(',', '.', (string) ($body['dae'] ?? '14.5')),
-                ':fee'   => (float) str_replace(',', '.', (string) ($body['admin_fee'] ?? '10')),
-                ':calc'  => (float) str_replace(',', '.', (string) ($body['calc_rate'] ?? '14.5')),
-                ':terms' => trim((string) ($body['terms'] ?? '12,18,24,36,48,60')),
-                ':pt'    => trim((string) ($body['page_title'] ?? '')),
-                ':ph'    => trim((string) ($body['page_html'] ?? '')),
-            ]);
-        } catch (Throwable) {
-            // ignore
         }
 
         return $this->to($response, '/setari?ok=1');
@@ -188,15 +165,5 @@ final class SettingsController extends BaseController
             $this->content()->deletePage((int) ($args['id'] ?? 0));
         }
         return $this->to($response, '/setari/pagini?ok=1');
-    }
-
-    private function financeRow(): array
-    {
-        try {
-            $r = $this->pdo->query("SELECT * FROM finance WHERE id = 1")->fetch();
-            return $r ?: [];
-        } catch (Throwable) {
-            return [];
-        }
     }
 }

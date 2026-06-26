@@ -110,7 +110,8 @@ final class Repository
     {
         $row = $this->one(
             "SELECT p.id, p.brand, p.name, p.subtitle, p.slug, p.year, p.price, p.discount_pct,
-                    p.licence, p.cover_image, c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
+                    p.licence, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
+                    c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
              " . self::PROD_JOIN . "
              WHERE (c.id = :a OR c.parent_id = :b)
                AND p.is_active = 1 AND p.cover_image IS NOT NULL AND p.cover_image <> ''
@@ -168,7 +169,8 @@ final class Repository
 
         $rows = $this->all(
             "SELECT p.id, p.brand, p.name, p.subtitle, p.slug, p.year, p.price, p.discount_pct,
-                    p.licence, p.cover_image, c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
+                    p.licence, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
+                    c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
              " . self::PROD_JOIN . "
              WHERE {$where}
              ORDER BY p.position, p.year DESC, p.name",
@@ -199,7 +201,8 @@ final class Repository
         $params[] = $query . '%';
         $rows = $this->all(
             "SELECT p.id, p.brand, p.name, p.subtitle, p.slug, p.year, p.price, p.discount_pct,
-                    p.licence, p.cover_image, c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
+                    p.licence, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
+                    c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
              " . self::PROD_JOIN . "
              WHERE p.is_active = 1 AND " . implode(' AND ', $conds) . "
              ORDER BY (p.name LIKE ?) DESC, p.year DESC, p.name
@@ -240,7 +243,8 @@ final class Repository
     {
         $rows = $this->all(
             "SELECT p.id, p.brand, p.name, p.subtitle, p.slug, p.year, p.price, p.discount_pct,
-                    p.licence, p.cover_image, c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
+                    p.licence, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
+                    c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
              " . self::PROD_JOIN . "
              WHERE p.is_active = 1
              ORDER BY p.id DESC
@@ -258,7 +262,8 @@ final class Repository
     {
         $rows = $this->all(
             "SELECT p.id, p.brand, p.name, p.subtitle, p.slug, p.year, p.price, p.discount_pct,
-                    p.licence, p.cover_image, c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
+                    p.licence, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
+                    c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
              " . self::PROD_JOIN . "
              WHERE p.is_active = 1 AND p.year = :year
              ORDER BY RAND()
@@ -303,7 +308,8 @@ final class Repository
         }
         $rows = $this->all(
             "SELECT p.id, p.brand, p.name, p.subtitle, p.slug, p.year, p.price, p.discount_pct,
-                    p.licence, p.cover_image, c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
+                    p.licence, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
+                    c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
              " . self::PROD_JOIN . "
              WHERE p.category_id = :cid AND p.id <> :id
              ORDER BY p.position, p.year DESC
@@ -604,6 +610,8 @@ final class Repository
             'price'        => (int) $r['price'],
             'old_price'    => $this->oldPrice($r),
             'discount'     => (int) round((float) $r['discount_pct']),
+            // promoție = preț redus SAU conținut în promo_html → ribon pe card
+            'promo'        => $this->oldPrice($r) !== null || !empty($r['has_promo']),
             'licence'      => $r['licence'],
             'cat'          => ucfirst((string) ($r['sub_slug'] ?: $r['top_slug'])),
             'image'        => self::imagePath($r['brand'], 'cover', $r['cover_image']),

@@ -80,7 +80,7 @@
                 <a class="card-moto" href="{{ base }}{{ m.url }}">
                     <div class="card-moto__media{{ m.image ? '' : ' media-ph' }}">
                         {% if m.year %}<span class="badge">{{ m.year }}</span>{% endif %}
-                        {% if m.old_price %}<span class="badge badge--sale badge--tr">−{{ m.discount }}%</span>{% endif %}
+                        {% if m.promo %}<span class="ribbon-promo">Promoție</span>{% endif %}
                         {% if m.image %}
                             <img src="{{ base }}{{ m.image }}" alt="{{ m.name }}" loading="lazy" width="900" height="600"
                                  onerror="this.closest('.card-moto__media').classList.add('media-ph');this.remove()">
@@ -95,8 +95,10 @@
                         </div>
                         <h3 class="card-moto__name">{{ m.name }}</h3>
                         <div class="card-moto__foot">
-                            {% set pr = prices(m.price) %}
-                            <span class="price"><small>de la</small> {{ pr.eur }}<span class="price__ron">{{ pr.ron }}</span></span>
+                            {% if m.price %}
+                                {% set pr = prices(m.price, m.brand) %}
+                                <span class="price"><small>de la</small> {{ pr.eur }}<span class="price__ron">{{ pr.ron }}</span></span>
+                            {% endif %}
                             <span class="link-arrow link-arrow--sm">Detalii <span aria-hidden="true">→</span></span>
                         </div>
                     </div>

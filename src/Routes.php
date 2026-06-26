@@ -152,6 +152,9 @@ return function (App $app, Twig $twig, array $container): void {
     // Service — description + note + price list
     $app->get($adminBase . '/service',                       $adminCtl('ServiceController', 'index'));
     $app->post($adminBase . '/service',                      $adminCtl('ServiceController', 'save'));
+    // Finanțare — config UniCredit + pagina /finantare
+    $app->get($adminBase . '/finantare',                     $adminCtl('FinanceController', 'index'));
+    $app->post($adminBase . '/finantare',                    $adminCtl('FinanceController', 'save'));
     // Settings
     $app->get($adminBase . '/setari',                              $adminCtl('SettingsController', 'index'));
     $app->post($adminBase . '/setari',                             $adminCtl('SettingsController', 'save'));

@@ -70,7 +70,7 @@
                     <a class="card-moto" href="{{ base }}{{ m.url }}">
                         <div class="card-moto__media{{ m.image ? '' : ' media-ph' }}">
                             {% if m.year %}<span class="badge">{{ m.year }}</span>{% endif %}
-                            {% if m.old_price %}<span class="badge badge--sale badge--tr">−{{ m.discount }}%</span>{% endif %}
+                            {% if m.promo %}<span class="ribbon-promo">Promoție</span>{% endif %}
                             <label class="card-compare" data-cmp title="Adaugă la comparație">
                                 <input type="checkbox" data-cmp-cb value="{{ m.slug }}" data-name="{{ m.name }}">
                                 <span class="card-compare__txt">Compară</span>
@@ -89,12 +89,14 @@
                             </div>
                             <h2 class="card-moto__name">{{ m.name }}</h2>
                             <div class="card-moto__foot">
-                                {% set pr = prices(m.price) %}
-                                <span class="price">
-                                    <small>de la</small>
-                                    {{ pr.eur }}
-                                    <span class="price__ron">{{ pr.ron }}{% if m.old_price %} · <s>{{ prices(m.old_price).eur }}</s>{% endif %}</span>
-                                </span>
+                                {% if m.price %}
+                                    {% set pr = prices(m.price, m.brand) %}
+                                    <span class="price">
+                                        <small>de la</small>
+                                        {{ pr.eur }}
+                                        <span class="price__ron">{{ pr.ron }}{% if m.old_price %} · <s>{{ prices(m.old_price, m.brand).eur }}</s>{% endif %}</span>
+                                    </span>
+                                {% endif %}
                                 <span class="link-arrow link-arrow--sm">Detalii <span aria-hidden="true">→</span></span>
                             </div>
                         </div>

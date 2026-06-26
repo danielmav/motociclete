@@ -55,15 +55,18 @@ if (!function_exists('credit_annuity')) {
 if (!function_exists('price_dual')) {
     /**
      * Turn a stored EUR amount into VAT-inclusive EUR + RON display strings.
+     * The RON conversion uses the brand-specific rate (Yamaha=BNR, CFMOTO=BRD)
+     * when `$brand` is given, else the generic `rate`.
      *
      * @param array{rate:float,vat:int,incl:bool} $cur currency config
      * @return array{eur:string,ron:string,eur_raw:int,ron_raw:int}
      */
-    function price_dual(float|int $eur, array $cur): array
+    function price_dual(float|int $eur, array $cur, ?string $brand = null): array
     {
+        $rate = \App\Support\Settings::rateForBrand($cur, $brand);
         $gross = $cur['incl'] ? (float) $eur : (float) $eur * (1 + $cur['vat'] / 100);
         $grossEur = (int) round($gross);
-        $grossRon = (int) round($gross * $cur['rate']);
+        $grossRon = (int) round($gross * $rate);
         return [
             'eur'     => money_ron($grossEur, '€'),
             'ron'     => money_lei($grossRon),
