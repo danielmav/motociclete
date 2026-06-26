@@ -126,7 +126,7 @@ final class Repository
     {
         return $this->all(
             "SELECT c.id, c.name, c.slug, c.description,
-                    (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id) AS product_count
+                    (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id AND p.is_active = 1) AS product_count
              FROM categories c
              WHERE c.parent_id = :pid
              ORDER BY c.position, c.name",
@@ -172,7 +172,7 @@ final class Repository
                     p.licence, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
                     c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
              " . self::PROD_JOIN . "
-             WHERE {$where}
+             WHERE {$where} AND p.is_active = 1
              ORDER BY p.position, p.year DESC, p.name",
             $params
         );
@@ -311,7 +311,7 @@ final class Repository
                     p.licence, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
                     c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
              " . self::PROD_JOIN . "
-             WHERE p.category_id = :cid AND p.id <> :id
+             WHERE p.category_id = :cid AND p.id <> :id AND p.is_active = 1
              ORDER BY p.position, p.year DESC
              LIMIT {$limit}",
             [':cid' => $product['category_id'], ':id' => $product['id']]
