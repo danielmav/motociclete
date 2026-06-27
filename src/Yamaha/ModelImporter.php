@@ -103,14 +103,17 @@ final class ModelImporter
         $out['ok'] = true;
         $out['draft'] = [
             'name'         => $this->clean((string) $product['name']),
-            'subtitle'     => '',
+            // Slogan = headerul scurt al modelului (poate fi în engleză dacă Yamaha nu l-a tradus).
+            'subtitle'     => $this->loc($attrs['productShortStoryHeader'] ?? null),
             'slug'         => $slug,
             'year'         => $year,
             'price'        => 0,                       // prețul RO e POA — se completează manual
             'discount_pct' => 0,
             'licence'      => '',
-            'excerpt'      => '',
-            'description'  => '',
+            // Descriere scurtă = introul scurt; descriere lungă = introul lung A/B/C (fallback story body).
+            'excerpt'      => $this->paras($attrs, ['productShortIntro']),
+            'description'  => $this->paras($attrs, ['productLongIntroA', 'productLongIntroB', 'productLongIntroC'])
+                ?: $this->paras($attrs, ['productStoryBodyA', 'productStoryBodyB', 'productStoryBodyC']),
             'promo_html'   => '',
             'details_html' => $detailsHtml,
             'variants_json' => $this->shapeVariants($product['variants'] ?? []),
@@ -416,6 +419,24 @@ final class ModelImporter
     private function clean(string $s): string
     {
         return trim((string) preg_replace('/\s+/u', ' ', str_replace(["\r", "\n"], ' ', $s)));
+    }
+
+    /**
+     * Construiește HTML pt. câmpurile WYSIWYG (excerpt/description): un <p> per
+     * atribut non-gol, în ordinea dată. Textul e plain → escapat.
+     * @param array<string,mixed> $attrs
+     * @param array<int,string> $names
+     */
+    private function paras(array $attrs, array $names): string
+    {
+        $html = '';
+        foreach ($names as $n) {
+            $t = $this->loc($attrs[$n] ?? null);
+            if ($t !== '') {
+                $html .= '<p>' . htmlspecialchars($t, ENT_QUOTES, 'UTF-8') . '</p>';
+            }
+        }
+        return $html;
     }
 
     /** Lowercase + fără diacritice pt. potrivirea numelor de grup. */
