@@ -14,7 +14,7 @@
 
   function writeCookie(analytics) {
     var secure = location.protocol === 'https:' ? '; Secure' : '';
-    document.cookie = NAME + '=' + encodeURIComponent(VERSION + ':analytics=' + (analytics ? '1' : '0')) +
+    document.cookie = NAME + '=' + VERSION + ':analytics=' + (analytics ? '1' : '0') +
       '; path=/; max-age=' + MAX_AGE + '; SameSite=Lax' + secure;
   }
 
