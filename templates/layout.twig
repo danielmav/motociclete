@@ -5,14 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>window.BASE={{ base|json_encode|raw }};document.documentElement.classList.add('js');</script>
 
-    {# Google Analytics (GA4). Cloudflare injects email-decode.min.js automatically — not added here. #}
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VTV11ZJ0P9"></script>
+    {# Google Analytics (GA4) with Consent Mode v2.
+       Consent defaults to DENIED (EEA) so GA runs cookieless until the user opts in
+       via the cookie banner (assets/js/consent.js, cookie `dm_consent`).
+       Cloudflare injects email-decode.min.js automatically — not added here. #}
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
+      gtag('consent', 'default', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'denied',
+        wait_for_update: 500
+      });
+      // Returning visitor who already granted analytics: lift consent before GA loads.
+      try {
+        if (/(?:^|;\s*)dm_consent=[^;]*analytics=1/.test(document.cookie)) {
+          gtag('consent', 'update', { analytics_storage: 'granted' });
+        }
+      } catch (e) {}
       gtag('js', new Date());
       gtag('config', 'G-VTV11ZJ0P9');
     </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VTV11ZJ0P9"></script>
 
     {% set canonical = app.url ~ (canonical_path|default('/')) %}
     {% set og_image_url = app.url ~ (og_image|default('/assets/img/og-default.jpg')) %}
