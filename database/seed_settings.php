@@ -32,6 +32,21 @@ if ((int) $pdo->query('SELECT COUNT(*) FROM contact_departments')->fetchColumn()
 $pages = [
     ['termeni-si-conditii', 'Termeni și condiții', '<p>Conținutul termenilor și condițiilor va fi completat din administrare.</p>'],
     ['confidentialitate', 'Politica de confidențialitate', '<p>Politica de confidențialitate va fi completată din administrare.</p>'],
+    ['politica-cookies', 'Politica de cookie-uri', '<h2>Ce sunt cookie-urile</h2>
+<p>Cookie-urile sunt fișiere text mici stocate pe dispozitivul tău. Le folosim pentru funcționarea site-ului și, cu acordul tău, pentru analiză.</p>
+<h2>Cookie-uri pe care le folosim</h2>
+<table>
+<thead><tr><th>Cookie</th><th>Categorie</th><th>Scop</th><th>Durată</th></tr></thead>
+<tbody>
+<tr><td>dm_garage</td><td>Necesar</td><td>Sesiunea de autentificare „Garajul meu"</td><td>Sesiune</td></tr>
+<tr><td>dm_consent</td><td>Necesar</td><td>Reține preferința ta privind cookie-urile</td><td>12 luni</td></tr>
+<tr><td>__cf_bm</td><td>Necesar</td><td>Securitate / anti-bot (Cloudflare)</td><td>30 min</td></tr>
+<tr><td>_ga, _ga_*</td><td>Analitic</td><td>Google Analytics 4 — statistici anonime de utilizare</td><td>până la 13 luni</td></tr>
+</tbody>
+</table>
+<h2>Gestionarea consimțământului</h2>
+<p>Îți poți schimba oricând alegerea din linkul „Setări cookie-uri" din subsolul site-ului. Cookie-urile analitice se activează doar după acordul tău explicit.</p>
+<p>Vezi și <a href="/confidentialitate">Politica de confidențialitate</a>.</p>'],
     ['despre', 'Despre noi', '<p>Dual Motors — dealer autorizat Yamaha și CFMOTO, showroom Pipera, București.</p>'],
 ];
 $st = $pdo->prepare('INSERT IGNORE INTO pages (slug, title, body_html, is_active) VALUES (?,?,?,1)');
