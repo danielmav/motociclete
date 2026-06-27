@@ -66,6 +66,7 @@
                         <label>Serie șasiu<input type="text" name="sasiu"></label>
                         <label>Lucrări solicitate<textarea name="lucrari" rows="3"></textarea></label>
 
+                        {% include 'partials/_consent-field.twig' %}
                         <p class="booking-form__err" data-form-err hidden></p>
                         <button type="submit" class="btn btn--primary booking-form__submit">Trimite cererea</button>
                     </form>
