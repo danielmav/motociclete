@@ -40,12 +40,23 @@ GA4 rulează în **Consent Mode v2**, implicit `denied`; cookie-urile `_ga` se s
 | Drepturile GDPR în pagina de confidențialitate | **Parțial** — drepturile sunt prezente pe `/confidentialitate` (prod); de completat cu detalii de prelucrare/retention |
 | IP-uri stocate fără politică de ștergere | **Remediat** — `database/retention.php` (cron zilnic): IP la 30 zile, restul PII la 12 luni, loguri șterse |
 
+### Date reziduale după anonimizare (decizie asumată)
+
+La anonimizarea PII (12 luni), rândurile de lead/programare **se păstrează** golite de
+date personale, pentru statistici agregate:
+- `site_messages`: golite `name`, `email`, `phone`, `message`, `licence`, `ip`;
+  păstrate `type`, `brand`, `product_slug`, `product_name`, `created_at`.
+- `service_bookings`: golite `name`, `email`, `phone`, `sasiu` (serie șasiu), `lucrari`, `ip`;
+  **păstrate `marca`, `model`, `an_fabricatie`, `kilometri`**, `status`, `created_at`.
+  Model + an + km sunt cvasi-identificatoare într-un set mic — decizie de business
+  asumată (valoare statistică > risc rezidual, după eliminarea identificatorilor direcți).
+
 ## 4. Acțiuni pentru companie (non-tehnice / decizii de business)
 
 1. **Conținut juridic** — finalizează textul paginilor `/confidentialitate` și `/termeni-si-conditii` (validare juridică umană).
 2. **Responsabil prelucrare date** — desemnează persoana de contact pentru solicitări GDPR și, dacă e cazul, înregistrarea la ANSPDCP.
 3. **Politică de retention** — implementată prin `database/retention.php` (cron zilnic 03:30). Praguri: IP 30 zile, PII 12 luni, `email_log`/`client_otp` șterse. Conturile My Garage inactive (`clienti`/`service_requests`) rămân de evaluat separat.
-4. **Anonimizare IP** — evaluează stocarea trunchiată/anonimizată a IP-urilor existente (parte din runda de retention).
+4. **Anonimizare IP** — **implementată** prin `database/retention.php` (Stage A, IP golit la 30 zile).
 5. **Acorduri de prelucrare (DPA)** cu procesatorii: Google (Analytics), Cloudflare, furnizorul de găzduire cPanel + SMTP, BikerShop / PartsEurope.
 
 ## 5. Verificare consimțământ (regresie)

@@ -68,7 +68,7 @@ $op(
 $op(
     'site_messages PII (' . PII_DAYS . 'z)',
     'SELECT COUNT(*) FROM site_messages WHERE created_at < (NOW() - INTERVAL ' . PII_DAYS . ' DAY) AND anonymized_at IS NULL',
-    "UPDATE site_messages SET name='', email='', phone='', message=NULL, ip=NULL, anonymized_at=NOW() WHERE created_at < (NOW() - INTERVAL " . PII_DAYS . ' DAY) AND anonymized_at IS NULL'
+    "UPDATE site_messages SET name='', email='', phone='', message=NULL, licence=NULL, ip=NULL, anonymized_at=NOW() WHERE created_at < (NOW() - INTERVAL " . PII_DAYS . ' DAY) AND anonymized_at IS NULL'
 );
 
 // 2. service_bookings — Stage A (IP, 30 zile)
