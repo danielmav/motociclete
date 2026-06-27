@@ -92,7 +92,8 @@ CREATE TABLE IF NOT EXISTS `service_bookings` (
     `status`        ENUM('nou','confirmat','inchis') NOT NULL DEFAULT 'nou',
     `is_read`       TINYINT(1) NOT NULL DEFAULT 0,
     `ip`            VARCHAR(45) NULL,
-    `created_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `created_at`     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `anonymized_at`  DATETIME NULL,
     PRIMARY KEY (`id`),
     KEY `idx_service_bookings_status` (`status`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
