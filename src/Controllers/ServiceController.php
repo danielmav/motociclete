@@ -56,7 +56,7 @@ final class ServiceController
         }
 
         // GDPR: explicit consent is required to process the booking.
-        if (trim((string) ($d['consent'] ?? '')) === '') {
+        if (trim((string) ($d['consent'] ?? '')) !== '1') {
             return $this->json($response->withStatus(422), ['ok' => false, 'error' => 'Bifează acordul privind prelucrarea datelor personale.']);
         }
 
