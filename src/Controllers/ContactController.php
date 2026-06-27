@@ -48,6 +48,11 @@ final class ContactController
             return $this->json($response, ['ok' => true]);
         }
 
+        // GDPR: explicit consent is required to process the lead.
+        if (trim((string) ($data['consent'] ?? '')) === '') {
+            return $this->json($response->withStatus(422), ['ok' => false, 'error' => 'Bifează acordul privind prelucrarea datelor personale.']);
+        }
+
         $name  = trim((string) ($data['name'] ?? ''));
         $email = trim((string) ($data['email'] ?? ''));
         $phone = trim((string) ($data['phone'] ?? ''));

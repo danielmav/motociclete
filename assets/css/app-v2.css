@@ -369,3 +369,6 @@
 .cc__cat-head input{margin-top:.2rem}
 .cc__modal-actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1.25rem;flex-wrap:wrap}
 @media(max-width:640px){.cc__banner{flex-direction:column;align-items:stretch}.cc__actions{justify-content:stretch}.cc__actions .cc__btn{flex:1}}
+
+.consent-field{display:flex;gap:.5rem;align-items:flex-start;font-size:.82rem;line-height:1.45;margin:.25rem 0 .75rem}
+.consent-field input{margin-top:.15rem}

@@ -43,6 +43,7 @@
                     <label class="field"><span>Mesaj</span>
                         <textarea name="message" rows="3"></textarea></label>
                 {% endif %}
+                {% include 'partials/_consent-field.twig' %}
                 <p class="lead-form__err" data-lead-err hidden></p>
                 <button type="submit" class="btn btn--primary btn--lg">{{ f.submit }}</button>
             </form>
