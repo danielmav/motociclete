@@ -357,6 +357,8 @@
 .cc__text a{color:#fff;text-decoration:underline}
 .cc__actions{display:flex;gap:.5rem;flex-wrap:wrap}
 .cc__btn{white-space:nowrap}
+.cc__banner .btn--ghost{color:#fff;border-color:rgba(255,255,255,.5)}
+.cc__banner .btn--ghost:hover{color:#fff;border-color:#fff;background:rgba(255,255,255,.1)}
 .cc__modal{position:fixed;inset:0;z-index:1001;display:flex;align-items:center;justify-content:center;padding:1rem}
 .cc__modal[hidden]{display:none}
 .cc__overlay{position:absolute;inset:0;background:rgba(0,0,0,.55)}
