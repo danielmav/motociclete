@@ -91,7 +91,7 @@
     {% block head_extra %}{% endblock %}
 
     <link rel="stylesheet" href="{{ base }}/assets/css/app.css?v=40">
-    <link rel="stylesheet" href="{{ base }}/assets/css/app-v2.css?v=3">
+    <link rel="stylesheet" href="{{ base }}/assets/css/app-v2.css?v=4">
     <link rel="icon" href="{{ base }}/assets/img/logo.png" type="image/png">
 </head>
 <body>
@@ -104,7 +104,9 @@
 
     {% include 'partials/footer.twig' %}
     {% include 'partials/announcement.twig' %}
+    {% include 'partials/cookie-consent.twig' %}
 
+    <script src="{{ base }}/assets/js/consent.js?v=1" defer></script>
     <script src="{{ base }}/assets/js/app.js?v=20" defer></script>
     <script src="{{ base }}/assets/js/app-v2.js?v=3" defer></script>
 </body>

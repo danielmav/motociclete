@@ -345,3 +345,26 @@
 @media (max-width: 560px) {
     .herov2__stats { gap: 1.3rem; flex-wrap: wrap; }
 }
+
+/* ---- Cookie consent ---- */
+.cc__banner{position:fixed;left:0;right:0;bottom:0;z-index:1000;display:flex;gap:1rem;
+  align-items:center;justify-content:space-between;flex-wrap:wrap;
+  padding:1rem clamp(1rem,4vw,2rem);background:#0E0E10;color:#fff;
+  box-shadow:0 -6px 24px rgba(0,0,0,.25)}
+.cc__text{max-width:62ch}
+.cc__text strong{display:block;font-weight:800;margin-bottom:.25rem}
+.cc__text p{margin:0;font-size:.9rem;line-height:1.5;color:#d6d6d8}
+.cc__text a{color:#fff;text-decoration:underline}
+.cc__actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.cc__btn{white-space:nowrap}
+.cc__modal{position:fixed;inset:0;z-index:1001;display:flex;align-items:center;justify-content:center;padding:1rem}
+.cc__overlay{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.cc__dialog{position:relative;background:#fff;color:#0E0E10;max-width:560px;width:100%;
+  border-radius:12px;padding:1.5rem clamp(1rem,4vw,2rem);max-height:90vh;overflow:auto}
+.cc__x{position:absolute;top:.5rem;right:.75rem;background:none;border:0;font-size:1.6rem;line-height:1;cursor:pointer}
+.cc__title{margin:0 0 1rem;font-size:1.25rem}
+.cc__cat{padding:.75rem 0;border-top:1px solid #eee}
+.cc__cat-head{display:flex;gap:.6rem;align-items:flex-start;font-size:.9rem;line-height:1.5;cursor:pointer}
+.cc__cat-head input{margin-top:.2rem}
+.cc__modal-actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1.25rem;flex-wrap:wrap}
+@media(max-width:640px){.cc__banner{flex-direction:column;align-items:stretch}.cc__actions{justify-content:stretch}.cc__actions .cc__btn{flex:1}}

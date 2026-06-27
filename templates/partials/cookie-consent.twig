@@ -1,0 +1,43 @@
+{# EU cookie consent — banner + preferences modal. Logic in assets/js/consent.js.
+   Hidden by default (shown by JS only when there is no stored decision). #}
+<div class="cc" data-cc hidden>
+  <div class="cc__banner" role="dialog" aria-modal="false" aria-label="Consimțământ cookie-uri" data-cc-banner>
+    <div class="cc__text">
+      <strong>Folosim cookie-uri</strong>
+      <p>Folosim cookie-uri necesare pentru funcționarea site-ului și, cu acordul tău,
+         cookie-uri de analiză (Google Analytics) pentru a înțelege cum este folosit site-ul.
+         Detalii în <a href="{{ base }}/politica-cookies">Politica de cookie-uri</a>.</p>
+    </div>
+    <div class="cc__actions">
+      <button type="button" class="btn btn--ghost cc__btn" data-cc-reject>Doar necesare</button>
+      <button type="button" class="btn btn--ghost cc__btn" data-cc-prefs>Setări</button>
+      <button type="button" class="btn btn--primary cc__btn" data-cc-accept>Accept toate</button>
+    </div>
+  </div>
+
+  <div class="cc__modal" data-cc-modal hidden>
+    <div class="cc__overlay" data-cc-modal-close></div>
+    <div class="cc__dialog" role="dialog" aria-modal="true" aria-labelledby="cc-prefs-title">
+      <button type="button" class="cc__x" data-cc-modal-close aria-label="Închide">&times;</button>
+      <h2 class="cc__title" id="cc-prefs-title">Setări cookie-uri</h2>
+
+      <div class="cc__cat">
+        <label class="cc__cat-head">
+          <input type="checkbox" checked disabled>
+          <span><strong>Necesare</strong> — sesiune, securitate, preferința de consimțământ. Mereu active.</span>
+        </label>
+      </div>
+      <div class="cc__cat">
+        <label class="cc__cat-head">
+          <input type="checkbox" data-cc-analytics>
+          <span><strong>Analitice</strong> — Google Analytics 4, statistici anonime de utilizare.</span>
+        </label>
+      </div>
+
+      <div class="cc__modal-actions">
+        <button type="button" class="btn btn--ghost cc__btn" data-cc-reject>Refuz analitice</button>
+        <button type="button" class="btn btn--primary cc__btn" data-cc-save>Salvează preferințele</button>
+      </div>
+    </div>
+  </div>
+</div>
