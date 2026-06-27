@@ -38,13 +38,13 @@ GA4 rulează în **Consent Mode v2**, implicit `denied`; cookie-urile `_ga` se s
 | Formularele nu cereau consimțământ explicit | **Remediat** — checkbox obligatoriu + validare server (lead + service) |
 | Login My Garage fără link la confidențialitate | **Remediat** — notă + link |
 | Drepturile GDPR în pagina de confidențialitate | **Parțial** — drepturile sunt prezente pe `/confidentialitate` (prod); de completat cu detalii de prelucrare/retention |
-| IP-uri stocate fără politică de ștergere | **Recomandat** — vezi §4 (retention cron) |
+| IP-uri stocate fără politică de ștergere | **Remediat** — `database/retention.php` (cron zilnic): IP la 30 zile, restul PII la 12 luni, loguri șterse |
 
 ## 4. Acțiuni pentru companie (non-tehnice / decizii de business)
 
 1. **Conținut juridic** — finalizează textul paginilor `/confidentialitate` și `/termeni-si-conditii` (validare juridică umană).
 2. **Responsabil prelucrare date** — desemnează persoana de contact pentru solicitări GDPR și, dacă e cazul, înregistrarea la ANSPDCP.
-3. **Politică de retention + ștergere automată** — implementează un cron care șterge/anonimizează `site_messages`, `service_bookings`, `email_log` conform termenelor din §1 (neimplementat în această rundă).
+3. **Politică de retention** — implementată prin `database/retention.php` (cron zilnic 03:30). Praguri: IP 30 zile, PII 12 luni, `email_log`/`client_otp` șterse. Conturile My Garage inactive (`clienti`/`service_requests`) rămân de evaluat separat.
 4. **Anonimizare IP** — evaluează stocarea trunchiată/anonimizată a IP-urilor existente (parte din runda de retention).
 5. **Acorduri de prelucrare (DPA)** cu procesatorii: Google (Analytics), Cloudflare, furnizorul de găzduire cPanel + SMTP, BikerShop / PartsEurope.
 
