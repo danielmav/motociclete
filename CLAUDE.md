@@ -212,9 +212,9 @@ Vezi `DEPLOY.md`. **Repo GitHub `danielmav/motociclete` e PUBLIC** → nu comite
 `/home/dualmotors/public_html/motociclete.com.ro` (cont cPanel **`dualmotors`**, fără underscore);
 „Update from Remote" / `git pull` pe loc = suficient pentru cod. `vendor/` (gitignored) via `vendor.zip` + FTP.
 Permisiuni post-clone: `.htaccess`=644, foldere=755.
-- **PHP server = alt-php 8.1:** binar `/opt/alt/php81/usr/bin/php` (are pdo_mysql+curl); `composer` = `/opt/cpanel/composer/bin/composer` (rulat de `.cpanel.yml` la „Deploy HEAD Commit").
+- **PHP server = ea-php 8.1** (PHP-ul asignat domeniului în MultiPHP): binar `/usr/local/bin/ea-php81` (= `/opt/cpanel/ea-php81/root/usr/bin/php`), are pdo_mysql+curl; `composer` = `/opt/cpanel/composer/bin/composer` (rulat de `.cpanel.yml` la „Deploy HEAD Commit"). (Verifică binarul cu `ea-php81 -m | grep -Ei 'pdo_mysql|curl'`.)
 - **`.htaccess` are un bloc PHP generat de cPanel** (MultiPHP) → apare mereu „modified" și blochează „Deploy" din cPanel. NU-l comite (strică PHP pe Laragon local). Pe server o singură dată: `git update-index --skip-worktree .htaccess`. `drive-test/` (app separată sub docroot) + `.duckversions/` (artefact File Manager) sunt gitignored.
-- **Cron-uri (alt-php81):** accesorii Yamaha lunar (`import_yamaha_accessories.php --apply`); curs valutar zilnic 07:00 (`update_currency.php`); retention GDPR zilnic 03:30 (`retention.php --apply` — anonimizare IP 30z / PII 12 luni, ștergere `email_log`/`client_otp`); loguri în `/home/dualmotors/`.
+- **Cron-uri (ea-php81, `/usr/local/bin/ea-php81`):** accesorii Yamaha lunar (`import_yamaha_accessories.php --apply`); curs valutar zilnic 07:00 (`update_currency.php`); retention GDPR zilnic 03:30 (`retention.php --apply` — anonimizare IP 30z / PII 12 luni, ștergere `email_log`/`client_otp`); loguri în `/home/dualmotors/`.
 - **Post-deploy:** la coloane/schemă noi rulează `database/migrate_admin.php`; după schimbări catalog/meniu șterge `storage/cache/navv2.cache`.
 
 **Hook pre-commit anti-secrete** (`.githooks/pre-commit`, gitleaks): blochează commit-urile cu secrete.
