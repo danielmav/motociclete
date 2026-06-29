@@ -192,7 +192,9 @@ final class ClientController
                 (string) ($this->mail['service'] ?? $this->mail['dealer']),
                 'Cerere programare service — ' . $bike['model'],
                 "Client: {$email}\nModel: {$bike['model']}" . ($bike['plate'] ? " ({$bike['plate']})" : '')
-                . "\nData preferată: " . ($date ?: '—') . "\n\nProblemă:\n{$problem}"
+                . "\nData preferată: " . ($date ?: '—') . "\n\nProblemă:\n{$problem}",
+                'service',
+                $email
             );
             return $this->redirect($response, '/garage/service?sent=1');
         }

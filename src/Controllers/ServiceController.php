@@ -117,7 +117,7 @@ final class ServiceController
             'Data: ' . date('Y-m-d H:i:s'),
         ];
         try {
-            $this->mailer->send($this->serviceMail, 'Programare service' . ($moto !== '' ? ': ' . $moto : ''), implode("\n", $lines), 'service');
+            $this->mailer->send($this->serviceMail, 'Programare service' . ($moto !== '' ? ': ' . $moto : ''), implode("\n", $lines), 'service', (string) ($f['email'] ?? ''));
         } catch (Throwable) {
             // never let mail failure break the JSON response
         }

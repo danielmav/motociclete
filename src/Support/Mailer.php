@@ -24,7 +24,7 @@ final class Mailer
      * Send (or log) a plain-text email. Returns true on success/logged. Every
      * call is persisted to `email_log` (admin Messages), tagged with $context.
      */
-    public function send(string $to, string $subject, string $body, string $context = ''): bool
+    public function send(string $to, string $subject, string $body, string $context = '', string $replyTo = ''): bool
     {
         $ok = true;
         $status = 'sent';
@@ -34,7 +34,7 @@ final class Mailer
             $status = 'logged';
         } else {
             try {
-                $ok = $this->smtpSend($to, $subject, $body);
+                $ok = $this->smtpSend($to, $subject, $body, $replyTo);
                 $status = $ok ? 'sent' : 'failed';
             } catch (Throwable $e) {
                 // Never let a mail failure break the flow; log it and fall back.
@@ -82,7 +82,7 @@ final class Mailer
         return (bool) @file_put_contents($this->logDir . '/mail.log', $line . "\n", FILE_APPEND | LOCK_EX);
     }
 
-    private function smtpSend(string $to, string $subject, string $body): bool
+    private function smtpSend(string $to, string $subject, string $body, string $replyTo = ''): bool
     {
         $secure = (string) ($this->cfg['smtp_secure'] ?? 'tls');
         $from = (string) $this->cfg['from'];
@@ -111,6 +111,11 @@ final class Mailer
 
         $mail->setFrom($from, $fromName);
         $mail->addAddress($to);
+        // Reply-To = clientul → echipa poate răspunde direct din info@/service@, nu către
+        // căsuța de trimitere (website@, necitită). Doar dacă e o adresă validă.
+        if ($replyTo !== '' && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+            $mail->addReplyTo($replyTo);
+        }
         $mail->isHTML(false);
         $mail->Subject = $subject;
         $mail->Body = $body;
