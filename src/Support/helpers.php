@@ -132,7 +132,9 @@ if (!function_exists('slugify')) {
         ];
         $text = strtr($text, $map);
         $text = preg_replace('~[^\pL\d]+~u', '-', $text) ?? '';
-        $text = trim(strtolower($text), '-');
-        return $text === '' ? 'n-a' : $text;
+        // Întoarce '' pentru input gol/imposibil de sluguit, ca idiomul caller-ilor
+        // `slugify($slug) ?: slugify($name)` să cadă corect pe nume (un sentinel
+        // truthy ca 'n-a' ar fi rupt fallback-ul → slug literal „n-a”).
+        return trim(strtolower($text), '-');
     }
 }
