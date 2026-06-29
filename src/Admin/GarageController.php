@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Admin;
 
 use App\Client\Repository as Client;
-use App\Catalog\Repository as Catalog;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Throwable;
@@ -22,11 +21,6 @@ final class GarageController extends BaseController
         return $this->container['client'];
     }
 
-    private function catalog(): Catalog
-    {
-        return $this->container['catalog'];
-    }
-
     /** GET {base}/garage */
     public function index(Request $request, Response $response): Response
     {
@@ -41,6 +35,7 @@ final class GarageController extends BaseController
             'an'      => trim((string) ($qp['an'] ?? '')),
         ];
         $opts = $this->client()->adminBikeFilters();
+        $bikes = $this->client()->adminBikes($q !== '' ? $q : null, array_filter($filters));
         return $this->render($response, 'admin/garage/index.twig', [
             'active'  => 'garage',
             'q'       => $q,
@@ -48,8 +43,36 @@ final class GarageController extends BaseController
             'judete'  => $opts['judete'],
             'modele'  => $opts['modele'],
             'ani'     => $opts['ani'],
-            'bikes'   => $this->client()->adminBikes($q !== '' ? $q : null, array_filter($filters)),
+            'groups'  => $this->groupByOwner($bikes),
         ]);
+    }
+
+    /**
+     * Grupează motocicletele pe proprietar (email, fallback telefon) — un client cu
+     * mai multe rânduri `clienti`/motociclete apare o singură dată, cu toate motoarele.
+     * @param array<int,array<string,mixed>> $bikes
+     * @return array<int,array<string,mixed>>
+     */
+    private function groupByOwner(array $bikes): array
+    {
+        $groups = [];
+        foreach ($bikes as $b) {
+            $email = (string) ($b['email_norm'] ?? '');
+            $tel   = (string) ($b['telefon_norm'] ?? '');
+            $key   = $email !== '' ? 'e:' . $email : ($tel !== '' ? 't:' . $tel : 'b:' . $b['id']);
+            if (!isset($groups[$key])) {
+                $groups[$key] = [
+                    'owner'        => $b['owner'] ?? '',
+                    'oras'         => $b['oras'] ?? '',
+                    'judet'        => $b['judet'] ?? '',
+                    'email_norm'   => $email,
+                    'telefon_norm' => $tel,
+                    'bikes'        => [],
+                ];
+            }
+            $groups[$key]['bikes'][] = $b;
+        }
+        return array_values($groups);
     }
 
     /** GET {base}/garage/moto/{id} */
@@ -64,13 +87,14 @@ final class GarageController extends BaseController
             return $response->withStatus(404);
         }
         $bikeId = (int) $bike['id'];
+        $qp = $request->getQueryParams();
         return $this->render($response, 'admin/garage/bike.twig', [
             'active'    => 'garage',
             'bike'      => $bike,
-            'products'  => $this->catalog()->adminProducts(),
             'service'   => $this->client()->serviceRecords($bikeId),
             'incidents' => $this->client()->incidents($bikeId),
-            'saved'     => isset($request->getQueryParams()['ok']),
+            'saved'     => isset($qp['ok']),
+            'error'     => (string) ($qp['err'] ?? ''),
         ]);
     }
 
@@ -84,10 +108,16 @@ final class GarageController extends BaseController
         $id = (int) ($args['id'] ?? 0);
         if ($this->csrfOk($body) && $id > 0) {
             $action = (string) ($body['action'] ?? 'profile');
-            if ($action === 'service') {
-                $this->client()->addServiceRecord($id, $body);
-            } elseif ($action === 'incident') {
-                $this->client()->addIncident($id, $body);
+            if ($action === 'service' || $action === 'incident') {
+                // Nu insera înregistrări goale — descrierea e obligatorie.
+                if (trim((string) ($body['description'] ?? '')) === '') {
+                    return $this->to($response, '/garage/moto/' . $id . '?err=descriere');
+                }
+                if ($action === 'service') {
+                    $this->client()->addServiceRecord($id, $body);
+                } else {
+                    $this->client()->addIncident($id, $body);
+                }
             } else {
                 $this->client()->updateBike($id, $body);
             }

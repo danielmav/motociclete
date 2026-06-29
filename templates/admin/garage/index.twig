@@ -25,17 +25,21 @@
 <table class="adm-table">
     <thead><tr><th>Client</th><th>Oraș</th><th>Contact</th><th>Model</th><th>An vânzare</th><th>Nr.</th><th>Km</th><th></th></tr></thead>
     <tbody>
-    {% for b in bikes %}
-        <tr>
-            <td><strong>{{ b.owner }}</strong></td>
-            <td class="adm-muted">{{ b.oras ?: '—' }}{% if b.judet %}<br><span style="font-size:.85em">{{ b.judet }}</span>{% endif %}</td>
-            <td class="adm-muted">{{ b.email_norm }}<br>{{ b.telefon_norm }}</td>
+    {% for g in groups %}
+        {% for b in g.bikes %}
+        <tr{% if loop.first and g.bikes|length > 1 %} style="border-top:2px solid var(--adm-line,#e2e2e2)"{% endif %}>
+            {% if loop.first %}
+            <td rowspan="{{ g.bikes|length }}"><strong>{{ g.owner }}</strong>{% if g.bikes|length > 1 %}<br><span class="adm-muted" style="font-size:.85em">{{ g.bikes|length }} motociclete</span>{% endif %}</td>
+            <td rowspan="{{ g.bikes|length }}" class="adm-muted">{{ g.oras ?: '—' }}{% if g.judet %}<br><span style="font-size:.85em">{{ g.judet }}</span>{% endif %}</td>
+            <td rowspan="{{ g.bikes|length }}" class="adm-muted">{{ g.email_norm }}<br>{{ g.telefon_norm }}</td>
+            {% endif %}
             <td>{{ b.product_name ?: b.model_label ?: b.unitate ?: '—' }}{% if b.year %} <span class="adm-muted">{{ b.year }}</span>{% endif %}</td>
             <td>{{ b.an ?: '—' }}</td>
             <td>{{ b.plate }}</td>
             <td>{{ b.mileage_km }}</td>
             <td><a class="adm-btn adm-btn--sm" href="{{ admin_base }}/garage/moto/{{ b.id }}">Detalii</a></td>
         </tr>
+        {% endfor %}
     {% else %}
         <tr><td colspan="8" class="adm-muted">Niciun client/motocicletă.</td></tr>
     {% endfor %}

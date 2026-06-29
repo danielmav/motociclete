@@ -4,17 +4,13 @@
 {% block actions %}<a class="adm-btn" href="{{ admin_base }}/garage">← Înapoi</a>{% endblock %}
 
 {% block content %}
+{% if error == 'descriere' %}<div class="adm-alert adm-alert--err" style="max-width:980px;margin-bottom:1rem;padding:.7rem 1rem;border:1px solid #d33;background:#fdecec;color:#a00;border-radius:6px">Descrierea este obligatorie — înregistrarea nu a fost salvată.</div>{% endif %}
 <div class="adm-fieldset" style="max-width:980px">
     <span class="adm-fieldset__t">Profil motocicletă — {{ bike.owner }} ({{ bike.telefon_norm }})</span>
     <form class="adm-form" method="post" action="{{ admin_base }}/garage/moto/{{ bike.id }}" style="margin-top:.8rem">
         <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="profile">
         <div class="adm-grid3">
-            <label>Model din catalog
-                <select name="product_id">
-                    <option value="">— ({{ bike.model_label ?: 'nelegat' }})</option>
-                    {% for p in products %}<option value="{{ p.id }}" {{ bike.product_id == p.id ? 'selected' }}>{{ p.brand }} · {{ p.name }}</option>{% endfor %}
-                </select>
-            </label>
+            <label>Model <input type="text" name="model_label" value="{{ bike.model_label }}" placeholder="ex. Ténéré 700"></label>
             <label>Poreclă <input type="text" name="nickname" value="{{ bike.nickname }}"></label>
             <label>An <input type="number" name="year" value="{{ bike.year }}"></label>
         </div>
@@ -49,7 +45,7 @@
         <label>Data <input type="date" name="service_date"></label>
         <label>Km <input type="number" name="mileage_km"></label>
         <label>Tip <input type="text" name="type" placeholder="revizie / reparație"></label>
-        <label>Descriere <input type="text" name="description"></label>
+        <label>Descriere * <input type="text" name="description" required></label>
         <label>Cost (Lei) <input type="text" name="cost_ron"></label>
         <label>Efectuat de <input type="text" name="performed_by"></label>
         <button class="adm-btn adm-btn--primary adm-btn--sm" type="submit" style="grid-column:span 3;justify-self:start">+ Adaugă revizie</button>
@@ -74,7 +70,7 @@
         <label>Gravitate
             <select name="severity"><option value="minor">minor</option><option value="mediu">mediu</option><option value="major">major</option></select>
         </label>
-        <label>Descriere <input type="text" name="description"></label>
+        <label>Descriere * <input type="text" name="description" required></label>
         <button class="adm-btn adm-btn--primary adm-btn--sm" type="submit" style="grid-column:span 3;justify-self:start">+ Adaugă incident</button>
     </form>
 </div>

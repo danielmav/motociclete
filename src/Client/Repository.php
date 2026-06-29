@@ -307,14 +307,16 @@ final class Repository
             return false;
         }
         try {
+            // Maparea pe `products` a fost scoasă din admin (unele modele nu mai există
+            // în catalog) — edit&m doar eticheta text. `product_id` existent rămâne neatins.
             $stmt = $this->pdo->prepare(
                 "UPDATE client_bikes SET
-                    product_id = :pid, nickname = :nick, color = :color, plate = :plate,
+                    model_label = :label, nickname = :nick, color = :color, plate = :plate,
                     mileage_km = :km, purchase_date = :pdate, year = :year, vin = :vin, notes = :notes
                  WHERE id = :id"
             );
             return $stmt->execute([
-                ':pid'   => $f['product_id'] ?: null,
+                ':label' => trim((string) ($f['model_label'] ?? '')) ?: null,
                 ':nick'  => $f['nickname'] ?: null,
                 ':color' => $f['color'] ?: null,
                 ':plate' => $f['plate'] ?: null,
