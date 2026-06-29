@@ -28,6 +28,7 @@ final class Mailer
     {
         $ok = true;
         $status = 'sent';
+        $error = '';
         if ($this->devLog || empty($this->cfg['smtp_host'])) {
             $ok = $this->logMail($to, $subject, $body);
             $status = 'logged';
@@ -37,12 +38,18 @@ final class Mailer
                 $status = $ok ? 'sent' : 'failed';
             } catch (Throwable $e) {
                 // Never let a mail failure break the flow; log it and fall back.
-                $this->logMail($to, $subject, $body . "\n\n[SMTP ERROR] " . $e->getMessage());
+                $error = $e->getMessage();
+                $this->logMail($to, $subject, $body . "\n\n[SMTP ERROR] " . $error);
                 $ok = false;
                 $status = 'failed';
             }
         }
-        $this->persist($to, $subject, $body, $context, $status);
+        // La eșec, salvează motivul în email_log (în body) ca adminul să vadă DE CE a
+        // picat, nu doar „failed" — altfel cauza rămâne doar în storage/logs/mail.log.
+        $persistBody = ($status === 'failed' && $error !== '')
+            ? $body . "\n\n[SMTP ERROR] " . $error
+            : $body;
+        $this->persist($to, $subject, $persistBody, $context, $status);
         return $ok;
     }
 
