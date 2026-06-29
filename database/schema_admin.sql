@@ -105,3 +105,15 @@ CREATE TABLE IF NOT EXISTS `email_log` (
     PRIMARY KEY (`id`),
     KEY `idx_email_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 301-uri la schimbarea slug-ului unui produs din admin: slug vechi -> produsul curent.
+-- old_slug se mapează pe product_id (nu pe noul slug) → toate slug-urile vechi redirect
+-- direct la canonical-ul curent (1 hop), chiar după redenumiri multiple.
+CREATE TABLE IF NOT EXISTS `product_slug_redirects` (
+    `brand`      VARCHAR(20) NOT NULL,
+    `old_slug`   VARCHAR(190) NOT NULL,
+    `product_id` INT UNSIGNED NOT NULL,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`brand`, `old_slug`),
+    KEY `idx_slugredir_product` (`product_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

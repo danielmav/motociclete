@@ -230,6 +230,11 @@ final class CatalogController
                     return $redirect;
                 }
             }
+            // Slug schimbat din admin: 301 de la slug-ul vechi la canonical-ul curent.
+            $canonical = $this->repo->canonicalForSlugRedirect($brand, $slug);
+            if ($canonical) {
+                return $response->withHeader('Location', $this->base . $canonical)->withStatus(301);
+            }
             throw new HttpNotFoundException($request);
         }
         $id = (int) $product['id'];

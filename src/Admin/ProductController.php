@@ -176,7 +176,10 @@ final class ProductController extends BaseController
         }
         $id = (int) ($args['id'] ?? 0);
         $brand = in_array($body['brand'] ?? '', ['yamaha', 'cfmoto'], true) ? $body['brand'] : 'yamaha';
-        $prevPid = $id > 0 ? (string) ($this->repo()->productById($id)['yamaha_pid'] ?? '') : '';
+        $prev = $id > 0 ? $this->repo()->productById($id) : null;
+        $prevPid = (string) ($prev['yamaha_pid'] ?? '');
+        $prevSlug = (string) ($prev['slug'] ?? '');
+        $prevBrand = (string) ($prev['brand'] ?? $brand);
 
         $data = [
             'brand'        => $brand,
@@ -216,6 +219,12 @@ final class ProductController extends BaseController
         }
 
         $pid = $this->repo()->saveProduct($id > 0 ? $id : null, $data);
+
+        // 301 automat: dacă slug-ul s-a schimbat, URL-ul vechi va redirecta la cel nou.
+        // Brandul vechi (din URL-ul vechi) e cel relevant pentru maparea slug-ului retras.
+        if ($id > 0) {
+            $this->repo()->recordSlugChange($pid, $prevBrand, $prevSlug, $data['slug']);
+        }
 
         foreach (['color', 'gallery', 'detail'] as $t) {
             $this->repo()->replaceImages($pid, $t, (array) ($body[$t] ?? []));

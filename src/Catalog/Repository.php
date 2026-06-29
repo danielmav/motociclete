@@ -398,6 +398,48 @@ final class Repository
         return null;
     }
 
+    /**
+     * Înregistrează un 301 după ce slug-ul unui produs s-a schimbat din admin:
+     * slug-ul vechi -> produsul curent. Mapăm pe product_id (nu pe noul slug) ca
+     * redirectul să rămână 1-hop chiar după redenumiri în lanț. No-op fără schimbare.
+     */
+    public function recordSlugChange(int $productId, string $brand, string $oldSlug, string $newSlug): void
+    {
+        if ($oldSlug === '' || $oldSlug === $newSlug || $this->pdo === null) {
+            return;
+        }
+        try {
+            // Noul slug nu mai trebuie să redirecteze nicăieri (ex. revenire la un slug
+            // care înainte trimitea altundeva) → curăță rândul cu acel old_slug.
+            $this->pdo->prepare('DELETE FROM product_slug_redirects WHERE brand = :b AND old_slug = :s')
+                ->execute([':b' => $brand, ':s' => $newSlug]);
+            $this->pdo->prepare(
+                'INSERT INTO product_slug_redirects (brand, old_slug, product_id) VALUES (:b, :s, :p)
+                 ON DUPLICATE KEY UPDATE product_id = VALUES(product_id)'
+            )->execute([':b' => $brand, ':s' => $oldSlug, ':p' => $productId]);
+        } catch (Throwable) {
+            // tabela poate lipsi încă (înainte de migrate_admin.php); ignoră.
+        }
+    }
+
+    /** Canonical-ul curent pentru un slug de produs retras (redenumire admin), sau null. */
+    public function canonicalForSlugRedirect(string $brand, string $slug): ?string
+    {
+        $row = $this->one(
+            "SELECT p.brand, p.slug, c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
+             FROM product_slug_redirects r
+             JOIN products p ON p.id = r.product_id
+             JOIN categories c ON c.id = p.category_id
+             LEFT JOIN categories t ON t.id = c.parent_id
+             WHERE r.brand = :b AND r.old_slug = :s",
+            [':b' => $brand, ':s' => $slug]
+        );
+        if (!$row) {
+            return null;
+        }
+        return self::productUrl($this->breadcrumbSlugs($row));
+    }
+
     // -- Sitemap --------------------------------------------------------------
 
     /** Active products as sitemap rows: ['path'=>..., 'lastmod'=>?]. */
