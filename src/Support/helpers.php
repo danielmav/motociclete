@@ -113,8 +113,23 @@ if (!function_exists('slugify')) {
     /** Make a URL-safe slug from a string (diacritics-aware). */
     function slugify(string $text): string
     {
-        $map = ['ă' => 'a', 'â' => 'a', 'î' => 'i', 'ș' => 's', 'ț' => 't',
-                'Ă' => 'a', 'Â' => 'a', 'Î' => 'i', 'Ș' => 's', 'Ț' => 't'];
+        // Transliterare ASCII dependency-free (identic local/server): română +
+        // accente Latine vest-europene (ex. Ténéré -> tenere). Rulează ÎNAINTE de
+        // regex ca literele cu accent să nu fie tratate ca separatori (\pL Unicode
+        // poate lipsi pe unele build-uri PCRE → ar produce „t-n-r”).
+        $map = [
+            'ă' => 'a', 'â' => 'a', 'î' => 'i', 'ș' => 's', 'ț' => 't', 'ş' => 's', 'ţ' => 't',
+            'Ă' => 'a', 'Â' => 'a', 'Î' => 'i', 'Ș' => 's', 'Ț' => 't', 'Ş' => 's', 'Ţ' => 't',
+            'á' => 'a', 'à' => 'a', 'ä' => 'a', 'å' => 'a', 'ã' => 'a', 'æ' => 'ae',
+            'Á' => 'a', 'À' => 'a', 'Ä' => 'a', 'Å' => 'a', 'Ã' => 'a', 'Æ' => 'ae',
+            'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
+            'É' => 'e', 'È' => 'e', 'Ê' => 'e', 'Ë' => 'e',
+            'í' => 'i', 'ì' => 'i', 'ï' => 'i', 'Í' => 'i', 'Ì' => 'i', 'Ï' => 'i',
+            'ó' => 'o', 'ò' => 'o', 'ö' => 'o', 'ô' => 'o', 'õ' => 'o', 'ø' => 'o', 'œ' => 'oe',
+            'Ó' => 'o', 'Ò' => 'o', 'Ö' => 'o', 'Ô' => 'o', 'Õ' => 'o', 'Ø' => 'o', 'Œ' => 'oe',
+            'ú' => 'u', 'ù' => 'u', 'ü' => 'u', 'û' => 'u', 'Ú' => 'u', 'Ù' => 'u', 'Ü' => 'u', 'Û' => 'u',
+            'ç' => 'c', 'Ç' => 'c', 'ñ' => 'n', 'Ñ' => 'n', 'ß' => 'ss', 'ý' => 'y', 'ÿ' => 'y', 'Ý' => 'y',
+        ];
         $text = strtr($text, $map);
         $text = preg_replace('~[^\pL\d]+~u', '-', $text) ?? '';
         $text = trim(strtolower($text), '-');
