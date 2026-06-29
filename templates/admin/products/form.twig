@@ -203,7 +203,7 @@
 
     <div class="adm-actions">
         <button class="adm-btn adm-btn--primary" type="submit">Salvează</button>
-        <a class="adm-btn" href="{{ admin_base }}/produse">Înapoi</a>
+        <a class="adm-btn" href="{{ admin_base }}/produse{{ back_qs|default('') }}">Înapoi</a>
     </div>
 </form>
 {% endblock %}

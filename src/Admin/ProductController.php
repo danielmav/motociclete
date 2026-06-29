@@ -38,6 +38,7 @@ final class ProductController extends BaseController
             'active'      => 'products',
             'brand'       => $brand,
             'category_id' => $categoryId,
+            'list_qs'     => $this->listQuery($categoryId, $brand),
             'products'    => $this->repo()->adminProducts($brand, $categoryId),
             'categories'  => $this->categorySelect(),
             'saved'       => isset($qp['ok']),
@@ -108,11 +109,18 @@ final class ProductController extends BaseController
             }
         }
 
+        // Lista la care duce „Înapoi” (și implicit categoria din care face parte modelul):
+        // categoria produsului dacă există, altfel filtrul cu care s-a deschis formularul.
+        $backCat = ($p['category_id'] ?? null) ?: (((int) ($q['category_id'] ?? 0)) ?: null);
+        $backBrand = $p['brand'] ?? ($q['brand'] ?? null);
+        $backBrand = in_array($backBrand, ['yamaha', 'cfmoto'], true) ? $backBrand : null;
+
         return $this->render($response, 'admin/products/form.twig', [
             'active'     => 'products',
             'p'          => $p,
             'id'         => $id,
             'brand'      => $brand,
+            'back_qs'    => $this->listQuery($backCat, $backBrand),
             'categories' => $this->categorySelect(),
             'specRows'   => $specRows,
             'variantRows' => $variantRows,
@@ -254,14 +262,32 @@ final class ProductController extends BaseController
         if ($d = $this->requireAuth($response)) {
             return $d;
         }
-        if ($this->csrfOk($this->body($request))) {
+        $body = $this->body($request);
+        if ($this->csrfOk($body)) {
             $this->repo()->deleteProduct((int) ($args['id'] ?? 0));
             $this->bustMenuCache();
         }
-        return $this->to($response, '/produse?ok=1');
+        // Întoarce-te în aceeași categorie/brand din care s-a șters.
+        $catId = ((int) ($body['category_id'] ?? 0)) ?: null;
+        $brand = in_array($body['brand'] ?? '', ['yamaha', 'cfmoto'], true) ? $body['brand'] : null;
+        $qs = $this->listQuery($catId, $brand);
+        return $this->to($response, '/produse' . ($qs === '' ? '?ok=1' : $qs . '&ok=1'));
     }
 
     // -- helpers --------------------------------------------------------------
+
+    /** Query string (?brand=…&category_id=…) pentru a păstra filtrul listei de produse. */
+    private function listQuery(?int $catId, ?string $brand): string
+    {
+        $qs = [];
+        if ($brand !== null && $brand !== '') {
+            $qs['brand'] = $brand;
+        }
+        if ($catId) {
+            $qs['category_id'] = $catId;
+        }
+        return $qs === [] ? '' : '?' . http_build_query($qs);
+    }
 
     /** [{id,brand,label}] for the category <select> (hierarchy in the label). */
     private function categorySelect(): array

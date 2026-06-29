@@ -3,7 +3,7 @@
 {% block title %}Produse{% endblock %}
 {% block actions %}
     <button type="button" class="adm-btn adm-btn--primary" data-yamaha-open>+ Adaugă produs Yamaha</button>
-    <a class="adm-btn" href="{{ admin_base }}/produse/0">+ Produs nou</a>
+    <a class="adm-btn" href="{{ admin_base }}/produse/0{{ list_qs|default('') }}">+ Produs nou</a>
 {% endblock %}
 
 {% block content %}
@@ -42,9 +42,11 @@
                 <td class="adm-muted">{{ p.created_at ? p.created_at|date('d.m.Y') : '—' }}</td>
                 <td>{% if p.is_active %}<span class="adm-badge adm-badge--on">activ</span>{% else %}<span class="adm-badge adm-badge--off">ascuns</span>{% endif %}</td>
                 <td style="white-space:nowrap">
-                    <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/produse/{{ p.id }}">Editează</a>
+                    <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/produse/{{ p.id }}{{ list_qs|default('') }}">Editează</a>
                     <form method="post" action="{{ admin_base }}/produse/{{ p.id }}/delete" style="display:inline" onsubmit="return confirm('Ștergi produsul și imaginile lui din DB?')">
                         <input type="hidden" name="_csrf" value="{{ csrf }}">
+                        <input type="hidden" name="category_id" value="{{ category_id|default('') }}">
+                        <input type="hidden" name="brand" value="{{ brand|default('') }}">
                         <button class="adm-btn adm-btn--sm adm-btn--danger" type="submit">Șterge</button>
                     </form>
                 </td>
