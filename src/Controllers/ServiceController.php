@@ -24,6 +24,7 @@ final class ServiceController
     private Mailer $mailer;
     private string $dealer;
     private string $serviceMail;
+    private string $base;
 
     /** @param array<string,mixed> $container */
     public function __construct(private Twig $twig, array $container)
@@ -34,33 +35,38 @@ final class ServiceController
         $this->dealer   = (string) ($container['settings']['mail']['dealer'] ?? 'info@motociclete.com.ro');
         // Programările de service merg la service@ (fallback la dealer).
         $this->serviceMail = (string) ($container['settings']['mail']['service'] ?? $this->dealer);
+        $this->base = (string) ($container['settings']['app']['base_path'] ?? '');
     }
 
     /** GET /service */
     public function page(Request $request, Response $response): Response
     {
+        $q = $request->getQueryParams();
         return $this->twig->render($response, 'service.twig', [
             'heading'        => $this->settings->get('service_heading', 'Service'),
             'desc_html'      => $this->settings->get('service_desc_html', ''),
             'note_html'      => $this->settings->get('service_note_html', ''),
             'price_groups'   => $this->service->groupedPrices(),
             'canonical_path' => '/service',
+            // Fallback fără JS: după POST non-AJAX redirectăm aici cu flag-uri.
+            'sent'           => isset($q['trimis']),
+            'form_error'     => (string) ($q['eroare'] ?? ''),
         ]);
     }
 
-    /** POST /service/programare — JSON. */
+    /** POST /service/programare — JSON pentru AJAX; redirect cu mesaj pentru POST normal. */
     public function book(Request $request, Response $response): Response
     {
         $d = (array) $request->getParsedBody();
 
         // Honeypot: silent success for bots.
         if (trim((string) ($d['website'] ?? '')) !== '') {
-            return $this->json($response, ['ok' => true]);
+            return $this->bookOk($request, $response);
         }
 
         // GDPR: explicit consent is required to process the booking.
         if (trim((string) ($d['consent'] ?? '')) !== '1') {
-            return $this->json($response->withStatus(422), ['ok' => false, 'error' => 'Bifează acordul privind prelucrarea datelor personale.']);
+            return $this->bookErr($request, $response, 'Bifează acordul privind prelucrarea datelor personale.');
         }
 
         $name  = trim((string) ($d['name'] ?? ''));
@@ -68,10 +74,10 @@ final class ServiceController
         $phone = trim((string) ($d['phone'] ?? ''));
 
         if ($name === '' || $phone === '') {
-            return $this->json($response->withStatus(422), ['ok' => false, 'error' => 'Completează numele și telefonul.']);
+            return $this->bookErr($request, $response, 'Completează numele și telefonul.');
         }
         if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return $this->json($response->withStatus(422), ['ok' => false, 'error' => 'Adresa de email nu este validă.']);
+            return $this->bookErr($request, $response, 'Adresa de email nu este validă.');
         }
 
         $row = [
@@ -94,7 +100,31 @@ final class ServiceController
         }
         $this->notify($row);
 
-        return $this->json($response, ['ok' => true]);
+        return $this->bookOk($request, $response);
+    }
+
+    /** AJAX? (folosit ca să alegem între JSON și redirect cu mesaj). */
+    private function isAjax(Request $request): bool
+    {
+        return strtolower($request->getHeaderLine('X-Requested-With')) === 'xmlhttprequest';
+    }
+
+    /** Succes: JSON pentru AJAX, altfel redirect la /service cu panoul „mulțumim". */
+    private function bookOk(Request $request, Response $response): Response
+    {
+        if ($this->isAjax($request)) {
+            return $this->json($response, ['ok' => true]);
+        }
+        return $response->withHeader('Location', $this->base . '/service?trimis=1#programare')->withStatus(303);
+    }
+
+    /** Eroare: JSON 422 pentru AJAX, altfel redirect la /service cu mesajul. */
+    private function bookErr(Request $request, Response $response, string $msg): Response
+    {
+        if ($this->isAjax($request)) {
+            return $this->json($response->withStatus(422), ['ok' => false, 'error' => $msg]);
+        }
+        return $response->withHeader('Location', $this->base . '/service?eroare=' . rawurlencode($msg) . '#programare')->withStatus(303);
     }
 
     /** @param array<string,mixed> $f */

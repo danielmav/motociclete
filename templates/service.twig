@@ -46,9 +46,11 @@
                     <h2 class="booking-card__title">Programare service</h2>
                     <p class="booking-card__lead">Completează detaliile motocicletei și te contactăm pentru a stabili data și alte detalii.</p>
 
-                    <form data-ajax-form action="{{ base }}/service/programare" method="post" class="booking-form" novalidate>
+                    <form data-ajax-form action="{{ base }}/service/programare" method="post" class="booking-form" novalidate {{ sent|default(false) ? 'hidden' }}>
                         {# honeypot #}
                         <input type="text" name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
+                        {# Eroare la POST fără JS (redirect ?eroare=…) #}
+                        {% if form_error|default('') %}<p class="booking-form__err">{{ form_error }}</p>{% endif %}
 
                         <div class="booking-form__row">
                             <label>Nume<input type="text" name="name" required></label>
@@ -71,7 +73,7 @@
                         <button type="submit" class="btn btn--primary booking-form__submit">Trimite cererea</button>
                     </form>
 
-                    <div class="booking-thanks" data-form-thanks hidden>
+                    <div class="booking-thanks" data-form-thanks {{ sent|default(false) ? '' : 'hidden' }}>
                         <p class="booking-thanks__title">Mulțumim! 🏍️</p>
                         <p>Cererea ta a fost trimisă. Te contactăm cât de curând pentru a stabili programarea.</p>
                     </div>
