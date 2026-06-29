@@ -31,7 +31,10 @@ return [
     'mail' => [
         'from'      => $_ENV['MAIL_FROM'] ?? 'noreply@motociclete.com.ro',
         'from_name' => $_ENV['MAIL_FROM_NAME'] ?? 'Dual Motors',
+        // Destinatari per tip: lead-uri (ofertă/test drive) -> dealer (info@);
+        // service (programare + cerere din garage) -> service@ (fallback la dealer).
         'dealer'    => $_ENV['MAIL_DEALER'] ?? ($_ENV['MAIL_FROM'] ?? 'info@motociclete.com.ro'),
+        'service'   => $_ENV['MAIL_SERVICE'] ?? ($_ENV['MAIL_DEALER'] ?? 'service@motociclete.com.ro'),
         'smtp_host' => $_ENV['SMTP_HOST'] ?? '',
         'smtp_port' => (int) ($_ENV['SMTP_PORT'] ?? 587),
         'smtp_user' => $_ENV['SMTP_USER'] ?? '',

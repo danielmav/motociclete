@@ -23,6 +23,7 @@ final class ServiceController
     private Settings $settings;
     private Mailer $mailer;
     private string $dealer;
+    private string $serviceMail;
 
     /** @param array<string,mixed> $container */
     public function __construct(private Twig $twig, array $container)
@@ -31,6 +32,8 @@ final class ServiceController
         $this->settings = $container['app_settings'];
         $this->mailer   = $container['mailer'];
         $this->dealer   = (string) ($container['settings']['mail']['dealer'] ?? 'info@motociclete.com.ro');
+        // Programările de service merg la service@ (fallback la dealer).
+        $this->serviceMail = (string) ($container['settings']['mail']['service'] ?? $this->dealer);
     }
 
     /** GET /service */
@@ -114,7 +117,7 @@ final class ServiceController
             'Data: ' . date('Y-m-d H:i:s'),
         ];
         try {
-            $this->mailer->send($this->dealer, 'Programare service' . ($moto !== '' ? ': ' . $moto : ''), implode("\n", $lines), 'service');
+            $this->mailer->send($this->serviceMail, 'Programare service' . ($moto !== '' ? ': ' . $moto : ''), implode("\n", $lines), 'service');
         } catch (Throwable) {
             // never let mail failure break the JSON response
         }

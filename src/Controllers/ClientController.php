@@ -189,7 +189,7 @@ final class ClientController
         if ($bike && $problem !== '') {
             $this->repo->createServiceRequest($bike['clienti_id'], $bike['id'], $date ?: null, $problem);
             $this->mailer->send(
-                (string) $this->mail['dealer'],
+                (string) ($this->mail['service'] ?? $this->mail['dealer']),
                 'Cerere programare service — ' . $bike['model'],
                 "Client: {$email}\nModel: {$bike['model']}" . ($bike['plate'] ? " ({$bike['plate']})" : '')
                 . "\nData preferată: " . ($date ?: '—') . "\n\nProblemă:\n{$problem}"
