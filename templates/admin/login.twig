@@ -10,7 +10,7 @@
 </head>
 <body class="adm adm-login">
     <form class="adm-loginbox" method="post" action="{{ admin_base }}/login">
-        <img src="{{ base }}/assets/img/logo.png" alt="Dual Motors" height="40">
+        <img src="{{ base }}/assets/img/logo.png" alt="Dual Motors">
         <h1>Administrare</h1>
         {% if error %}<div class="adm-flash adm-flash--err">Date de autentificare greșite.</div>{% endif %}
         <input type="hidden" name="_csrf" value="{{ csrf }}">
