@@ -83,6 +83,11 @@ final class ModelImporter
             return $out;
         }
 
+        // Slug-ul Yamaha din URL e folosit verbatim pentru fetch, dar pentru portal îl
+        // normalizăm prin slugify (transliterare ASCII) — altfel un slug Yamaha cu accente
+        // (ex. ténéré-700-world-raid) ar ajunge nemapată în formular. Idempotent pe ASCII curat.
+        $cleanSlug = slugify($slug);
+
         $variant = $product['variants'][0] ?? [];
         $attrs = [];
         foreach (($variant['attributes'] ?? []) as $a) {
@@ -105,7 +110,7 @@ final class ModelImporter
             'name'         => $this->clean((string) $product['name']),
             // Slogan = headerul scurt al modelului (poate fi în engleză dacă Yamaha nu l-a tradus).
             'subtitle'     => $this->loc($attrs['productShortStoryHeader'] ?? null),
-            'slug'         => $slug,
+            'slug'         => $cleanSlug,
             'year'         => $year,
             'price'        => 0,                       // prețul RO e POA — se completează manual
             'discount_pct' => 0,
@@ -120,7 +125,7 @@ final class ModelImporter
             'video'        => '',
             'keywords'     => '',
             'yamaha_pid'   => preg_match('/\d+/', $pid, $m) ? $m[0] : '',
-            'bs_product_id' => $this->resolveBs($slug, (string) $product['name'], $year),
+            'bs_product_id' => $this->resolveBs($cleanSlug, (string) $product['name'], $year),
             'specs'        => $specs,                  // [engine|chassis|dimensions|connectivity => [[label,value],...]]
             'images'       => $images,                 // URL-uri în acest stadiu; downloadImages() le face nume de fișier
             'feature_images' => $featureImages,        // URL-uri remote din details_html; downloadImages() le localizează
