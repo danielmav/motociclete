@@ -133,6 +133,11 @@ final class Bootstrap
         // --- Error handling ---
         $debug = (bool) $settings['app']['debug'];
         $errorMw = $app->addErrorMiddleware($debug, true, true);
+        // 404 → pagină de portal cu sugestii din URL (în loc de pagina goală Slim).
+        $errorMw->setErrorHandler(
+            \Slim\Exception\HttpNotFoundException::class,
+            new Support\NotFoundHandler($twig, $container['catalog'], $app->getResponseFactory())
+        );
 
         // --- Routes ---
         (require $root . '/src/Routes.php')($app, $twig, $container);

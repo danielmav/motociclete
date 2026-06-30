@@ -265,6 +265,23 @@ final class ProductController extends BaseController
             : '&accerr=1';
     }
 
+    /** POST {base}/produse/{id}/scoate — scoate modelul din ofertă (is_active=0). */
+    public function deactivate(Request $request, Response $response, array $args): Response
+    {
+        if ($d = $this->requireAuth($response)) {
+            return $d;
+        }
+        $body = $this->body($request);
+        if ($this->csrfOk($body)) {
+            $this->repo()->setProductActive((int) ($args['id'] ?? 0), false);
+            $this->bustMenuCache();
+        }
+        $catId = ((int) ($body['category_id'] ?? 0)) ?: null;
+        $brand = in_array($body['brand'] ?? '', ['yamaha', 'cfmoto'], true) ? $body['brand'] : null;
+        $qs = $this->listQuery($catId, $brand);
+        return $this->to($response, '/produse' . ($qs === '' ? '?ok=1' : $qs . '&ok=1'));
+    }
+
     /** POST {base}/produse/{id}/delete */
     public function delete(Request $request, Response $response, array $args): Response
     {

@@ -574,6 +574,17 @@ final class Repository
         }
     }
 
+    /** Scoate/repune un produs în ofertă (soft-delete via is_active). */
+    public function setProductActive(int $id, bool $active): void
+    {
+        try {
+            $this->pdo->prepare("UPDATE products SET is_active = :a WHERE id = :id")
+                ->execute([':a' => $active ? 1 : 0, ':id' => $id]);
+        } catch (Throwable) {
+            // ignore
+        }
+    }
+
     /** Image rows of a product+type (color|gallery|detail). */
     public function productImages(int $productId, string $type): array
     {

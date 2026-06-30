@@ -237,6 +237,19 @@ final class CatalogController
             }
             throw new HttpNotFoundException($request);
         }
+        // Model scos din ofertă (is_active=0): pagină dedicată „nu mai e în ofertă"
+        // cu alternative din aceeași categorie. HTTP 410 Gone → Google îl scoate
+        // din index, dar vizitatorul venit din linkuri vechi primește alternative.
+        if (empty($product['is_active'])) {
+            return $this->twig->render($response->withStatus(410), 'catalog/discontinued.twig', [
+                'brand'        => $brand,
+                'brandLabel'   => $this->brandLabels[$brand] ?? ucfirst($brand),
+                'p'            => $product,
+                'alternatives' => $this->repo->related($product, 8),
+                'category_url' => '/' . $brand . '/' . $product['top_slug']
+                                  . ($product['sub_slug'] ? '/' . $product['sub_slug'] : ''),
+            ]);
+        }
         $id = (int) $product['id'];
 
         // For CFMOTO (flat categories) the product sits directly on a top category,

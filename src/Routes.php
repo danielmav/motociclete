@@ -118,6 +118,7 @@ return function (App $app, Twig $twig, array $container): void {
     $app->post($adminBase . '/produse/import-yamaha',      $adminCtl('ProductController', 'importYamaha'));
     $app->get($adminBase . '/produse/{id:[0-9]+}',         $adminCtl('ProductController', 'form'));
     $app->post($adminBase . '/produse/{id:[0-9]+}',        $adminCtl('ProductController', 'save'));
+    $app->post($adminBase . '/produse/{id:[0-9]+}/scoate', $adminCtl('ProductController', 'deactivate'));
     $app->post($adminBase . '/produse/{id:[0-9]+}/delete', $adminCtl('ProductController', 'delete'));
     $app->post($adminBase . '/produse/{id:[0-9]+}/sync-accesorii', $adminCtl('ProductController', 'syncAccessories'));
     // Blog

@@ -1,0 +1,39 @@
+{% extends 'layout.twig' %}
+{% import 'partials/_model_card_v2.twig' as cards %}
+
+{% block title %}{{ p.name }} — nu mai este în ofertă | Dual Motors{% endblock %}
+{% block description %}{{ p.name }} nu mai face parte din oferta curentă. Vezi modele {{ brandLabel }} alternative disponibile acum.{% endblock %}
+{% block meta_robots %}noindex,follow{% endblock %}
+
+{% block content %}
+
+<section class="section catalog-head">
+    <div class="container">
+        <span class="kicker">{{ brandLabel }}</span>
+        <h1 class="catalog-head__title">Acest model nu mai este în ofertă</h1>
+        <p class="catalog-count">
+            <strong>{{ p.name }}</strong> nu mai face parte din oferta curentă. Mai jos găsești
+            modele alternative din aceeași gamă, sau ne poți contacta pentru disponibilitate.
+        </p>
+        <p class="err404__links">
+            {% if category_url %}<a class="btn btn--ghost" href="{{ base }}{{ category_url }}">Vezi gama {{ brandLabel }}</a>{% endif %}
+            <a class="btn btn--primary" href="https://wa.me/40722354437" target="_blank" rel="noopener">Întreabă pe WhatsApp</a>
+            <a class="btn btn--ghost" href="tel:+40722354437">0722 354 437</a>
+        </p>
+    </div>
+</section>
+
+{% if alternatives|length %}
+<section class="section section--tight">
+    <div class="container">
+        <h2 class="search-group__title">Alternative recomandate</h2>
+        <div class="grid grid--models grid--5">
+            {% for m in alternatives %}
+                {{ cards.card(m, base) }}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}

@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Content\Repository;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Slim\Exception\HttpNotFoundException;
 use Slim\Views\Twig;
 
 /**
@@ -29,8 +30,8 @@ final class PageController
     {
         $page = $this->content->pageBySlug((string) ($args['slug'] ?? ''));
         if (!$page) {
-            $response->getBody()->write('Pagină inexistentă');
-            return $response->withStatus(404);
+            // Treci prin handler-ul de 404 (pagină de portal cu sugestii).
+            throw new HttpNotFoundException($request);
         }
         return $this->twig->render($response, 'page.twig', [
             'page'           => $page,

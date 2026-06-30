@@ -1,0 +1,47 @@
+{% extends 'layout.twig' %}
+{% import 'partials/_model_card_v2.twig' as cards %}
+
+{% block title %}Pagina nu a fost găsită | Dual Motors{% endblock %}
+{% block description %}Pagina căutată nu mai există. Vezi modelele Yamaha și CFMOTO din oferta curentă sau caută pe motociclete.com.ro.{% endblock %}
+{% block meta_robots %}noindex,follow{% endblock %}
+
+{% block content %}
+
+<section class="section catalog-head">
+    <div class="container">
+        <span class="kicker">Eroare 404</span>
+        <h1 class="catalog-head__title">Pagina nu a fost găsită</h1>
+        <p class="catalog-count">
+            Linkul accesat nu mai există sau s-a schimbat. Caută mai jos sau alege din modelele curente.
+        </p>
+
+        <form class="search-page__form" action="{{ base }}/cauta" method="get" role="search">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.7"/><path d="M20 20l-3.2-3.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <input type="search" name="q" value="{{ query }}" placeholder="Caută motociclete, echipament, piese, articole…" aria-label="Caută în tot site-ul" autocomplete="off">
+            <button class="btn btn--primary" type="submit">Caută</button>
+        </form>
+
+        <p class="err404__links">
+            <a class="btn btn--ghost" href="{{ base }}/yamaha">Modele Yamaha</a>
+            <a class="btn btn--ghost" href="{{ base }}/cfmoto">Modele CFMOTO</a>
+            <a class="btn btn--ghost" href="{{ base }}/">Pagina principală</a>
+        </p>
+    </div>
+</section>
+
+{% if suggestions|length %}
+<section class="section section--tight">
+    <div class="container">
+        <h2 class="search-group__title">
+            {% if query %}Poate căutai{% else %}Modele recomandate{% endif %}
+        </h2>
+        <div class="grid grid--models grid--5">
+            {% for m in suggestions %}
+                {{ cards.card(m, base) }}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}

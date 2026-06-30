@@ -43,11 +43,19 @@
                 <td>{% if p.is_active %}<span class="adm-badge adm-badge--on">activ</span>{% else %}<span class="adm-badge adm-badge--off">ascuns</span>{% endif %}</td>
                 <td style="white-space:nowrap">
                     <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/produse/{{ p.id }}{{ list_qs|default('') }}">Editează</a>
-                    <form method="post" action="{{ admin_base }}/produse/{{ p.id }}/delete" style="display:inline" onsubmit="return confirm('Ștergi produsul și imaginile lui din DB?')">
+                    {% if p.is_active %}
+                    <form method="post" action="{{ admin_base }}/produse/{{ p.id }}/scoate" style="display:inline" onsubmit="return confirm('Scoți „{{ p.name|e('js') }}” din ofertă? Pagina va afișa „nu mai e în ofertă” cu alternative (poți reactiva oricând editând produsul).')">
                         <input type="hidden" name="_csrf" value="{{ csrf }}">
                         <input type="hidden" name="category_id" value="{{ category_id|default('') }}">
                         <input type="hidden" name="brand" value="{{ brand|default('') }}">
-                        <button class="adm-btn adm-btn--sm adm-btn--danger" type="submit">Șterge</button>
+                        <button class="adm-btn adm-btn--sm" type="submit">Scoate din ofertă</button>
+                    </form>
+                    {% endif %}
+                    <form method="post" action="{{ admin_base }}/produse/{{ p.id }}/delete" style="display:inline" onsubmit="return confirm('ȘTERGERE DEFINITIVĂ: produsul și imaginile lui dispar din DB (pierzi istoricul). Pentru un model indisponibil folosește «Scoate din ofertă». Continui?')">
+                        <input type="hidden" name="_csrf" value="{{ csrf }}">
+                        <input type="hidden" name="category_id" value="{{ category_id|default('') }}">
+                        <input type="hidden" name="brand" value="{{ brand|default('') }}">
+                        <button class="adm-btn adm-btn--sm adm-btn--danger" type="submit">Șterge definitiv</button>
                     </form>
                 </td>
             </tr>

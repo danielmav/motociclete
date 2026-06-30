@@ -374,3 +374,6 @@
 
 .consent-field{display:flex;gap:.5rem;align-items:flex-start;font-size:.82rem;line-height:1.45;margin:.25rem 0 .75rem}
 .consent-field input{margin-top:.15rem}
+
+/* Quick links on the 404 / discontinued pages */
+.err404__links{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.25rem}
