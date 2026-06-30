@@ -377,3 +377,29 @@
 
 /* Quick links on the 404 / discontinued pages */
 .err404__links{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.25rem}
+
+/* ---- Dark header bar --------------------------------------------------- */
+/* Bara de sus e închisă la culoare (ca footer-ul) ca să se desprindă de pagina
+   albă. Dropdown-ul mega rămâne alb (vezi .megav2 → background:var(--bg)). */
+.site-header {
+    background: #0E0E10;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    box-shadow: 0 2px 16px rgba(0,0,0,.16);
+}
+.site-header.is-stuck {
+    background: rgba(14,14,16,.94);
+    backdrop-filter: saturate(140%) blur(12px);
+    border-bottom-color: rgba(255,255,255,.10);
+    box-shadow: 0 8px 28px rgba(0,0,0,.30);
+}
+/* Linkuri meniu pe fundal închis: alb implicit, accent roșu la hover/deschis. */
+.headerv2 .navv2__link { color: #fff; }
+.headerv2 .navv2__link:hover,
+.headerv2 .navv2__link[aria-expanded="true"] { color: var(--red); background: rgba(255,255,255,.07); }
+/* Iconițe (caută / garage / cont) + burger. */
+.headerv2 .iconbtn { color: #fff; }
+.headerv2 .iconbtn:hover { color: var(--red); background: rgba(255,255,255,.10); }
+.headerv2 .burger span { background: #fff; }
+/* Overlay-ul de căutare e alb → iconițele din el rămân închise la culoare. */
+.headerv2 .search .iconbtn { color: var(--ink); }
+.headerv2 .search .iconbtn:hover { color: var(--red); background: var(--surface); }
