@@ -80,6 +80,7 @@
                 {% if p.cat_name %}<span class="chip">{{ p.cat_name }}</span>{% endif %}
                 {% if p.year %}<span class="chip chip--ghost">{{ p.year }}</span>{% endif %}
                 {% if p.licence %}<span class="chip chip--permis">Permis {{ p.licence }}</span>{% endif %}
+                {% if p.rabla_eligible and rablaCfg and rablaCfg.page_html %}<button type="button" class="chip chip--rabla" data-modal-open="rabla">Eligibil programul RABLA</button>{% endif %}
             </div>
 
             {% set brandRate = brand == 'cfmoto' ? currency.rate_cfmoto : (brand == 'yamaha' ? currency.rate_yamaha : currency.rate) %}
@@ -123,6 +124,31 @@
             </div>
             {% endif %}
 
+            {# Variante de preț (putere/transmisie) — scoase din taburi, imediat sub preț. #}
+            {% if variantRows|default([])|length %}
+                <div class="product__variants">
+                    <h2 class="product__variants-title">Variante și prețuri</h2>
+                    <p class="muted">Prețuri orientative cu TVA, în funcție de versiune. Curs: {{ brandRate }} lei/€.</p>
+                    <div class="variant-table-wrap">
+                        <table class="variant-table">
+                            <thead>
+                                <tr><th>Versiune</th><th>Transmisie</th><th>Preț</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for v in variantRows %}
+                                    {% set vp = v.price ? prices(v.price, brand) : null %}
+                                    <tr>
+                                        <td>{{ v.version|default('—') }}</td>
+                                        <td>{{ v.transmission|default('—') }}</td>
+                                        <td class="variant-table__price">{% if vp %}{{ vp.eur }} <span class="variant-table__ron">{{ vp.ron }}</span>{% else %}La cerere{% endif %}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+
             {% if p.excerpt %}<div class="product__excerpt">{{ p.excerpt|raw }}</div>{% endif %}
 
             {% set wamsg = ('Bună ziua, sunt interesat de ' ~ p.name ~ (p.year ? ' ' ~ p.year : '') ~ '. Aș dori detalii.')|url_encode %}
@@ -157,7 +183,6 @@
     {% if p.description or p.promo_html|trim is not empty %}{% set tabs = tabs|merge([{ id: 'descriere', label: 'Descriere' }]) %}{% endif %}
     {% if p.details_html|trim is not empty %}{% set tabs = tabs|merge([{ id: 'caracteristici', label: 'Caracteristici cheie' }]) %}{% endif %}
     {% if specs|length %}{% set tabs = tabs|merge([{ id: 'specificatii', label: 'Specificații' }]) %}{% endif %}
-    {% if variantRows|default([])|length %}{% set tabs = tabs|merge([{ id: 'preturi', label: 'Preturi' }]) %}{% endif %}
     {% if hasGalerie %}{% set tabs = tabs|merge([{ id: 'galerie', label: 'Galerie' }]) %}{% endif %}
     {% if accCount %}{% set tabs = tabs|merge([{ id: 'accesorii', label: 'Piese & accesorii', count: accCount }]) %}{% endif %}
     {% set activeTab = tabs|length ? tabs[0].id : '' %}
@@ -222,33 +247,6 @@
                     {% endfor %}
                 </div>
             </div></section>
-        </div>
-    {% endif %}
-
-    {# ---------------- Preturi (variante: putere / transmisie) ---------------- #}
-    {% if variantRows|default([])|length %}
-        <div class="ptabs__panel{{ 'preturi' == activeTab ? ' is-active' : '' }}" data-ppanel="preturi">
-            <section class="section product-section"><div class="container"><div class="product-prose">
-                <h2 class="section__title">Variante și prețuri</h2>
-                <p class="muted">Prețuri orientative cu TVA, în funcție de versiune. Cursul de schimb: {{ brandRate }} lei/€.</p>
-                <div class="variant-table-wrap">
-                    <table class="variant-table">
-                        <thead>
-                            <tr><th>Versiune</th><th>Transmisie</th><th>Preț</th></tr>
-                        </thead>
-                        <tbody>
-                            {% for v in variantRows %}
-                                {% set vp = v.price ? prices(v.price, brand) : null %}
-                                <tr>
-                                    <td>{{ v.version|default('—') }}</td>
-                                    <td>{{ v.transmission|default('—') }}</td>
-                                    <td class="variant-table__price">{% if vp %}{{ vp.eur }} <span class="variant-table__ron">{{ vp.ron }}</span>{% else %}La cerere{% endif %}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div></div></section>
         </div>
     {% endif %}
 
@@ -389,6 +387,20 @@
         <div class="modal__body">
             <h2 class="modal__title" id="modal-title-finantare">{{ financeCfg.page_title|default('Finanțare UniCredit') }}</h2>
             <div class="prose finance-prose">{{ financeCfg.page_html|raw }}</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# Programul RABLA în modal — doar la produsele marcate „Eligibil programul RABLA". #}
+{% if p.rabla_eligible and rablaCfg and rablaCfg.page_html %}
+<div class="modal" data-modal="rabla" hidden>
+    <div class="modal__overlay" data-modal-close></div>
+    <div class="modal__dialog modal__dialog--wide" role="dialog" aria-modal="true" aria-labelledby="modal-title-rabla">
+        <button type="button" class="modal__x" data-modal-close aria-label="Închide">&times;</button>
+        <div class="modal__body">
+            <h2 class="modal__title" id="modal-title-rabla">Programul RABLA {{ "now"|date("Y") }}</h2>
+            <div class="prose">{{ rablaCfg.page_html|raw }}</div>
         </div>
     </div>
 </div>

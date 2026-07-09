@@ -23,6 +23,7 @@ final class CatalogController
     private BikerShopClient $bikershop;
     private string $base;
     private \App\Finance\Repository $finance;
+    private \App\Rabla\Repository $rabla;
     private array $brandLabels = ['yamaha' => 'Yamaha', 'cfmoto' => 'CFMOTO'];
 
     /** @param array<string,mixed> $container */
@@ -33,6 +34,7 @@ final class CatalogController
         $this->bikershop = $container['bikershop'];
         $this->base      = (string) ($container['settings']['app']['base_path'] ?? '');
         $this->finance = $container['finance'];
+        $this->rabla = $container['rabla'];
     }
 
     /** /{brand} — brand landing: list of top categories. */
@@ -293,6 +295,8 @@ final class CatalogController
         $priceRon = $priceEur > 0 ? price_dual($priceEur, $cur)['ron_raw'] : 0;
         $financeRates = $priceRon > 0 ? $this->finance->ratesFor((float) $priceRon) : [];
         $financeCfg = $this->finance->config();
+        // Conținutul „Programul RABLA" (modal) — doar dacă produsul e marcat eligibil.
+        $rablaCfg = !empty($product['rabla_eligible']) ? $this->rabla->config() : null;
 
         // Variante de preț (putere/transmisie) → tabul „Preturi" (doar dacă modelul are mai multe).
         $variantRows = [];
@@ -321,6 +325,7 @@ final class CatalogController
             'financePriceRon' => $priceRon,
             'financeRates'    => $financeRates,
             'financeCfg'      => $financeCfg,
+            'rablaCfg'        => $rablaCfg,
         ]);
     }
 }

@@ -156,6 +156,9 @@ return function (App $app, Twig $twig, array $container): void {
     // Finanțare — config UniCredit + pagina /finantare
     $app->get($adminBase . '/finantare',                     $adminCtl('FinanceController', 'index'));
     $app->post($adminBase . '/finantare',                    $adminCtl('FinanceController', 'save'));
+    // Programul RABLA — conținut modal (an curent auto)
+    $app->get($adminBase . '/rabla',                         $adminCtl('RablaController', 'index'));
+    $app->post($adminBase . '/rabla',                        $adminCtl('RablaController', 'save'));
     // Settings
     $app->get($adminBase . '/setari',                              $adminCtl('SettingsController', 'index'));
     $app->post($adminBase . '/setari',                             $adminCtl('SettingsController', 'save'));

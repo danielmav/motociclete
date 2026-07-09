@@ -117,3 +117,13 @@ CREATE TABLE IF NOT EXISTS `product_slug_redirects` (
     PRIMARY KEY (`brand`, `old_slug`),
     KEY `idx_slugredir_product` (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- „Programul RABLA": conținut editabil (un singur rând, id = 1) afișat în modalul
+-- de pe pagina produselor eligibile. Titlul (Programul RABLA {an curent}) se
+-- generează automat în template, deci se stochează doar body-ul HTML.
+CREATE TABLE IF NOT EXISTS `rabla` (
+    `id`        TINYINT UNSIGNED NOT NULL,
+    `page_html` MEDIUMTEXT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT IGNORE INTO `rabla` (`id`) VALUES (1);

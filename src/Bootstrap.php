@@ -96,6 +96,7 @@ final class Bootstrap
             'service'   => new Service\Repository($db),
             'content'   => new Content\Repository($db),
             'finance'   => new Finance\Repository($db),
+            'rabla'     => new Rabla\Repository($db),
             'client'    => new Client\Repository($db),
             'mailer'    => new Support\Mailer(
                 $settings['mail'],

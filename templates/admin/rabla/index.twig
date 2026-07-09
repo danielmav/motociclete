@@ -1,0 +1,23 @@
+{% extends 'admin/layout.twig' %}
+{% import 'admin/_widgets.twig' as w %}
+{% set active = 'rabla' %}
+{% block title %}Programul RABLA{% endblock %}
+
+{% block content %}
+<form class="adm-form" method="post" action="{{ admin_base }}/rabla" style="max-width:980px">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Programul RABLA {{ "now"|date("Y") }}</span>
+        <p class="adm-help" style="margin-top:.4rem">
+            Conținutul afișat în modalul „Eligibil programul RABLA" de pe pagina produselor bifate.
+            Titlul (Programul RABLA {{ "now"|date("Y") }}) se generează automat cu anul curent — nu îl include în text.
+        </p>
+        <div style="margin-top:.6rem">{{ w.editor('page_html', rabla.page_html|default('')) }}</div>
+    </div>
+
+    <div class="adm-actions">
+        <button class="adm-btn adm-btn--primary" type="submit">Salvează</button>
+    </div>
+</form>
+{% endblock %}

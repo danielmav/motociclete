@@ -489,7 +489,7 @@ final class Repository
         'brand', 'category_id', 'name', 'subtitle', 'slug', 'year', 'price', 'discount_pct', 'licence',
         'cover_image', 'excerpt', 'description', 'promo_html', 'details_html', 'variants_json',
         'specs_engine', 'specs_chassis', 'specs_dimensions', 'specs_connectivity',
-        'video', 'keywords', 'is_active', 'position', 'yamaha_pid', 'bs_product_id',
+        'video', 'keywords', 'is_active', 'rabla_eligible', 'position', 'yamaha_pid', 'bs_product_id',
     ];
 
     /** All categories (incl. inactive) with parent name, for the admin tree. */
