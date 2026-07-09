@@ -204,7 +204,6 @@ final class ProductController extends BaseController
             'video'        => trim((string) ($body['video'] ?? '')) ?: null,
             'keywords'     => trim((string) ($body['keywords'] ?? '')),
             'is_active'    => empty($body['is_active']) ? 0 : 1,
-            'rabla_eligible' => empty($body['rabla_eligible']) ? 0 : 1,
             'position'     => (int) ($body['position'] ?? 0),
             // PID Yamaha (doar cifre) pt. importul accesoriilor originale; gol -> NULL.
             'yamaha_pid'   => ($brand === 'yamaha' && preg_match('/\d+/', (string) ($body['yamaha_pid'] ?? ''), $mm)) ? $mm[0] : null,
@@ -281,6 +280,24 @@ final class ProductController extends BaseController
         $brand = in_array($body['brand'] ?? '', ['yamaha', 'cfmoto'], true) ? $body['brand'] : null;
         $qs = $this->listQuery($catId, $brand);
         return $this->to($response, '/produse' . ($qs === '' ? '?ok=1' : $qs . '&ok=1'));
+    }
+
+    /** POST {base}/produse/{id}/rabla — comută flagul „Eligibil programul RABLA" din listă. */
+    public function toggleRabla(Request $request, Response $response, array $args): Response
+    {
+        if ($d = $this->requireAuth($response)) {
+            return $d;
+        }
+        $body = $this->body($request);
+        if ($this->csrfOk($body)) {
+            $this->repo()->setRablaEligible((int) ($args['id'] ?? 0), !empty($body['rabla_eligible']));
+            $this->bustMenuCache(); // cardurile de meniu arată chip-ul „Eligibil RABLA"
+        }
+        // Întoarce-te în aceeași categorie/brand din listă (fără flash — schimbare inline).
+        $catId = ((int) ($body['category_id'] ?? 0)) ?: null;
+        $brand = in_array($body['brand'] ?? '', ['yamaha', 'cfmoto'], true) ? $body['brand'] : null;
+        $qs = $this->listQuery($catId, $brand);
+        return $this->to($response, '/produse' . $qs);
     }
 
     /** POST {base}/produse/{id}/delete */

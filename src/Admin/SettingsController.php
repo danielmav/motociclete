@@ -42,6 +42,7 @@ final class SettingsController extends BaseController
             'active'      => 'settings',
             'cur'         => $this->settings()->currency(),
             'vals'        => $vals,
+            'rablaHomeSection' => $this->settings()->bool('rabla_home_section', false),
             'departments' => $this->content()->departments(),
             'saved'       => isset($request->getQueryParams()['ok']),
         ]);
@@ -66,6 +67,7 @@ final class SettingsController extends BaseController
             $s->set('vat_pct', (string) $vat);
         }
         $s->set('price_includes_vat', empty($body['price_includes_vat']) ? '0' : '1');
+        $s->set('rabla_home_section', empty($body['rabla_home_section']) ? '0' : '1');
 
         foreach (self::SOCIAL_KEYS as $k) {
             $s->set($k, trim((string) ($body[$k] ?? '')));

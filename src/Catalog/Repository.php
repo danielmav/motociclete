@@ -110,7 +110,7 @@ final class Repository
     {
         $row = $this->one(
             "SELECT p.id, p.brand, p.name, p.subtitle, p.slug, p.year, p.price, p.discount_pct,
-                    p.licence, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
+                    p.licence, p.rabla_eligible, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
                     c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
              " . self::PROD_JOIN . "
              WHERE (c.id = :a OR c.parent_id = :b)
@@ -169,7 +169,7 @@ final class Repository
 
         $rows = $this->all(
             "SELECT p.id, p.brand, p.name, p.subtitle, p.slug, p.year, p.price, p.discount_pct,
-                    p.licence, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
+                    p.licence, p.rabla_eligible, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
                     c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
              " . self::PROD_JOIN . "
              WHERE {$where} AND p.is_active = 1
@@ -201,7 +201,7 @@ final class Repository
         $params[] = $query . '%';
         $rows = $this->all(
             "SELECT p.id, p.brand, p.name, p.subtitle, p.slug, p.year, p.price, p.discount_pct,
-                    p.licence, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
+                    p.licence, p.rabla_eligible, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
                     c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
              " . self::PROD_JOIN . "
              WHERE p.is_active = 1 AND " . implode(' AND ', $conds) . "
@@ -243,7 +243,7 @@ final class Repository
     {
         $rows = $this->all(
             "SELECT p.id, p.brand, p.name, p.subtitle, p.slug, p.year, p.price, p.discount_pct,
-                    p.licence, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
+                    p.licence, p.rabla_eligible, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
                     c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
              " . self::PROD_JOIN . "
              WHERE p.is_active = 1
@@ -262,7 +262,7 @@ final class Repository
     {
         $rows = $this->all(
             "SELECT p.id, p.brand, p.name, p.subtitle, p.slug, p.year, p.price, p.discount_pct,
-                    p.licence, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
+                    p.licence, p.rabla_eligible, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
                     c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
              " . self::PROD_JOIN . "
              WHERE p.is_active = 1 AND p.year = :year
@@ -308,7 +308,7 @@ final class Repository
         }
         $rows = $this->all(
             "SELECT p.id, p.brand, p.name, p.subtitle, p.slug, p.year, p.price, p.discount_pct,
-                    p.licence, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
+                    p.licence, p.rabla_eligible, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
                     c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
              " . self::PROD_JOIN . "
              WHERE p.category_id = :cid AND p.id <> :id AND p.is_active = 1
@@ -489,8 +489,25 @@ final class Repository
         'brand', 'category_id', 'name', 'subtitle', 'slug', 'year', 'price', 'discount_pct', 'licence',
         'cover_image', 'excerpt', 'description', 'promo_html', 'details_html', 'variants_json',
         'specs_engine', 'specs_chassis', 'specs_dimensions', 'specs_connectivity',
-        'video', 'keywords', 'is_active', 'rabla_eligible', 'position', 'yamaha_pid', 'bs_product_id',
+        'video', 'keywords', 'is_active', 'position', 'yamaha_pid', 'bs_product_id',
+        // NOTE: `rabla_eligible` NU e aici intenționat — se gestionează exclusiv prin
+        // toggle-ul din lista de produse (setRablaEligible), ca să nu fie resetat de
+        // upsert-ul generic la fiecare salvare din formularul de editare.
     ];
+
+    /** Top-category slug → tip pentru gruparea „Modele eligibile RABLA". */
+    private const RABLA_TYPE_MAP = [
+        'motociclete' => 'Motociclete',
+        'scutere'     => 'Scutere',
+        'atvuri'      => 'ATV / SSV',
+        'waverunners' => 'Marine',
+        'marine'      => 'Marine',
+        // CFMOTO are categorii plate (fiecare e un „top") → toate sunt motociclete.
+        'naked' => 'Motociclete', 'sport' => 'Motociclete', 'touring-travel' => 'Motociclete', 'heritage' => 'Motociclete',
+    ];
+
+    /** Ordinea de afișare a grupurilor de tip pentru pagina/secțiunea RABLA. */
+    private const RABLA_TYPE_ORDER = ['Motociclete', 'Scutere', 'ATV / SSV', 'Marine'];
 
     /** All categories (incl. inactive) with parent name, for the admin tree. */
     public function adminCategories(): array
@@ -546,12 +563,56 @@ final class Repository
         }
         $where = $conds ? ('WHERE ' . implode(' AND ', $conds)) : '';
         return $this->all(
-            "SELECT p.id, p.brand, p.name, p.slug, p.year, p.price, p.is_active, p.cover_image, p.created_at, c.name AS cat_name
+            "SELECT p.id, p.brand, p.name, p.slug, p.year, p.price, p.is_active, p.rabla_eligible, p.cover_image, p.created_at, c.name AS cat_name
              FROM products p LEFT JOIN categories c ON c.id = p.category_id
              {$where}
              ORDER BY p.created_at DESC, p.id DESC",
             $params
         );
+    }
+
+    /** Marchează/demarchează un produs ca eligibil pentru programul RABLA. */
+    public function setRablaEligible(int $id, bool $eligible): void
+    {
+        try {
+            $this->pdo->prepare("UPDATE products SET rabla_eligible = :e WHERE id = :id")
+                ->execute([':e' => $eligible ? 1 : 0, ':id' => $id]);
+        } catch (Throwable) {
+            // ignore
+        }
+    }
+
+    /**
+     * Produsele active marcate „Eligibil programul RABLA", grupate pe tip
+     * (Motociclete / Scutere / ATV / Marine), în ordinea RABLA_TYPE_ORDER.
+     * @return array<string,array<int,array<string,mixed>>> tip => carduri
+     */
+    public function rablaEligibleGrouped(): array
+    {
+        $rows = $this->all(
+            "SELECT p.id, p.brand, p.name, p.subtitle, p.slug, p.year, p.price, p.discount_pct,
+                    p.licence, p.rabla_eligible, p.cover_image, (p.promo_html IS NOT NULL AND p.promo_html <> '') AS has_promo,
+                    c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
+             " . self::PROD_JOIN . "
+             WHERE p.is_active = 1 AND p.rabla_eligible = 1
+             ORDER BY p.position, p.year DESC, p.name"
+        );
+        $groups = [];
+        foreach ($rows as $r) {
+            // Slug-ul de top efectiv: pt. produsele pe subcategorie = t.slug;
+            // pt. cele pe categorie plată (CFMOTO, cat_parent null) = cat_slug.
+            $topSlug = $r['cat_parent'] !== null ? (string) $r['top_slug'] : (string) $r['cat_slug'];
+            $type = self::RABLA_TYPE_MAP[$topSlug] ?? ucfirst($topSlug);
+            $groups[$type][] = $this->shapeCard($r);
+        }
+        uksort($groups, static function (string $a, string $b): int {
+            $ia = array_search($a, self::RABLA_TYPE_ORDER, true);
+            $ib = array_search($b, self::RABLA_TYPE_ORDER, true);
+            $ia = $ia === false ? PHP_INT_MAX : $ia;
+            $ib = $ib === false ? PHP_INT_MAX : $ib;
+            return $ia === $ib ? strcmp($a, $b) : $ia <=> $ib;
+        });
+        return $groups;
     }
 
     public function productById(int $id): ?array
@@ -666,6 +727,7 @@ final class Repository
             // promoție = preț redus SAU conținut în promo_html → ribon pe card
             'promo'        => $this->oldPrice($r) !== null || !empty($r['has_promo']),
             'licence'      => $r['licence'],
+            'rabla'        => !empty($r['rabla_eligible']),
             'cat'          => ucfirst((string) ($r['sub_slug'] ?: $r['top_slug'])),
             'image'        => self::imagePath($r['brand'], 'cover', $r['cover_image']),
             'url'          => self::productUrl($r),

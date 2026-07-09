@@ -26,6 +26,14 @@
     </div>
 
     <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Pagina principală</span>
+        <label style="flex-direction:row;align-items:center;gap:.5rem;margin-top:.8rem">
+            <input type="checkbox" name="rabla_home_section" value="1" {{ rablaHomeSection ? 'checked' }} style="width:auto"> Activează secțiunea „Modele eligibile programul RABLA"
+        </label>
+        <p class="adm-help" style="margin-top:.5rem">Când e bifat, secțiunea „Modele de pus în garaj" de pe prima pagină e înlocuită cu modelele marcate <strong>eligibile RABLA</strong>, grupate pe categorii. Marchezi modelele din <a href="{{ admin_base }}/produse">lista de produse</a> (coloana RABLA).</p>
+    </div>
+
+    <div class="adm-fieldset">
         <span class="adm-fieldset__t">Social & contact</span>
         <div class="adm-grid2" style="margin-top:.8rem">
             <label>Facebook URL <input type="url" name="social_facebook" value="{{ vals.social_facebook }}"></label>

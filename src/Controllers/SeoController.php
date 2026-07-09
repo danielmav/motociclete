@@ -62,7 +62,7 @@ final class SeoController
     {
         $entries = [];
         // Static, high-value pages.
-        foreach (['/', '/despre_dual_motors', '/service', '/accesorii', '/finantare', '/blog', '/evenimente'] as $p) {
+        foreach (['/', '/despre_dual_motors', '/service', '/accesorii', '/finantare', '/programul-rabla', '/blog', '/evenimente'] as $p) {
             $entries[] = ['path' => $p, 'lastmod' => null];
         }
         // Catalog (categories then products), blog, events, legal pages.

@@ -24,6 +24,7 @@ final class HomeController
     private Catalog $catalog;
     private Hero $hero;
     private News $news;
+    private \App\Support\Settings $settings;
 
     /** @param array<string,mixed> $container */
     public function __construct(private Twig $twig, array $container)
@@ -32,17 +33,26 @@ final class HomeController
         $this->catalog   = $container['catalog'];
         $this->hero      = $container['hero'];
         $this->news      = $container['news'];
+        $this->settings  = $container['app_settings'];
     }
 
     public function index(Request $request, Response $response): Response
     {
         $accessories = $this->bikershop->featuredProducts(6);
 
+        // Secțiunea „Modele eligibile programul RABLA" înlocuiește „Modele de pus în
+        // garaj" doar când e activată din admin ȘI există modele marcate eligibile.
+        $rablaGroups = $this->settings->bool('rabla_home_section', false)
+            ? $this->catalog->rablaEligibleGrouped()
+            : [];
+
         return $this->twig->render($response, 'home.twig', [
             'canonical_path'  => '/',
             'heroSlides'      => $this->hero->slides(),
             'brands'          => $this->brands(),
             'models'          => $this->catalog->randomModels(8),
+            'rablaGroups'     => $rablaGroups,
+            'rablaYear'       => (int) date('Y'),
             'makes'           => $this->bikershop->makes(),
             'accessories'     => $accessories,
             'accessoriesLive' => $this->bikershop->isAvailable(),

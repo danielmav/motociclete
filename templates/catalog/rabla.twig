@@ -1,0 +1,39 @@
+{% extends 'layout.twig' %}
+{% import 'partials/_model_card_v2.twig' as cards %}
+
+{% block title %}Modele eligibile programul RABLA {{ year }} — Yamaha & CFMOTO | Dual Motors{% endblock %}
+{% block description %}Toate modelele Yamaha și CFMOTO eligibile pentru programul RABLA {{ year }} la Dual Motors — motociclete și scutere, prețuri și detalii. Dealer validat (Dual Tours).{% endblock %}
+
+{% block content %}
+
+<section class="section catalog-head">
+    <div class="container">
+        <span class="kicker">Programul RABLA {{ year }}</span>
+        <h1 class="catalog-head__title">Modele eligibile programul RABLA {{ year }}</h1>
+        <div class="catalog-head__lead">
+            <p>Modelele de mai jos sunt eligibile pentru programul RABLA {{ year }}. Dual Tours este producător validat — ne poți selecta în aplicația AFM după obținerea numărului de înregistrare. Vezi condițiile complete pe pagina fiecărui model (butonul „Eligibil programul RABLA").</p>
+        </div>
+    </div>
+</section>
+
+<section class="section section--tight">
+    <div class="container">
+        {% if groups|length %}
+            {% for type, items in groups %}
+                <div class="rabla-group">
+                    <h2 class="rabla-group__title">{{ type }} <small class="rabla-group__count">{{ items|length }}</small></h2>
+                    <div class="grid grid--models">
+                        {% for m in items %}{{ cards.card(m, base) }}{% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <p>Momentan nu sunt modele marcate ca eligibile pentru programul RABLA.</p>
+                <a class="btn btn--ghost" href="{{ base }}/">Înapoi la prima pagină <span aria-hidden="true">→</span></a>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}

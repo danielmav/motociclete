@@ -64,47 +64,68 @@
     </div>
 </section>
 
-{# ============ FEATURED MODELS ============ #}
+{# ============ FEATURED MODELS (or RABLA-eligible when enabled from admin) ============ #}
+{% import 'partials/_model_card_v2.twig' as cards %}
 <section class="section" id="modele">
     <div class="container">
-        <header class="section__head">
-            <div>
-                <span class="kicker">Gama 2026</span>
-                <h2 class="section__title">Modele de pus în garaj</h2>
-            </div>
-            <a class="link-arrow" href="{{ base }}/motociclete">Toate motocicletele <span aria-hidden="true">→</span></a>
-        </header>
+        {% if rablaGroups|default({})|length %}
+            <header class="section__head">
+                <div>
+                    <span class="kicker">Programul RABLA {{ rablaYear }}</span>
+                    <h2 class="section__title">Modele eligibile programul RABLA {{ rablaYear }}</h2>
+                </div>
+                <a class="link-arrow" href="{{ base }}/programul-rabla">Vezi toate modelele eligibile <span aria-hidden="true">→</span></a>
+            </header>
 
-        <div class="grid grid--models">
-            {% for m in models %}
-                <a class="card-moto" href="{{ base }}{{ m.url }}">
-                    <div class="card-moto__media{{ m.image ? '' : ' media-ph' }}">
-                        {% if m.year %}<span class="badge">{{ m.year }}</span>{% endif %}
-                        {% if m.promo %}<span class="ribbon-promo">Promoție</span>{% endif %}
-                        {% if m.image %}
-                            <img src="{{ base }}{{ m.image }}" alt="{{ m.name }}" loading="lazy" width="900" height="600"
-                                 onerror="this.closest('.card-moto__media').classList.add('media-ph');this.remove()">
-                        {% else %}
-                            <span class="media-ph__label">{{ m.name }}</span>
-                        {% endif %}
+            {% for type, items in rablaGroups %}
+                <div class="rabla-group">
+                    <h3 class="rabla-group__title">{{ type }}</h3>
+                    <div class="grid grid--models">
+                        {% for m in items %}{{ cards.card(m, base) }}{% endfor %}
                     </div>
-                    <div class="card-moto__body">
-                        <div class="card-moto__meta">
-                            <span class="chip">{{ m.cat }}</span>
-                            {% if m.licence %}<span class="chip chip--permis">Permis {{ m.licence }}</span>{% endif %}
-                        </div>
-                        <h3 class="card-moto__name">{{ m.name }}</h3>
-                        <div class="card-moto__foot">
-                            {% if m.price %}
-                                {% set pr = prices(m.price, m.brand) %}
-                                <span class="price"><small>de la</small> {{ pr.eur }}<span class="price__ron">{{ pr.ron }}</span></span>
-                            {% endif %}
-                            <span class="link-arrow link-arrow--sm">Detalii <span aria-hidden="true">→</span></span>
-                        </div>
-                    </div>
-                </a>
+                </div>
             {% endfor %}
-        </div>
+        {% else %}
+            <header class="section__head">
+                <div>
+                    <span class="kicker">Gama 2026</span>
+                    <h2 class="section__title">Modele de pus în garaj</h2>
+                </div>
+                <a class="link-arrow" href="{{ base }}/motociclete">Toate motocicletele <span aria-hidden="true">→</span></a>
+            </header>
+
+            <div class="grid grid--models">
+                {% for m in models %}
+                    <a class="card-moto" href="{{ base }}{{ m.url }}">
+                        <div class="card-moto__media{{ m.image ? '' : ' media-ph' }}">
+                            {% if m.year %}<span class="badge">{{ m.year }}</span>{% endif %}
+                            {% if m.promo %}<span class="ribbon-promo">Promoție</span>{% endif %}
+                            {% if m.image %}
+                                <img src="{{ base }}{{ m.image }}" alt="{{ m.name }}" loading="lazy" width="900" height="600"
+                                     onerror="this.closest('.card-moto__media').classList.add('media-ph');this.remove()">
+                            {% else %}
+                                <span class="media-ph__label">{{ m.name }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="card-moto__body">
+                            <div class="card-moto__meta">
+                                <span class="chip">{{ m.cat }}</span>
+                                {% if m.licence %}<span class="chip chip--permis">Permis {{ m.licence }}</span>{% endif %}
+                                {% if m.rabla %}<span class="chip chip--rabla">Eligibil RABLA</span>{% endif %}
+                            </div>
+                            <h3 class="card-moto__name">{{ m.name }}</h3>
+                            <div class="card-moto__foot">
+                                {% if m.price %}
+                                    {% set pr = prices(m.price, m.brand) %}
+                                    <span class="price"><small>de la</small> {{ pr.eur }}<span class="price__ron">{{ pr.ron }}</span></span>
+                                {% endif %}
+                                <span class="link-arrow link-arrow--sm">Detalii <span aria-hidden="true">→</span></span>
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
     </div>
 </section>
 

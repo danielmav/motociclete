@@ -68,6 +68,15 @@
 
 /* brand pills */
 .megav2__brandstrip { display: flex; align-items: center; gap: .4rem; }
+.megav2__rabla {
+    margin-left: auto;
+    background: #1e9e4a; color: #fff;
+    font-family: var(--head); font-weight: 700; font-size: .72rem;
+    letter-spacing: .08em; text-transform: uppercase;
+    padding: .34rem .9rem; border-radius: 999px;
+    transition: background .15s var(--ease);
+}
+.megav2__rabla:hover { background: #178a3f; color: #fff; }
 .megav2__brandlabel {
     font-family: var(--head); font-weight: 700; font-size: .68rem;
     text-transform: uppercase; letter-spacing: .14em; color: var(--muted); margin-right: .2rem;

@@ -311,8 +311,12 @@ ul { list-style: none; padding: 0; }
 }
 .chip--ghost { background: transparent; box-shadow: inset 0 0 0 1px var(--line); color: var(--muted); }
 .chip--permis { background: var(--red-soft); color: var(--red-dark); }
-.chip--rabla { background: #1e9e4a; color: #000; border: 0; cursor: pointer; font-weight: 700; }
-.chip--rabla:hover { background: #178a3f; }
+.chip--rabla { background: #1e9e4a; color: #fff; border: 0; font-weight: 700; }
+button.chip--rabla { cursor: pointer; }
+button.chip--rabla:hover { background: #178a3f; }
+.rabla-group { margin-top: 2rem; }
+.rabla-group:first-of-type { margin-top: 1rem; }
+.rabla-group__title { font-family: var(--display); font-weight: 800; font-size: 1.35rem; margin-bottom: 1rem; padding-bottom: .5rem; border-bottom: 2px solid var(--line); }
 .card-moto__name { font-family: var(--display); font-weight: 800; font-size: 1.25rem; line-height: 1.05; margin-bottom: .9rem; }
 .card-moto__foot { display: flex; align-items: center; justify-content: space-between; }
 .price { font-family: var(--head); font-weight: 800; font-size: 1.15rem; }

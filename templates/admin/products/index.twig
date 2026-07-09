@@ -29,7 +29,7 @@
         {% if brand or category_id %}<a class="adm-btn adm-btn--sm" href="{{ admin_base }}/produse">Reset</a>{% endif %}
     </form>
     <table class="adm-table">
-        <thead><tr><th></th><th>Brand</th><th>Model</th><th>Categorie</th><th>An</th><th>Preț €</th><th>Adăugat</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th></th><th>Brand</th><th>Model</th><th>Categorie</th><th>An</th><th>Preț €</th><th>Adăugat</th><th title="Eligibil programul RABLA">RABLA</th><th>Status</th><th></th></tr></thead>
         <tbody>
         {% for p in products %}
             <tr>
@@ -40,6 +40,14 @@
                 <td>{{ p.year }}</td>
                 <td>{{ p.price }}</td>
                 <td class="adm-muted">{{ p.created_at ? p.created_at|date('d.m.Y') : '—' }}</td>
+                <td style="text-align:center">
+                    <form method="post" action="{{ admin_base }}/produse/{{ p.id }}/rabla" style="display:inline">
+                        <input type="hidden" name="_csrf" value="{{ csrf }}">
+                        <input type="hidden" name="brand" value="{{ brand|default('') }}">
+                        <input type="hidden" name="category_id" value="{{ category_id|default('') }}">
+                        <input type="checkbox" name="rabla_eligible" value="1" {{ p.rabla_eligible ? 'checked' }} onchange="this.form.submit()" title="Eligibil programul RABLA" style="width:auto;cursor:pointer">
+                    </form>
+                </td>
                 <td>{% if p.is_active %}<span class="adm-badge adm-badge--on">activ</span>{% else %}<span class="adm-badge adm-badge--off">ascuns</span>{% endif %}</td>
                 <td style="white-space:nowrap">
                     <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/produse/{{ p.id }}{{ list_qs|default('') }}">Editează</a>
@@ -60,7 +68,7 @@
                 </td>
             </tr>
         {% else %}
-            <tr><td colspan="9" class="adm-muted">Niciun produs.</td></tr>
+            <tr><td colspan="10" class="adm-muted">Niciun produs.</td></tr>
         {% endfor %}
         </tbody>
     </table>
