@@ -620,6 +620,22 @@ final class Repository
         return $this->one("SELECT * FROM products WHERE id = :id", [':id' => $id]);
     }
 
+    /**
+     * Produsul (id + nume + is_active) care ocupă deja perechea (brand, slug), sau null.
+     * `products` are UNIQUE(brand, slug) → adminul verifică ÎNAINTE de save, altfel
+     * INSERT-ul crapă cu 1062 și operatorul pierde tot formularul.
+     */
+    public function productBySlug(string $brand, string $slug): ?array
+    {
+        if ($slug === '') {
+            return null;
+        }
+        return $this->one(
+            "SELECT id, name, year, is_active FROM products WHERE brand = :b AND slug = :s",
+            [':b' => $brand, ':s' => $slug]
+        );
+    }
+
     /** @param array<string,mixed> $d */
     public function saveProduct(?int $id, array $d): int
     {

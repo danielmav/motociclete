@@ -32,6 +32,18 @@
     {% if fromYamaha is defined and fromYamaha %}
         <div class="adm-flash adm-flash--ok">Date pre-completate de la Yamaha. <strong>Verifică</strong> totul (mai ales prețul — nu vine de la Yamaha) și ordonează/șterge imaginile, apoi apasă <strong>Salvează</strong>. Nimic nu e salvat până nu salvezi.</div>
     {% endif %}
+    {% if dup is defined and dup %}
+        {% set dupYear = p.year ?: 'now'|date('Y') %}
+        {% set dupSuggest = p.slug ends with ('-' ~ dupYear) ? p.slug ~ '-nou' : p.slug ~ '-' ~ dupYear %}
+        <div class="adm-flash adm-flash--err">
+            <strong>Nu s-a salvat nimic.</strong> Există deja un model cu slug-ul
+            <code>{{ p.slug }}</code>: <strong>{{ dup.name }}</strong>{% if dup.year %} ({{ dup.year }}){% endif %}{% if not dup.is_active %},
+            <em>scos din ofertă</em> — de aceea nu apare în catalog{% endif %}.
+            Schimbă slug-ul de mai jos (ex. <code>{{ dupSuggest }}</code>) și salvează din nou,
+            sau <a href="{{ admin_base }}/produse/{{ dup.id }}">editează modelul existent</a>.
+            Datele completate sunt păstrate în formular.
+        </div>
+    {% endif %}
     {% if sync is defined and sync %}
         <div class="adm-flash adm-flash--ok">Accesorii sincronizate: {{ sync.fetched }} ({{ sync.new }} noi{% if sync.unmatched %}, {{ sync.unmatched }} fără produs pe bikershop{% endif %}).</div>
     {% endif %}

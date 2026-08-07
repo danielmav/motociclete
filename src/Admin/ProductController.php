@@ -109,6 +109,24 @@ final class ProductController extends BaseController
             }
         }
 
+        // Salvare respinsă din cauza unui slug duplicat (vezi save()/stashDraft): datele
+        // trimise se întorc în formular, cu produsul care ocupă slug-ul în flash.
+        $dup = null;
+        if (!empty($_SESSION['product_draft'])) {
+            $draft = $_SESSION['product_draft'];
+            unset($_SESSION['product_draft']);
+            $dup = $draft['dup'] ?? null;
+            $p = array_merge($p ?? [], $draft['p']);
+            $brand = $p['brand'];
+            foreach (self::SPECS as $key => $col) {
+                $specRows[$key] = $this->specRows($p[$col] ?? '');
+            }
+            $variantRows = $this->variantRows($p['variants_json'] ?? '');
+            foreach (['color', 'gallery', 'detail'] as $t) {
+                $images[$t] = array_map(static fn ($f) => ['filename' => $f], $draft['images'][$t] ?? []);
+            }
+        }
+
         // Lista la care duce „Înapoi” (și implicit categoria din care face parte modelul):
         // categoria produsului dacă există, altfel filtrul cu care s-a deschis formularul.
         $backCat = ($p['category_id'] ?? null) ?: (((int) ($q['category_id'] ?? 0)) ?: null);
@@ -126,6 +144,7 @@ final class ProductController extends BaseController
             'variantRows' => $variantRows,
             'images'     => $images,
             'fromYamaha' => $fromYamaha,
+            'dup'        => $dup,
             'saved'      => isset($q['ok']),
             'sync'       => isset($q['acc']) ? ['fetched' => (int) $q['acc'], 'new' => (int) ($q['accnew'] ?? 0), 'unmatched' => (int) ($q['accunm'] ?? 0)] : null,
             'syncErr'    => isset($q['accerr']),
@@ -218,7 +237,27 @@ final class ProductController extends BaseController
             );
         }
 
-        $pid = $this->repo()->saveProduct($id > 0 ? $id : null, $data);
+        // `products` are UNIQUE(brand, slug): fără verificare, salvarea crapă cu un 500
+        // (1062) și operatorul pierde tot formularul. Cazul tipic = model reimportat de
+        // la Yamaha peste unul existent — posibil scos din ofertă, deci invizibil în
+        // catalog. Nu salvăm nimic: întoarcem datele în formular cu un mesaj clar.
+        $dup = $this->repo()->productBySlug($brand, $data['slug']);
+        if ($dup && (int) $dup['id'] !== $id) {
+            $this->stashDraft($body, $data, $dup);
+            return $this->to($response, '/produse/' . $id);
+        }
+
+        try {
+            $pid = $this->repo()->saveProduct($id > 0 ? $id : null, $data);
+        } catch (\PDOException $e) {
+            // Plasă de siguranță (coliziune apărută între verificare și INSERT, sau
+            // verificarea a picat pe o eroare de DB) — tot fără 500, tot cu datele intacte.
+            if ((string) $e->getCode() !== '23000') {
+                throw $e;
+            }
+            $this->stashDraft($body, $data, $dup ?: $this->repo()->productBySlug($brand, $data['slug']));
+            return $this->to($response, '/produse/' . $id);
+        }
 
         // 301 automat: dacă slug-ul s-a schimbat, URL-ul vechi va redirecta la cel nou.
         // Brandul vechi (din URL-ul vechi) e cel relevant pentru maparea slug-ului retras.
@@ -255,6 +294,26 @@ final class ProductController extends BaseController
         $id = (int) ($args['id'] ?? 0);
         $sync = $this->syncQuery($this->container['accessories_importer']->importForModel($id, true));
         return $this->to($response, '/produse/' . $id . '?ok=1' . $sync);
+    }
+
+    /**
+     * Pune datele trimise (deja normalizate) în sesiune ca formularul să se repopuleze
+     * după un slug duplicat — vezi save() + form(). Nimic nu se scrie în DB.
+     *
+     * @param array<string,mixed> $body Formularul brut (pentru listele de imagini)
+     * @param array<string,mixed> $data Datele normalizate (aceleași chei ca un rând `products`)
+     * @param array<string,mixed>|null $dup Produsul care ocupă deja (brand, slug)
+     */
+    private function stashDraft(array $body, array $data, ?array $dup): void
+    {
+        $images = [];
+        foreach (['color', 'gallery', 'detail'] as $t) {
+            $images[$t] = array_values(array_filter(array_map(
+                static fn ($f) => trim((string) $f),
+                (array) ($body[$t] ?? [])
+            )));
+        }
+        $_SESSION['product_draft'] = ['p' => $data, 'images' => $images, 'dup' => $dup];
     }
 
     /** @param array<string,mixed> $r Build the ?acc=…&accnew=… query for the flash banner. */
