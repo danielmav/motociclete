@@ -9,6 +9,9 @@
 /storage/cache/*
 /storage/logs/*
 /storage/shots/
+# artefacte de rulare ale auditului de referințe (selecție operator + rollback generat)
+/storage/dup473_selection.json
+/storage/dup473_rollback_*.sql
 !/storage/cache/.gitkeep
 !/storage/logs/.gitkeep
 .DS_Store
