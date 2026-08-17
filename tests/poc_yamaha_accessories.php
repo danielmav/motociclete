@@ -69,11 +69,16 @@ function getJson(string $url): array
     return [json_decode((string) $body, true), $status];
 }
 
-/** PrestaShop reference: SKU fără cratime, fără ultimele 2 caractere (codul de mărime). */
+/**
+ * PrestaShop reference = SKU-ul COMPLET fără cratime (12 caractere).
+ *
+ * Varianta veche tăia ultimele 2 caractere, presupunându-le cod de mărime — greșit
+ * pentru SKU-uri ca BR8-HIPER-KT-10, unde `10` face parte din cod. Vezi
+ * App\Accessories\Importer::normalizeSku(), sursa canonică a acestei reguli.
+ */
 function extractBaseReference(string $sku): string
 {
-    $clean = str_replace('-', '', $sku);
-    return substr($clean, 0, -2);
+    return App\Accessories\Importer::normalizeSku($sku);
 }
 
 /**

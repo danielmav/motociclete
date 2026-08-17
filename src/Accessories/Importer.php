@@ -110,9 +110,22 @@ final class Importer
                 $shaped[$s['yamaha_id']] = $s;
             }
 
-            // Match referințe -> bs_product_id (un singur query).
-            $refs = array_values(array_filter(array_map(static fn ($s) => $s['reference'], $shaped)));
-            $bsMap = $this->bs->productIdsByReferences($refs);
+            // Match referințe -> bs_product_id (un singur query, cu ambele forme de cod).
+            $refs = [];
+            foreach ($shaped as $s) {
+                foreach ([$s['reference'], $s['reference_alt']] as $r) {
+                    if ($r !== '') {
+                        $refs[$r] = true;
+                    }
+                }
+            }
+            // Cheile întoarse păstrează forma din BikerShop, care are și referințe cu
+            // litere mici (ex. `34bf84a81000`) — MySQL le potrivește case-insensitive,
+            // cheile de array în PHP nu. Normalizăm ca să nu pierdem potriviri tăcut.
+            $bsMap = [];
+            foreach ($this->bs->productIdsByReferences(array_keys($refs)) as $ref => $bsId) {
+                $bsMap[strtoupper(trim((string) $ref))] = $bsId;
+            }
 
             // Starea curentă pentru diff (preț schimbat / nou).
             $existing = [];
@@ -139,7 +152,17 @@ final class Importer
             $pos = 0;
             foreach ($shaped as $yid => $s) {
                 $stat['fetched']++;
-                $bsId = $s['reference'] !== '' ? ($bsMap[$s['reference']] ?? null) : null;
+                // Codul complet are prioritate; cel trunchiat rămâne rezervă pentru
+                // produsele BikerShop importate înainte de corectarea referințelor.
+                $bsId = null;
+                $matchedRef = $s['reference'];
+                foreach ([$s['reference'], $s['reference_alt']] as $cand) {
+                    if ($cand !== '' && isset($bsMap[$cand])) {
+                        $bsId = $bsMap[$cand];
+                        $matchedRef = $cand;
+                        break;
+                    }
+                }
                 if ($bsId === null) {
                     $stat['unmatched']++;
                 }
@@ -150,7 +173,7 @@ final class Importer
                 }
                 if ($apply) {
                     $upsert->execute([
-                        ':yid' => $yid, ':ref' => $s['reference'], ':name' => $s['name'],
+                        ':yid' => $yid, ':ref' => $matchedRef, ':name' => $s['name'],
                         ':price' => $s['price_eur'], ':type' => $s['type'], ':bs' => $bsId,
                     ]);
                     $selId->execute([':yid' => $yid]);
@@ -221,7 +244,16 @@ final class Importer
         return $body === false ? null : json_decode((string) $body, true);
     }
 
-    /** Extrage {yamaha_id, reference, name, price_eur, type} din variantele unui produs. */
+    /**
+     * Normalizează un SKU Yamaha la formatul `ps_product.reference`: fără cratime/spații,
+     * majuscule. `BR8-HIPER-KT-10` → `BR8HIPERKT10` (mereu 12 caractere).
+     */
+    public static function normalizeSku(string $sku): string
+    {
+        return strtoupper((string) preg_replace('/[\s\-\.]+/', '', $sku));
+    }
+
+    /** Extrage {yamaha_id, reference, reference_alt, name, price_eur, type} din variantele unui produs. */
     private function shape(array $product): array
     {
         $priceEur = 0.0;
@@ -231,9 +263,14 @@ final class Importer
                 $priceEur = (float) $v['prices'][0]['amount'];
             }
             if ($reference === '' && !empty($v['sku'])) {
-                $reference = substr(str_replace('-', '', (string) $v['sku']), 0, -2); // referința PrestaShop
+                // Codul COMPLET e referința corectă. Varianta trunchiată (fără ultimele 2
+                // caractere) era presupusă a fi „codul de mărime", dar pentru SKU-uri ca
+                // BR8-HIPER-KT-10 tăia din codul propriu-zis și producea coliziuni cu alte
+                // produse. Rămâne doar ca rezervă, pentru intrările vechi din BikerShop.
+                $reference = self::normalizeSku((string) $v['sku']);
             }
         }
+        $referenceAlt = strlen($reference) > 2 ? substr($reference, 0, -2) : '';
         $type = '';
         foreach (($product['variants'][0]['attributes'] ?? []) as $a) {
             if (($a['name'] ?? '') === 'accessoryType') {
@@ -242,11 +279,12 @@ final class Importer
             }
         }
         return [
-            'yamaha_id' => (string) ($product['id'] ?? ''),
-            'reference' => $reference,
-            'name'      => trim((string) preg_replace('/\s+/u', ' ', (string) ($product['name'] ?? ''))),
-            'price_eur' => $priceEur,
-            'type'      => $type,
+            'yamaha_id'     => (string) ($product['id'] ?? ''),
+            'reference'     => $reference,
+            'reference_alt' => $referenceAlt,
+            'name'          => trim((string) preg_replace('/\s+/u', ' ', (string) ($product['name'] ?? ''))),
+            'price_eur'     => $priceEur,
+            'type'          => $type,
         ];
     }
 }
