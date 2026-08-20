@@ -555,7 +555,7 @@ button.chip--rabla:hover { background: #178a3f; }
 /* category head */
 .catalog-head { padding-block: clamp(2rem, 5vw, 3.5rem) 1rem; }
 .catalog-head__title { font-family: var(--display); font-weight: 800; font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.02; margin-top: .4rem; }
-.catalog-head__lead { color: var(--muted); max-width: 60ch; margin-top: .9rem; }
+.catalog-head__lead { color: var(--muted); margin-top: .9rem; }
 .catalog-head__lead p { margin-bottom: .6rem; }
 .section--tight { padding-block: 1rem clamp(3.5rem, 8vw, 6rem); }
 .catalog-count { color: var(--muted); font-size: .85rem; margin-bottom: 1.1rem; }
