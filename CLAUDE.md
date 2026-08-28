@@ -223,6 +223,11 @@ elegant pentru fotografii (până vin imaginile reale).
 Rulează direct cu Laragon — fără build step. `composer install`, apoi vizitează
 `http://motociclete.test`. `/health` raportează `bikershop` + `catalog` + `news`.
 După editări `app.css`/`app.js`: bump `?v=N` în `layout.twig` (cache-bust).
+**Loguri pe server:** PHP `~/logs/motociclete_com_ro.php.error.log` (nu are URL-ul!) → corelează timestamp-ul (UTC, +3h) cu access log-ul
+`~/access-logs/motociclete.com.ro.dualmotors.ro-ssl_log` (ora locală; rotit lunar în `~/logs/*-ssl_log-<Lună>-2026.gz`, `zcat`).
+`405 Method Not Allowed` în log = scanere care fac `POST /graphql`, `POST /stiri.php` etc. pe rute GET-only (catch-all `/{slug}`), NU un bug;
+`POST /autodiscover/autodiscover.xml → 400` nu trece prin Slim (răspunde serviciul autodiscover al cPanel la Outlook).
+Bash tool: `cd` relativ poate eșua („cwd reset") → folosește căi absolute în comenzi cu mai mulți pași.
 Screenshot: Chrome NU e pe PATH în Bash → cale completă
 `"/c/Program Files/Google/Chrome/Application/chrome.exe" --headless=new --screenshot=<CALE-ABSOLUTĂ>.png --window-size=1440,2600 <url>`
 (calea relativă a fișierului dă „cannot find path"; cale absolută obligatorie).
@@ -248,8 +253,21 @@ Activare după un clone nou: `git config core.hooksPath .githooks` + `scoop inst
 
 ## Module conexe
 
-- **drivetest** (`c:\laragon\www\drivetest`, `drivetest.test`) — sistem „drive test"
-  existent (PHP procedural + MySQLi, DB `dualmotors_testdrive`). Portalul face deocamdată
-  link spre el (CTA „Programează drive test", URL din `app.testride_url` / `.env` `TESTRIDE_URL`,
-  pe prod `https://www.motociclete.com.ro/drive-test/`); unificare ulterioară (Milestone 4).
+- **drivetest** — sistem „drive test" (PHP procedural + MySQLi, DB `dualmotors_testdrive`, fără Composer;
+  API `?action=` cu `match()`). Portalul face link spre el (CTA „Programează drive test", URL din `app.testride_url` /
+  `.env` `TESTRIDE_URL`, pe prod `https://www.motociclete.com.ro/drive-test/`); unificare ulterioară (Milestone 4).
   UI = „drive test" peste tot; rutele/id-urile interne rămân `test-ride`/`test_ride`.
+  **Butoanele „Programează drive test" sunt ascunse site-wide** (cerere client, aug 2026) prin flagul `TESTRIDE_ENABLED`
+  (`.env`, default `0`; global Twig `testride_enabled` în hero/bandă home, mega-meniu, footer). Modalul de lead de pe pagina produs rămâne.
+  - **Codul de lucru = `drive-test/` din acest repo** (copie de pe prod, **gitignored**: `includes/db.php` are parola de prod în clar).
+    Copia veche `c:\laragon\www\drivetest` are un CLAUDE.md descriptiv. Local: `includes/db.local.php` (negitat, NU se urcă)
+    suprascrie `DB_*` spre DB locală `drivetest` (root). Rulează la `http://motociclete.test/drive-test/` (portalul servește fișierele reale).
+  - **Deploy = manual prin `scp`** fișier cu fișier în `/home/dualmotors/public_html/motociclete.com.ro/drive-test/` (NU e în git),
+    apoi `ea-php81 -l` pe server. DB prod: `ssh dualmotors` + `export MYSQL_PWD=$(grep -oP "DB_PASS., .\K[^\x27]+" includes/db.php)`
+    + `mysql -u dualmotors_dbuser dualmotors_testdrive`; SQL cu diacritice → fișier `.sql` scp-uit + `source` cu `--default-character-set=utf8mb4`.
+  - ⚠️ **PHP pe server rulează pe UTC** → `includes/db.php` face `date_default_timezone_set('Europe/Bucharest')`; orice comparație
+    de timp (ex. `sesiuni.vizibila_de` = publicare programată, filtrată în `sesiuni_active`/`sesiune_details`/`index.php`) se face cu `date()` din PHP, nu `NOW()`.
+  - Schema reală ≠ `schema.sql` (lipsesc `rezervare_tokens`, `sesiuni.ora_sfarsit_duminica/pauza_masa_*/maps_url/vizibila_de`,
+    `clienti.cnp/ci_*`). ⚠️ Endpointurile `admin_*` din `api/index.php` + `api/modele.php`/`token.php` sunt **publice** (Basic Auth doar pe `admin/`) — de securizat.
+  - ⚠️ **Basic Auth sub docroot-ul portalului:** cPanel trimite 401 la `/401.shtml` (inexistent) → routerul Slim îl face **404** și browserul
+    nu mai cere parola. Orice folder protejat cu `.htpasswd` are nevoie de `ErrorDocument 401 "..."` inline în `.htaccess`-ul lui (`drive-test/admin/.htaccess`).
