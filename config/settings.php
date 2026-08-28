@@ -14,6 +14,9 @@ return [
         'base_path'    => rtrim($_ENV['BASE_PATH'] ?? '', '/'),
         // Where the "Drive test" buttons point (drivetest module).
         'testride_url' => $_ENV['TESTRIDE_URL'] ?? 'https://www.motociclete.com.ro/drive-test/',
+        // Show/hide every "Programează drive test" link site-wide (client request:
+        // hidden until the drivetest module is reworked). TESTRIDE_ENABLED=1 shows them.
+        'testride_enabled' => filter_var($_ENV['TESTRIDE_ENABLED'] ?? false, FILTER_VALIDATE_BOOL),
     ],
 
     // Admin back-office. `path` = hidden URL prefix (not "admin"), configurable so

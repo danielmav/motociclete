@@ -67,6 +67,7 @@ final class Bootstrap
         $twig->getEnvironment()->addGlobal('app', $settings['app']);
         $twig->getEnvironment()->addGlobal('base', $settings['app']['base_path']);
         $twig->getEnvironment()->addGlobal('testride_url', $settings['app']['testride_url']);
+        $twig->getEnvironment()->addGlobal('testride_enabled', $settings['app']['testride_enabled']);
         $twig->getEnvironment()->addGlobal('currency', $currency);
         $twig->getEnvironment()->addFilter(
             new \Twig\TwigFilter('money', fn ($v) => money_ron((float) $v))
