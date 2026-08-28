@@ -27,3 +27,6 @@ package-lock.json
 
 # Claude Code — setări locale/personale (permisiuni aprobate)
 .claude/settings.local.json
+
+# Newsletter Brevo: fragmente de template (conțin id-uri/URL-uri din contul Brevo) — se copiază manual pe server
+/storage/newsletter/

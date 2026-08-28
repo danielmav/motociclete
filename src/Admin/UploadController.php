@@ -62,6 +62,8 @@ final class UploadController extends BaseController
                 return 'evenimente';
             case 'about':
                 return 'despre';
+            case 'newsletter':
+                return 'newsletter';
             case 'product':
                 if (!in_array($brand, ['yamaha', 'cfmoto'], true)) {
                     return null;

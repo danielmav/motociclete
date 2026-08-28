@@ -34,6 +34,7 @@ h1,h2,h3{margin:0 0 .6rem;line-height:1.2}
 .adm-flash{padding:.7rem 1rem;border-radius:8px;margin-bottom:1rem;font-weight:600}
 .adm-flash--ok{background:var(--okbg);color:var(--ok)}
 .adm-flash--err{background:var(--errbg);color:var(--err)}
+.adm-flash--warn{background:#fff4d6;color:#8a5a00}
 
 /* ---- Cards / panels ---- */
 .adm-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:1rem;margin-bottom:1.4rem}

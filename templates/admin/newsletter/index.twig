@@ -1,0 +1,107 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'newsletter' %}
+{% block title %}Newsletter Brevo{% endblock %}
+
+{% block content %}
+{% if not parts_available %}
+    <div class="adm-flash adm-flash--err">Lipsesc fragmentele de template din <code>storage/newsletter/parts/</code> (head/news/mid1/model/mid2/product_row/tail .yml). Copiază-le de pe mașina de dezvoltare.</div>
+{% endif %}
+{% if error is defined %}
+    <div class="adm-flash adm-flash--err">{{ error }}</div>
+{% endif %}
+{% for w in warnings|default([]) %}
+    <div class="adm-flash adm-flash--warn">⚠ {{ w }}</div>
+{% endfor %}
+
+{% if yaml is defined %}
+<div class="adm-fieldset" style="max-width:980px;margin-bottom:1.2rem">
+    <span class="adm-fieldset__t">YAML generat — Brevo → Developer mode → Ctrl+A → paste</span>
+    <ul class="adm-help" style="margin:.6rem 0 .8rem 1rem">
+        {% for s in summary %}<li>{{ s }}</li>{% endfor %}
+    </ul>
+    <div class="adm-actions" style="margin:0 0 .6rem">
+        <button type="button" class="adm-btn adm-btn--primary" data-copy="#nl-yaml">Copiază în clipboard</button>
+        <span class="adm-help" data-copy-status></span>
+    </div>
+    <textarea id="nl-yaml" readonly spellcheck="false" style="width:100%;min-height:320px;font:12px/1.4 ui-monospace,Consolas,monospace;white-space:pre">{{ yaml }}</textarea>
+</div>
+{% endif %}
+
+<form class="adm-form" method="post" action="{{ admin_base }}/newsletter" style="max-width:980px">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Email</span>
+        <label style="margin-top:.6rem">Subiect <input type="text" name="subiect" value="{{ form.subiect }}" required></label>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">1. Știrea principală</span>
+        <label style="margin-top:.6rem">Titlu (textul mare de deasupra imaginii) <input type="text" name="titlu" value="{{ form.titlu }}" required></label>
+        <div class="adm-grid2" style="margin-top:.6rem">
+            <label>Link (unde duc imaginea și butonul) <input type="url" name="link" value="{{ form.link }}" placeholder="https://www.motociclete.com.ro/…" required></label>
+            <label>Text buton <input type="text" name="buton" value="{{ form.buton }}"></label>
+        </div>
+        <div style="margin-top:.8rem">
+            <span class="adm-help">Imagine (upload → se servește de pe {{ site }}/media/newsletter/)</span>
+            <div class="adm-imgmgr" data-imgmgr data-single data-store="url" data-context="newsletter" data-name="imagine">
+                <div class="adm-drop" data-dropzone>Trage o imagine aici sau click</div>
+                <div class="adm-imgs" data-images>
+                    {% if form.imagine %}
+                        <div class="adm-img" data-filename="{{ form.imagine }}">
+                            <img src="{{ base }}{{ form.imagine }}" alt="">
+                            <div class="adm-img__bar"><button type="button" class="adm-img__btn" data-del>Șterge</button></div>
+                            <input type="hidden" name="imagine" value="{{ form.imagine }}">
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <label style="margin-top:.6rem">…sau URL extern al imaginii (folosit doar dacă nu ai încărcat una)
+                <input type="url" name="imagine_url" value="{{ form.imagine_url }}" placeholder="https://…/poza.jpg"></label>
+        </div>
+        <label style="margin-top:.8rem">Text (paragrafe separate prin linie goală; HTML inline permis: &lt;b&gt;, &lt;a href=""&gt;)
+            <textarea name="paragrafe" rows="10">{{ form.paragrafe }}</textarea></label>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">2. Două modele de pe motociclete.com.ro</span>
+        <span class="adm-help">Lipește URL-ul paginii de model (sau slug-ul). Nume, preț, imagine cover și descriere vin din catalog.</span>
+        <div class="adm-grid2" style="margin-top:.6rem">
+            {% for i in 0..1 %}
+                <label>Model {{ i + 1 }} <input type="text" name="modele[]" value="{{ form.modele[i]|default('') }}" placeholder="https://www.motociclete.com.ro/yamaha/…" required></label>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">3. Șase produse de pe bikershop.ro</span>
+        <span class="adm-help">Lipește URL-ul produsului (sau ID-ul). Nume, preț și imagine vin LIVE de pe BikerShop (doar produse active).</span>
+        <div class="adm-grid2" style="margin-top:.6rem">
+            {% for i in 0..5 %}
+                <label>Produs {{ i + 1 }} <input type="text" name="produse[]" value="{{ form.produse[i]|default('') }}" placeholder="https://bikershop.ro/…/27821-….html" required></label>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="adm-actions">
+        <button class="adm-btn adm-btn--primary" type="submit"{% if not parts_available %} disabled{% endif %}>Generează YAML</button>
+    </div>
+</form>
+
+<script>
+document.querySelectorAll('[data-copy]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        var ta = document.querySelector(btn.getAttribute('data-copy'));
+        var st = document.querySelector('[data-copy-status]');
+        if (!ta) return;
+        ta.select();
+        var done = function (ok) { if (st) st.textContent = ok ? 'Copiat ✓' : 'Nu s-a putut copia — selectează textul și Ctrl+C'; };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(ta.value).then(function () { done(true); }, function () { done(document.execCommand('copy')); });
+        } else {
+            done(document.execCommand('copy'));
+        }
+    });
+});
+</script>
+{% endblock %}
