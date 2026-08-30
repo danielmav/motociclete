@@ -624,7 +624,7 @@ a.card-moto { display: block; color: inherit; }
    the bar is hidden and both panels stack (content stays accessible). */
 .ptabs { display: none; }
 .js .ptabs { display: block; position: sticky; top: 84px; z-index: 90; margin-top: 1.5rem;
-    background: #0c0c0e; }
+    background: #1A1A1D; /* aceeași nuanță ca .site-header.is-stuck (#0E0E10), puțin mai deschis */ }
 @media (max-width: 520px) { .js .ptabs { top: 70px; } }
 .ptabs__nav { display: flex; gap: .4rem; padding: .5rem 0; flex-wrap: wrap; }
 .ptabs__btn { font-family: var(--head); font-weight: 700; font-size: 1rem; padding: .7rem 1.5rem;
