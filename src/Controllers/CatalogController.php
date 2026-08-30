@@ -307,10 +307,16 @@ final class CatalogController
             }
         }
 
+        // Drive test doar pentru motociclete + scutere (cerere client): Yamaha după
+        // categoria top, CFMOTO are doar motociclete. ATV / marine / snowmobile etc. = fără buton.
+        $testrideAllowed = $brand === 'cfmoto'
+            || in_array((string)($product['top_slug'] ?? ''), ['motociclete', 'scutere'], true);
+
         return $this->twig->render($response, 'catalog/product.twig', [
             'brand'        => $brand,
             'brandLabel'   => $this->brandLabels[$brand] ?? ucfirst($brand),
             'p'            => $product,
+            'testride_allowed' => $testrideAllowed,
             'og_image'     => $product['cover'],
             'canonical_path' => $product['url'],
             'colors'       => $this->repo->images($brand, $id, 'color'),
