@@ -131,6 +131,19 @@ final class Bootstrap
             'departments' => $container['content']->departments(),
             'legal_pages' => $container['content']->activePages(),
         ]);
+        // Aceleași date de contact în footer-ul emailurilor HTML (Support\EmailTemplate).
+        $container['mailer']->setBrand([
+            'address'  => $appSettings->get('address', ''),
+            'schedule' => $appSettings->get('schedule', ''),
+            'phone'    => $appSettings->get('phone_general', ''),
+            'email'    => (string) ($settings['mail']['dealer'] ?? ''),
+            'social'   => [
+                'facebook'  => $appSettings->get('social_facebook', ''),
+                'instagram' => $appSettings->get('social_instagram', ''),
+                'youtube'   => $appSettings->get('social_youtube', ''),
+                'tiktok'    => $appSettings->get('social_tiktok', ''),
+            ],
+        ]);
 
         // --- Error handling ---
         $debug = (bool) $settings['app']['debug'];

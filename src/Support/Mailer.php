@@ -17,8 +17,17 @@ use Throwable;
  */
 final class Mailer
 {
+    /** @var array<string,mixed> date de brand pentru footer-ul HTML (adresă/program/contact/social) */
+    private array $brand = [];
+
     /** @param array<string,mixed> $cfg the 'mail' settings array */
     public function __construct(private array $cfg, private string $logDir, private bool $devLog = false, private ?\PDO $pdo = null) {}
+
+    /** @param array<string,mixed> $brand vezi EmailTemplate::wrap() */
+    public function setBrand(array $brand): void
+    {
+        $this->brand = $brand;
+    }
 
     /**
      * Send (or log) a plain-text email. Returns true on success/logged. Every
@@ -116,9 +125,12 @@ final class Mailer
         if ($replyTo !== '' && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
             $mail->addReplyTo($replyTo);
         }
-        $mail->isHTML(false);
+        // Body-ul primit e text (așa îl scriu controllerele și așa e persistat în
+        // email_log); îl trimitem ca HTML în layout-ul site-ului + alternativă text.
+        $mail->isHTML(true);
         $mail->Subject = $subject;
-        $mail->Body = $body;
+        $mail->Body = EmailTemplate::wrap($subject, EmailTemplate::textToHtml($body), $this->brand);
+        $mail->AltBody = $body;
 
         return $mail->send();
     }
