@@ -177,6 +177,10 @@ default `/dm-control`; citită în `config/settings.php` ca `admin.path`). NU ma
   (imagini în `media/service/`, URL-uri fixe bikershop.ro).
 - **Email → DB:** `Support\Mailer::send($to,$subj,$body,$context)` persistă **fiecare** email în `email_log`
   (PDO injectat din `Bootstrap`). Footer-ul folosește globalul Twig `site` (socials/adresă/departamente/pagini legale).
+  **Layout HTML emailuri** = `Support\EmailTemplate`: `wrap()` (header `#0E0E10` + `assets/img/email-logo.png` 320px + accent roșu + footer contact
+  din `settings` via `Mailer::setBrand()` în `Bootstrap`) + `textToHtml()` (body-ul TEXT al controllerelor → blocuri „Cheie: valoare" ca tabel, paragrafe, OTP evidențiat).
+  Controllerele scriu în continuare text; Mailer trimite HTML + `AltBody`; `email_log`/`mail.log` păstrează textul. Copie fără namespace: `drive-test/includes/mail.php` (`emailLayout()`).
+  Preview local fără SMTP: scrie HTML-ul în `storage/shots/*.html` + screenshot Chrome headless (`file:///…`, logo-ul rescris pe `motociclete.test`).
 - **Schemă/migrare (cross-engine):** `database/schema_admin.sql` (CREATE IF NOT EXISTS) + `database/migrate_admin.php`
   (rulează schema split pe `;` via `_dbutil.php` + `ensure_column` prin information_schema — MySQL 8 n-are
   `ADD COLUMN IF NOT EXISTS`). Seedere: `seed_admin_user.php`, `seed_settings.php` (departamente + pagini legale),
