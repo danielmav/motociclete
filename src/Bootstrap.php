@@ -137,6 +137,7 @@ final class Bootstrap
             'schedule' => $appSettings->get('schedule', ''),
             'phone'    => $appSettings->get('phone_general', ''),
             'email'    => (string) ($settings['mail']['dealer'] ?? ''),
+            'departments' => $container['content']->departments(),
             'social'   => [
                 'facebook'  => $appSettings->get('social_facebook', ''),
                 'instagram' => $appSettings->get('social_instagram', ''),

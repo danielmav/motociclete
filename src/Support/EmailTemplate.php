@@ -33,12 +33,26 @@ final class EmailTemplate
         $email    = $brand['email']    ?? '';
         $social   = array_filter((array) ($brand['social'] ?? []));
 
-        $contact = [];
-        if ($phone !== '') {
-            $contact[] = '<a href="tel:' . $e(preg_replace('/\s+/', '', $phone)) . '" style="color:#0E0E10;text-decoration:none;font-weight:700">' . $e($phone) . '</a>';
+        // Departamente (ca în footer-ul site-ului): „Label telefon · email", câte unul pe rând.
+        $contactRows = [];
+        foreach ((array) ($brand['departments'] ?? []) as $d) {
+            $label = trim((string) ($d['label'] ?? ''));
+            $dp    = trim((string) ($d['phone'] ?? ''));
+            $de    = trim((string) ($d['email'] ?? ''));
+            if ($label === '' && $dp === '' && $de === '') continue;
+            $parts = [];
+            if ($dp !== '') $parts[] = '<a href="tel:' . $e(preg_replace('/\s+/', '', $dp)) . '" style="color:#0E0E10;text-decoration:none;font-weight:700">' . $e($dp) . '</a>';
+            if ($de !== '') $parts[] = '<a href="mailto:' . $e($de) . '" style="color:#0E0E10;text-decoration:none">' . $e($de) . '</a>';
+            $contactRows[] = ($label !== '' ? $e($label) . ' ' : '') . implode(' · ', $parts);
         }
-        if ($email !== '') {
-            $contact[] = '<a href="mailto:' . $e($email) . '" style="color:#0E0E10;text-decoration:none">' . $e($email) . '</a>';
+        $contact = [];
+        if (!$contactRows) {
+            if ($phone !== '') {
+                $contact[] = '<a href="tel:' . $e(preg_replace('/\s+/', '', $phone)) . '" style="color:#0E0E10;text-decoration:none;font-weight:700">' . $e($phone) . '</a>';
+            }
+            if ($email !== '') {
+                $contact[] = '<a href="mailto:' . $e($email) . '" style="color:#0E0E10;text-decoration:none">' . $e($email) . '</a>';
+            }
         }
         $socialHtml = '';
         foreach ($social as $name => $url) {
@@ -67,6 +81,7 @@ final class EmailTemplate
             . '<tr><td style="background:#FAFAFA;border-top:1px solid #E4E4E7;padding:18px 28px 22px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#52525B;border-radius:0 0 10px 10px">'
             . '<strong style="color:' . self::INK . ';font-size:13px">Dual Motors</strong> — dealer autorizat Yamaha &amp; CFMOTO<br>'
             . $e($address) . '<br>' . $e($schedule)
+            . ($contactRows ? '<div style="margin-top:8px">' . implode('<br>', $contactRows) . '</div>' : '')
             . ($contact ? '<br>' . implode(' &nbsp;·&nbsp; ', $contact) : '')
             . '<br><a href="' . self::SITE_URL . '" style="color:' . self::RED . ';text-decoration:none;font-weight:700">motociclete.com.ro</a>'
             . ($socialHtml !== '' ? '<div style="margin-top:8px">' . $socialHtml . '</div>' : '')
