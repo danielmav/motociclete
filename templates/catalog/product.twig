@@ -54,12 +54,18 @@
 
                 {# Hero thumbnails: color variants only — the rest of the imagery
                    (gallery + details) lives in the "Galerie" tab below. #}
+                {% set hasColorNames = colors|filter(t => t.caption|default(''))|length > 0 %}
+                {% if hasColorNames %}
+                    <p class="gallery__color-name" data-color-name>{{ colors[0].caption|default('') }}</p>
+                {% endif %}
                 {% if colors|length > 1 %}
                     <ul class="gallery__thumbs">
                         {% for t in colors %}
                             <li>
                                 <button type="button" class="gallery__thumb{{ loop.first ? ' is-active' : '' }}"
-                                        data-gallery-thumb data-src="{{ base }}{{ t.src }}" aria-label="Culoare {{ loop.index }}">
+                                        data-gallery-thumb data-src="{{ base }}{{ t.src }}" data-caption="{{ t.caption|default('') }}"
+                                        {% if t.caption|default('') %}title="{{ t.caption }}"{% endif %}
+                                        aria-label="{{ t.caption|default('') ?: ('Culoare ' ~ loop.index) }}">
                                     <img src="{{ base }}{{ t.src }}" alt="" loading="lazy" width="120" height="80"
                                          onerror="this.closest('li').remove()">
                                 </button>

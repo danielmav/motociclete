@@ -33,5 +33,6 @@ ensure_column($pdo, 'products', 'variants_json', 'ALTER TABLE `products` ADD COL
 ensure_column($pdo, 'products', 'rabla_eligible', 'ALTER TABLE `products` ADD COLUMN `rabla_eligible` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_active`');
 ensure_column($pdo, 'site_messages', 'anonymized_at', 'ALTER TABLE `site_messages` ADD COLUMN `anonymized_at` DATETIME NULL');
 ensure_column($pdo, 'service_bookings', 'anonymized_at', 'ALTER TABLE `service_bookings` ADD COLUMN `anonymized_at` DATETIME NULL');
+ensure_column($pdo, 'product_images', 'caption', 'ALTER TABLE `product_images` ADD COLUMN `caption` VARCHAR(160) NULL AFTER `filename`');
 
 echo "migrate_admin: done.\n";

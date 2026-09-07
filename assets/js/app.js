@@ -291,6 +291,7 @@
     if (gallery) {
         var mainImg = gallery.querySelector('[data-gallery-main]');
         var thumbs = Array.prototype.slice.call(document.querySelectorAll('[data-gallery-thumb]'));
+        var colorName = document.querySelector('[data-color-name]');
         thumbs.forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var src = btn.getAttribute('data-src');
@@ -298,6 +299,7 @@
                 mainImg.src = src;
                 thumbs.forEach(function (b) { b.classList.remove('is-active'); });
                 btn.classList.add('is-active');
+                if (colorName) colorName.textContent = btn.getAttribute('data-caption') || '';
             });
         });
     }

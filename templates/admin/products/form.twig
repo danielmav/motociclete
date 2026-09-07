@@ -19,6 +19,9 @@
                         <button type="button" class="adm-img__btn" data-del>Șterge</button>
                     </div>
                     <input type="hidden" name="{{ name }}{{ single ? '' : '[]' }}" value="{{ it.filename }}">
+                    {% if type == 'color' and not single %}
+                        <input type="text" class="adm-img__caption" name="color_caption[]" value="{{ it.caption|default('') }}" placeholder="Numele culorii" title="Numele culorii (apare pe pagina produsului)">
+                    {% endif %}
                 </div>
             {% endfor %}
         </div>

@@ -103,7 +103,11 @@ final class ModelImporter
         [$detailsHtml, $featureImages] = $this->fetchFeatures($attrs['features'] ?? []);
 
         // Imaginile de feature NU mai merg în galerie (detail) — apar inline în „Caracteristici".
-        $images = $this->shapeImages($variant['images'] ?? [], []);
+        // Culorile pot fi răspândite pe variante (fiecare variantă = doar culoarea ei, ex. R9)
+        // → studiourile de culoare se aleg din TOATE variantele; cover+galeria rămân pe varianta 0.
+        $images = $this->shapeImages($variant['images'] ?? [], [], $this->allVariantImages($product['variants'] ?? []));
+        // URL studio → numele culorii (colourName per variantă) pt. captions după download.
+        $colorNames = $this->shapeColorNames($product['variants'] ?? []);
 
         $out['ok'] = true;
         $out['draft'] = [
@@ -128,6 +132,7 @@ final class ModelImporter
             'bs_product_id' => $this->resolveBs($cleanSlug, (string) $product['name'], $year),
             'specs'        => $specs,                  // [engine|chassis|dimensions|connectivity => [[label,value],...]]
             'images'       => $images,                 // URL-uri în acest stadiu; downloadImages() le face nume de fișier
+            'color_names'  => $colorNames,             // URL → colourName; downloadImages() le mută pe nume de fișier
             'feature_images' => $featureImages,        // URL-uri remote din details_html; downloadImages() le localizează
         ];
         return $out;
@@ -146,17 +151,23 @@ final class ModelImporter
         $coverUrl = (string) ($imgs['cover'] ?? '');
         $draft['cover_image'] = $coverUrl !== '' ? ($this->grab($coverUrl, 'cover') ?? '') : '';
         // liste
+        $colorNames = (array) ($draft['color_names'] ?? []);   // URL → colourName
+        $captions = [];
         foreach (['color', 'gallery', 'detail'] as $t) {
             $files = [];
             foreach ((array) ($imgs[$t] ?? []) as $url) {
                 $f = $this->grab((string) $url, $t);
                 if ($f !== null && !in_array($f, $files, true)) {
                     $files[] = $f;
+                    if ($t === 'color' && isset($colorNames[(string) $url])) {
+                        $captions['color'][$f] = $colorNames[(string) $url];
+                    }
                 }
             }
             $draft['images'][$t] = $files;
         }
-        unset($draft['images']['cover']);
+        unset($draft['images']['cover'], $draft['color_names']);
+        $draft['image_captions'] = $captions;                  // filename → nume culoare
 
         // Imaginile inline din „Caracteristici": descarcă-le în /media/yamaha/detalii/ și
         // rescrie URL-urile remote din details_html cu calea publică locală.
@@ -233,34 +244,45 @@ final class ModelImporter
      * detail = imaginile din blocurile de text. 360-Degrees (frame-uri de rotație) sunt ignorate.
      * @param array<int,array<string,mixed>> $productImages
      * @param array<int,string> $featureImages
+     * @param array<int,array<string,mixed>> $allVariantImages Imaginile TUTUROR variantelor (pt. culori)
      * @return array{cover:string,color:array<int,string>,gallery:array<int,string>,detail:array<int,string>}
      */
-    private function shapeImages(array $productImages, array $featureImages): array
+    private function shapeImages(array $productImages, array $featureImages, array $allVariantImages = []): array
     {
         $cover = '';
-        $color = [];     // url, dedup pe culoare
-        $colorSeen = [];
         $gallery = [];
         foreach ($productImages as $im) {
             $url = (string) ($im['url'] ?? '');
-            $label = (string) ($im['label'] ?? $url);
+            $label = $this->imageLabel($im, $url);
             if ($url === '') {
                 continue;
             }
             $type = preg_match('/-(Studio|Static|Action|360-Degrees|Detail)-/i', $label, $mm) ? strtolower($mm[1]) : '';
-            $colorTok = preg_match('/_([A-Za-z]+)-(?:Studio|Static|Action|360|Detail)/i', $label, $cm) ? strtolower($cm[1]) : '';
             if ($type === 'studio') {
                 if ($cover === '') {
                     $cover = $url; // primul studio = cover
-                }
-                if ($colorTok !== '' && !isset($colorSeen[$colorTok])) {
-                    $colorSeen[$colorTok] = true;
-                    $color[] = $url; // un studio reprezentativ per culoare
                 }
             } elseif ($type === 'static' || $type === 'action') {
                 $gallery[] = $url;
             }
             // 360-degrees / detail din produs: ignorate (zgomot / duplicat)
+        }
+        // Un studio reprezentativ per culoare, căutat în toate variantele (fallback varianta 0).
+        $color = [];
+        $colorSeen = [];
+        foreach (($allVariantImages ?: $productImages) as $im) {
+            $url = (string) ($im['url'] ?? '');
+            $label = $this->imageLabel($im, $url);
+            if ($url === '' || !preg_match('/-Studio-/i', $label)) {
+                continue;
+            }
+            // Tokenul complet al culorii (segmentul dinaintea lui -Studio-, cu underscori:
+            // „Icon_Blue"), nu doar ultimul cuvânt — altfel „Icon Blue"/„Light Blue" se ciocnesc.
+            $colorTok = preg_match('/-([A-Za-z][A-Za-z0-9_]*)-Studio-/i', $label, $cm) ? strtolower($cm[1]) : '';
+            if ($colorTok !== '' && !isset($colorSeen[$colorTok])) {
+                $colorSeen[$colorTok] = true;
+                $color[] = $url;
+            }
         }
         if ($cover === '' && $gallery !== []) {
             $cover = $gallery[0];
@@ -271,6 +293,76 @@ final class ModelImporter
             'gallery' => $gallery,
             'detail'  => array_values(array_unique($featureImages)),
         ];
+    }
+
+    /** Labelul unei imagini hyperdrive (poate veni localizat), fallback la URL. */
+    private function imageLabel(mixed $im, string $url): string
+    {
+        $label = is_array($im) ? ($im['label'] ?? null) : null;
+        return ($label !== null ? $this->loc($label) : '') ?: $url;
+    }
+
+    /**
+     * Imaginile tuturor variantelor, în ordinea variantelor, dedup pe URL.
+     * @param array<int,mixed> $variants
+     * @return array<int,array<string,mixed>>
+     */
+    private function allVariantImages(array $variants): array
+    {
+        $out = [];
+        $seen = [];
+        foreach ($variants as $v) {
+            if (!is_array($v)) {
+                continue;
+            }
+            foreach ((array) ($v['images'] ?? []) as $im) {
+                $url = (string) ($im['url'] ?? '');
+                if ($url === '' || isset($seen[$url])) {
+                    continue;
+                }
+                $seen[$url] = true;
+                $out[] = $im;
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * URL-ul imaginii Studio → numele culorii, din TOATE variantele (fiecare variantă
+     * are `colourName` + imaginile ei). Fallback: tokenul de culoare din label
+     * (`_Icon_Blue-Studio` → „Icon Blue") pentru studio-urile fără variantă asociată.
+     * @param array<int,mixed> $variants
+     * @return array<string,string>
+     */
+    private function shapeColorNames(array $variants): array
+    {
+        $map = [];
+        $fallback = [];
+        foreach ($variants as $v) {
+            if (!is_array($v)) {
+                continue;
+            }
+            $name = '';
+            foreach (($v['attributes'] ?? []) as $a) {
+                if (is_array($a) && ($a['name'] ?? '') === 'colourName') {
+                    $name = $this->loc($a['value'] ?? null);
+                    break;
+                }
+            }
+            foreach ((array) ($v['images'] ?? []) as $im) {
+                $url = (string) ($im['url'] ?? '');
+                $label = (string) ($im['label'] ?? $url);
+                if ($url === '' || !preg_match('/-Studio-/i', $label)) {
+                    continue;
+                }
+                if ($name !== '' && !isset($map[$url])) {
+                    $map[$url] = $name;
+                } elseif (preg_match('/_([A-Za-z0-9_]+)-Studio/i', $label, $m)) {
+                    $fallback[$url] = ucwords(strtolower(str_replace('_', ' ', $m[1])));
+                }
+            }
+        }
+        return $map + array_diff_key($fallback, $map);
     }
 
     /**
@@ -293,8 +385,9 @@ final class ModelImporter
                     $attrs[(string) $a['name']] = $a['value'] ?? null;
                 }
             }
-            $version = $this->clean((string) ($attrs['productMotorcyclePowerVersion'] ?? ''));
-            $trans   = $this->clean((string) ($attrs['productMotorcycleTransmission'] ?? ''));
+            // Atributele pot veni localizate (array multi-locale) → loc(), nu cast direct.
+            $version = $this->loc($attrs['productMotorcyclePowerVersion'] ?? '');
+            $trans   = $this->loc($attrs['productMotorcycleTransmission'] ?? '');
             if ($version === '' && $trans === '') {
                 continue;
             }

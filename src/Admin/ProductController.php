@@ -105,7 +105,8 @@ final class ProductController extends BaseController
             }
             $variantRows = $this->variantRows($d['variants_json'] ?? '');
             foreach (['color', 'gallery', 'detail'] as $t) {
-                $images[$t] = array_map(static fn ($f) => ['filename' => $f], $d['images'][$t] ?? []);
+                $caps = (array) ($d['image_captions'][$t] ?? []);  // filename → nume culoare (import Yamaha)
+                $images[$t] = array_map(static fn ($f) => ['filename' => $f, 'caption' => $caps[$f] ?? ''], $d['images'][$t] ?? []);
             }
         }
 
@@ -123,7 +124,8 @@ final class ProductController extends BaseController
             }
             $variantRows = $this->variantRows($p['variants_json'] ?? '');
             foreach (['color', 'gallery', 'detail'] as $t) {
-                $images[$t] = array_map(static fn ($f) => ['filename' => $f], $draft['images'][$t] ?? []);
+                $caps = (array) ($draft['image_captions'][$t] ?? []);
+                $images[$t] = array_map(static fn ($f) => ['filename' => $f, 'caption' => $caps[$f] ?? ''], $draft['images'][$t] ?? []);
             }
         }
 
@@ -266,7 +268,9 @@ final class ProductController extends BaseController
         }
 
         foreach (['color', 'gallery', 'detail'] as $t) {
-            $this->repo()->replaceImages($pid, $t, (array) ($body[$t] ?? []));
+            // Numele culorii vine paralel cu lista de fișiere (color_caption[]).
+            $captions = $t === 'color' ? (array) ($body['color_caption'] ?? []) : [];
+            $this->repo()->replaceImages($pid, $t, (array) ($body[$t] ?? []), $captions);
         }
 
         $this->bustMenuCache();
@@ -307,13 +311,22 @@ final class ProductController extends BaseController
     private function stashDraft(array $body, array $data, ?array $dup): void
     {
         $images = [];
+        $captions = [];
+        $colorCaps = array_values((array) ($body['color_caption'] ?? []));
         foreach (['color', 'gallery', 'detail'] as $t) {
-            $images[$t] = array_values(array_filter(array_map(
-                static fn ($f) => trim((string) $f),
-                (array) ($body[$t] ?? [])
-            )));
+            $images[$t] = [];
+            foreach (array_values((array) ($body[$t] ?? [])) as $i => $f) {
+                $f = trim((string) $f);
+                if ($f === '') {
+                    continue;
+                }
+                $images[$t][] = $f;
+                if ($t === 'color') {
+                    $captions[$t][$f] = trim((string) ($colorCaps[$i] ?? ''));
+                }
+            }
         }
-        $_SESSION['product_draft'] = ['p' => $data, 'images' => $images, 'dup' => $dup];
+        $_SESSION['product_draft'] = ['p' => $data, 'images' => $images, 'image_captions' => $captions, 'dup' => $dup];
     }
 
     /** @param array<string,mixed> $r Build the ?acc=…&accnew=… query for the flash banner. */

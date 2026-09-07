@@ -323,12 +323,15 @@ final class Repository
     public function images(string $brand, int $productId, string $type): array
     {
         $rows = $this->all(
-            "SELECT filename FROM product_images WHERE product_id = :pid AND type = :type ORDER BY position, id",
+            "SELECT filename, caption FROM product_images WHERE product_id = :pid AND type = :type ORDER BY position, id",
             [':pid' => $productId, ':type' => $type]
         );
         $out = [];
         foreach ($rows as $r) {
-            $out[] = ['src' => self::imagePath($brand, $type, $r['filename'])];
+            $out[] = [
+                'src'     => self::imagePath($brand, $type, $r['filename']),
+                'caption' => trim((string) ($r['caption'] ?? '')),
+            ];
         }
         return $out;
     }
@@ -666,25 +669,30 @@ final class Repository
     public function productImages(int $productId, string $type): array
     {
         return $this->all(
-            "SELECT id, filename, position FROM product_images WHERE product_id = :p AND type = :t ORDER BY position, id",
+            "SELECT id, filename, caption, position FROM product_images WHERE product_id = :p AND type = :t ORDER BY position, id",
             [':p' => $productId, ':t' => $type]
         );
     }
 
-    /** Replace all images of a type for a product with the given ordered filenames. */
-    public function replaceImages(int $productId, string $type, array $filenames): void
+    /**
+     * Replace all images of a type for a product with the given ordered filenames.
+     * $captions e paralel cu $filenames (același index) — numele culorii pe tipul `color`.
+     */
+    public function replaceImages(int $productId, string $type, array $filenames, array $captions = []): void
     {
         try {
             $this->pdo->prepare("DELETE FROM product_images WHERE product_id = :p AND type = :t")
                 ->execute([':p' => $productId, ':t' => $type]);
-            $ins = $this->pdo->prepare("INSERT INTO product_images (product_id, type, filename, position) VALUES (:p, :t, :f, :pos)");
+            $ins = $this->pdo->prepare("INSERT INTO product_images (product_id, type, filename, caption, position) VALUES (:p, :t, :f, :c, :pos)");
             $pos = 0;
-            foreach ($filenames as $f) {
+            $captions = array_values($captions);
+            foreach (array_values($filenames) as $i => $f) {
                 $f = trim((string) $f);
                 if ($f === '') {
                     continue;
                 }
-                $ins->execute([':p' => $productId, ':t' => $type, ':f' => $f, ':pos' => $pos++]);
+                $cap = trim((string) ($captions[$i] ?? ''));
+                $ins->execute([':p' => $productId, ':t' => $type, ':f' => $f, ':c' => $cap !== '' ? $cap : null, ':pos' => $pos++]);
             }
         } catch (Throwable) {
             // ignore

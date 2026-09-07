@@ -99,7 +99,11 @@
         (single ? '' : '<span class="adm-img__btn" data-move title="Mută">↕</span>') +
         '<button type="button" class="adm-img__btn" data-del title="Șterge">Șterge</button>' +
       '</div>' +
-      '<input type="hidden" name="' + ctx.name + (single ? '' : '[]') + '" value="' + value + '">';
+      '<input type="hidden" name="' + ctx.name + (single ? '' : '[]') + '" value="' + value + '">' +
+      // Imaginile de culoare au și numele culorii (paralel cu color[], vezi form.twig)
+      (ctx.type === 'color' && !single
+        ? '<input type="text" class="adm-img__caption" name="color_caption[]" value="" placeholder="Numele culorii" title="Numele culorii (apare pe pagina produsului)">'
+        : '');
     wireTile(t, null, single);
     return t;
   }
@@ -108,6 +112,12 @@
     tile.draggable = !single;
     var del = tile.querySelector('[data-del]');
     if (del) del.addEventListener('click', function () { tile.remove(); });
+    // draggable=true blochează selecția de text în input → dezactivăm drag-ul cât timp se scrie
+    var cap = tile.querySelector('.adm-img__caption');
+    if (cap) {
+      cap.addEventListener('focus', function () { tile.draggable = false; });
+      cap.addEventListener('blur', function () { tile.draggable = !single; });
+    }
   }
 
   function enableReorder(list) {
