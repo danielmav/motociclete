@@ -27,7 +27,9 @@
           ['clean']
         ] }
       });
-      if (ta.value) { q.clipboard.dangerouslyPasteHTML(ta.value); }
+      // NU dangerouslyPasteHTML: mută selecția în editor → pagina se deschide
+      // scrollată la ultimul editor cu conținut. convert+setContents nu ating focusul.
+      if (ta.value) { q.setContents(q.clipboard.convert(ta.value), 'silent'); }
       ta.style.display = 'none';
       form.addEventListener('submit', function () {
         var html = q.root.innerHTML;

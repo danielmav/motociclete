@@ -77,7 +77,8 @@ textarea{min-height:90px;resize:vertical}
 .adm-fieldset{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem}
 .adm-fieldset>legend,.adm-fieldset__t{font-weight:800;padding:0 .2rem;font-size:.95rem}
 .adm-help{font-weight:400;color:var(--muted);font-size:.8rem}
-.adm-actions{display:flex;gap:.6rem;align-items:center;margin-top:.4rem}
+/* Bara de acțiuni e sticky la baza viewportului: „Salvează" vizibil fără scroll până jos. */
+.adm-actions{display:flex;gap:.6rem;align-items:center;margin-top:.4rem;position:sticky;bottom:0;z-index:20;background:#fff;border-top:1px solid var(--line);padding:.7rem 0;box-shadow:0 -6px 16px rgba(0,0,0,.05)}
 
 /* ---- WYSIWYG (Quill) ---- */
 .adm-editor{background:#fff;border-radius:8px}
