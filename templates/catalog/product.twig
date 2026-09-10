@@ -159,7 +159,7 @@
 
             {% set wamsg = ('Bună ziua, sunt interesat de ' ~ p.name ~ (p.year ? ' ' ~ p.year : '') ~ '. Aș dori detalii.')|url_encode %}
             <div class="product__actions">
-                {% if testride_allowed %}
+                {% if testride_allowed and testride_enabled %}
                     <button type="button" class="btn btn--primary btn--sm" data-modal-open="test-ride">Programează drive test</button>
                     <button type="button" class="btn btn--ghost btn--sm" data-modal-open="oferta">Cere ofertă</button>
                 {% else %}

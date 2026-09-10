@@ -4,9 +4,12 @@
 {% set modelName = p.name ~ (p.year ? ' ' ~ p.year : '') %}
 
 {% set forms = [
-    { id: 'oferta',    action: '/api/lead/oferta',    title: 'Cere ofertă',           submit: 'Trimite cererea' },
-    { id: 'test-ride', action: '/api/lead/test-ride', title: 'Programează drive test', submit: 'Trimite programarea' }
+    { id: 'oferta',    action: '/api/lead/oferta',    title: 'Cere ofertă',           submit: 'Trimite cererea' }
 ] %}
+{# Modalul de drive test se randează doar când flagul global TESTRIDE_ENABLED e activ. #}
+{% if testride_enabled %}
+    {% set forms = forms|merge([{ id: 'test-ride', action: '/api/lead/test-ride', title: 'Programează drive test', submit: 'Trimite programarea' }]) %}
+{% endif %}
 
 {% for f in forms %}
 <div class="modal" data-modal="{{ f.id }}" hidden>
