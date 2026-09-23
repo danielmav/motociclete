@@ -564,13 +564,33 @@ fclose($csv);
 echo "Produse noi în CSV: $added | sărite (există deja pe bikershop): $skipped
 ";
 
-echo "✔ CSV generat: " . h(basename($filename)) . " (" . number_format(filesize($filename)) . " bytes)\n";
+$next     = $step + 1;
+$nextName = $next < $total ? $catNames[$next] : null;
+
+/* ================= NIMIC NOU → fără CSV, trecem automat mai departe ================= */
+
+if ($added === 0) {
+    @unlink($filename);
+    echo "— Niciun produs nou în această categorie: nu se generează CSV.
+";
+    echo "</div>";
+
+    $nextUrl = $self . "?step=" . $next;
+    echo "<div class='panel' id='panel'>";
+    echo "<p>Categoria <b>" . h($catName) . "</b> nu are produse noi.</p>";
+    echo "<p class='muted'>Trecem automat la " . ($nextName ? "categoria următoare: <b>" . h($nextName) . "</b>" : "<b>final</b>")
+       . " în 3 secunde… <a href='" . h($nextUrl) . "'>sau click aici</a>.</p>";
+    echo "</div>";
+    echo "<script>document.getElementById('log').scrollTop=1e9;setTimeout(function(){window.location.href=" . json_encode($nextUrl) . ";},3000);</script>";
+    echo "</body></html>";
+    exit;
+}
+
+echo "✔ CSV generat: " . h(basename($filename)) . " (" . number_format(filesize($filename)) . " bytes)
+";
 echo "</div>";
 
 /* ================= PANOU DOWNLOAD + AUTO-NEXT ================= */
-
-$next     = $step + 1;
-$nextName = $next < $total ? $catNames[$next] : null;
 
 echo "<div class='panel' id='panel'>";
 echo "<p>Categoria <b>" . h($catName) . "</b> este gata.</p>";
