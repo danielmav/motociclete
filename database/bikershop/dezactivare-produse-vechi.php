@@ -50,7 +50,8 @@ declare(strict_types=1);
  *                        credențialele vin din `.env`-ul portalului (BIKERSHOP_*).
  *
  * Copia canonică e în repo-ul portalului (database/bikershop/); pe serverul bikershop se copiază
- * cu scp în ~/tools/dezactivare-produse-vechi/ și se rulează cu /usr/local/bin/ea-php84.
+ * cu scp în ~/public_html/tool/ (lângă generare-csv-produse-noi-2026.php; folder protejat cu Basic Auth)
+ * și se rulează cu: cd ~/public_html/tool && /usr/local/bin/ea-php84 dezactivare-produse-vechi.php
  */
 
 if (PHP_SAPI !== 'cli') {
