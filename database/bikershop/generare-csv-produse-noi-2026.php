@@ -18,7 +18,8 @@ set_time_limit(0);
 
 /* ================= CATEGORIES (în ordinea de rulare) ================= */
 
-$DW = "https://www.dainese.com/on/demandware.store/Sites-dainese-row-Site/en_RO/Search-UpdateGrid?cgid=";
+$DW  = "https://www.dainese.com/on/demandware.store/Sites-dainese-row-Site/en_RO/Search-UpdateGrid?cgid=";
+$AGV = "https://www.agv.com/on/demandware.store/Sites-agv-row-Site/en_RO/Search-UpdateGrid?cgid=";
 
 $categories = [
 
@@ -40,10 +41,11 @@ $categories = [
     "women_layers"  => $DW . "motorbike-women-technical_layers&start=0&sz=200",
     "women_casual"  => $DW . "motorbike-women-casual_wear&start=0&sz=200",
 
-    /* AGV */
-    "agv_full_face" => $DW . "agv_helmets-full_face&start=0&sz=200",
-    "agv_flip_up"   => $DW . "agv_helmets-flip_up&start=0&sz=200",
-    "agv_open_face" => $DW . "agv_helmets-open_face&start=0&sz=200",
+    /* AGV — site propriu (Sites-agv-row-Site); cgid-urile vechi agv_helmets-* de pe
+       dainese.com întorc un subset învechit (ex. open face 22 din 51) */
+    "agv_full_face" => $AGV . "full_face&start=0&sz=200",
+    "agv_flip_up"   => $AGV . "flip_up&start=0&sz=200",
+    "agv_open_face" => $AGV . "open_face&start=0&sz=200",
 
     /* MOMO */
     "momodesign"    => $DW . "motorbike-momodesign-momodesign_helmets&start=0&sz=200",
@@ -206,27 +208,50 @@ ob_implicit_flush(true);
 while (ob_get_level()) ob_end_flush();
 flush();
 
-$html = getHTML($categoryURL);
-
 libxml_use_internal_errors(true);
 
-$dom = new DOMDocument();
-$dom->loadHTML($html ?: '<html></html>');
-$xpath = new DOMXPath($dom);
+// hostul linkurilor de produs = hostul site-ului din URL-ul categoriei (dainese.com / agv.com)
+$siteBase = "https://" . parse_url($categoryURL, PHP_URL_HOST);
 
 $products = [];
 
-$nodes = $xpath->query("//h2/a[contains(@class,'product-name')]");
+// paginare defensivă: start=0,200,400… până când o pagină nu mai aduce produse noi
+$pageSize = 200;
+for ($start = 0; $start < 5000; $start += $pageSize) {
 
-foreach($nodes as $node){
+    $url = preg_replace('/([?&])start=\d+/', '${1}start=' . $start, $categoryURL);
+    $url = preg_replace('/([?&])sz=\d+/',    '${1}sz=' . $pageSize, $url);
 
-    $name = cleanText($node->textContent);
-    $link = "https://www.dainese.com".$node->getAttribute("href");
+    $html = getHTML($url);
+    if (!$html) break;
 
-    $products[$link] = [
-        "name"=>$name,
-        "link"=>$link
-    ];
+    $dom = new DOMDocument();
+    $dom->loadHTML($html);
+    $xpath = new DOMXPath($dom);
+
+    $nodes = $xpath->query("//a[contains(concat(' ', normalize-space(@class), ' '), ' product-name ')]");
+
+    $before = count($products);
+
+    foreach($nodes as $node){
+
+        $name = cleanText($node->textContent);
+        $href = $node->getAttribute("href");
+        if ($href === '') continue;
+
+        $link = preg_match('#^https?://#', $href) ? $href : $siteBase . $href;
+
+        $products[$link] = [
+            "name"=>$name,
+            "link"=>$link
+        ];
+    }
+
+    $got = $nodes->length;
+    echo "Pagina start=$start: $got produse (" . (count($products) - $before) . " noi)\n";
+    flush();
+
+    if ($got < $pageSize || count($products) == $before) break;
 }
 
 $products = array_values($products);
