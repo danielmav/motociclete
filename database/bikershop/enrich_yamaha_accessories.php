@@ -17,7 +17,13 @@ declare(strict_types=1);
  *   --no-images        nu adaugă imagini
  *   --no-desc          nu completează descrieri
  *   --no-categorize    nu mută produsele în categoria 473
- *   --rate=5.30        cursul EUR→RON folosit DOAR în raportul de prețuri
+ *   --rate=5.30        cursul EUR→RON folosit în raportul de prețuri (și la --fix-prices)
+ *   --fix-prices       corectează prețul produselor ACTIVE cu EXACT UN furnizor a căror valoare
+ *                      rrp diferă de EUR×curs: rescrie câmpurile special|rrp din
+ *                      `ps_product_supplier.product_supplier_reference` (stocul rămâne), scrie
+ *                      și ps_product(.shop).price = brut/1.21 pentru efect imediat și pune produsul
+ *                      în `ps_supplierpricing_queue` (force_update=1). Restul (mai mulți furnizori,
+ *                      fără furnizor, fără preț Yamaha) rămân doar în CSV, de verificat manual.
  *   --ps-root=PATH     rădăcina PrestaShop (implicit /home2/bikershop/public_html)
  *
  * Ce face pentru fiecare produs ACTIV din BikerShop al cărui `reference` e un SKU Yamaha:
@@ -56,6 +62,7 @@ $opt = [
     'desc'       => true,
     'categorize' => true,
     'rate'       => 5.30,
+    'fix_prices' => false,
     'ps_root'    => '/home2/bikershop/public_html',
 ];
 foreach (array_slice($argv, 1) as $a) {
@@ -67,6 +74,8 @@ foreach (array_slice($argv, 1) as $a) {
         $opt['desc'] = false;
     } elseif ($a === '--no-categorize') {
         $opt['categorize'] = false;
+    } elseif ($a === '--fix-prices') {
+        $opt['fix_prices'] = true;
     } elseif (str_starts_with($a, '--only=')) {
         $opt['only'] = strtoupper(trim(substr($a, 7)));
     } elseif (str_starts_with($a, '--limit=')) {
@@ -94,6 +103,27 @@ const LANG_RO        = 1;
 const LANG_EN        = 2;
 const CATALOG_GUID   = 'bf96ad91-485c-4c2b-86a0-c1857d86097b'; // subtree „toate accesoriile"
 const PRICE_TOLERANCE = 1.00; // lei
+const VAT_RATE       = 1.21;  // = SUPPLIERPRICING_VAT_RATE (cronul face price = rrp / 1.21)
+
+/**
+ * Rescrie `product_supplier_reference` (`stoc|special|rrp` sau 5 câmpuri cu perioadă promo)
+ * păstrând stocul; special = rrp (special > rrp invalidează produsul în supplierpricing).
+ * Copie a App\Accessories\RefAudit::rewriteSupplierReference (scriptul n-are Composer).
+ */
+function rewrite_supplier_reference(string $current, float $gross): ?string
+{
+    $parts = explode('|', $current);
+    if (count($parts) !== 3 && count($parts) !== 5) {
+        return null;
+    }
+    $price = rtrim(rtrim(number_format($gross, 2, '.', ''), '0'), '.');
+    if ($price === '' || $price === '-0' || $gross <= 0) {
+        return null;
+    }
+    $parts[1] = $price;
+    $parts[2] = $price;
+    return implode('|', $parts);
+}
 
 const URL_TEMPLATE =
     'https://hyperdrive.yamaha-motor.eu/products/yme-prod-ro'
@@ -399,7 +429,7 @@ $counts = [
     'matched' => count($products), 'inactive' => 0, 'complete' => 0,
     'need_images' => 0, 'need_desc' => 0, 'need_cat' => 0,
     'images_added' => 0, 'images_failed' => 0, 'desc_set' => 0, 'cat_set' => 0,
-    'products_changed' => 0, 'skipped_limit' => 0,
+    'products_changed' => 0, 'skipped_limit' => 0, 'prices_fixed' => 0,
 ];
 
 // ---------------------------------------------------------------------------
@@ -560,7 +590,7 @@ function add_product_image(int $idProduct, string $url, bool $cover, array $lege
 // ---------------------------------------------------------------------------
 $csv = fopen($csvFile, 'w');
 fputcsv($csv, ['id_product', 'reference', 'name', 'active', 'price_eur', 'expected_gross_ron', 'supplier_rrp_ron', 'diff_ron', 'ps_price_net', 'status', 'supplier_refs', 'url']);
-$priceStats = ['ok' => 0, 'diff' => 0, 'multi' => 0, 'no_supplier' => 0, 'no_yamaha_price' => 0];
+$priceStats = ['ok' => 0, 'diff' => 0, 'multi_identical' => 0, 'multi' => 0, 'no_supplier' => 0, 'no_yamaha_price' => 0];
 try {
     $linkBase = rtrim((string) Context::getContext()->link->getBaseLink(ID_SHOP), '/');
 } catch (Throwable) {
@@ -607,11 +637,52 @@ foreach ($products as $id => $p) {
             }
         }
         if ($status === 'ok' && $rrp !== null && abs($rrp - $expected) > PRICE_TOLERANCE) {
-            $status = 'diff';
+            $status = count($supRefs) === 1 ? 'diff' : 'multi_identical';
         }
     }
-    $priceStats[$status]++;
-    if ($status !== 'ok') {
+    $priceStats[$status] = ($priceStats[$status] ?? 0) + 1;
+
+    // --- corectare preț: doar activ + exact un furnizor + format cunoscut ---
+    if ($opt['fix_prices'] && $status === 'diff' && (int) $p['active'] === 1) {
+        $newRef = rewrite_supplier_reference($supRefs[0], $expected);
+        if ($newRef === null) {
+            $status = 'diff_format_necunoscut';
+        } else {
+            $newNet  = round($expected / VAT_RATE, 2);
+            $fixed   = false;
+            $fixLine = sprintf('%s %-8d %-13s %-44s [preț %.2f → %.2f lei brut]',
+                $opt['apply'] ? '€' : '·', $id, $sku, mb_substr((string) $p['name'], 0, 44), $rrp, $expected);
+            if ($opt['apply']) {
+                try {
+                    $sup = $db->getRow("SELECT id_product_supplier, product_supplier_reference FROM {$prefix}product_supplier WHERE id_product = " . (int) $id);
+                    if (!$sup || (string) $sup['product_supplier_reference'] !== $supRefs[0]) {
+                        throw new RuntimeException('furnizorul s-a schimbat între timp');
+                    }
+                    $db->execute("UPDATE {$prefix}product_supplier SET product_supplier_reference = '" . pSQL($newRef) . "' WHERE id_product_supplier = " . (int) $sup['id_product_supplier']);
+                    $db->execute("UPDATE {$prefix}product SET price = " . $newNet . ", date_upd = NOW() WHERE id_product = " . (int) $id);
+                    $db->execute("UPDATE {$prefix}product_shop SET price = " . $newNet . ", date_upd = NOW() WHERE id_product = " . (int) $id . " AND id_shop = " . ID_SHOP);
+                    $db->execute("INSERT INTO {$prefix}supplierpricing_queue (id_product, last_update, in_progress, force_update) VALUES (" . (int) $id . ", NOW(), 0, 1)
+                                  ON DUPLICATE KEY UPDATE force_update = 1, last_update = NOW()");
+                    $rollback[] = sprintf("UPDATE {$prefix}product_supplier SET product_supplier_reference = '%s' WHERE id_product_supplier = %d;",
+                        str_replace("'", "''", $supRefs[0]), (int) $sup['id_product_supplier']);
+                    $rollback[] = sprintf("UPDATE {$prefix}product SET price = %s WHERE id_product = %d;", (string) $p['ps_price'], $id);
+                    $rollback[] = sprintf("UPDATE {$prefix}product_shop SET price = %s WHERE id_product = %d AND id_shop = %d;", (string) $p['shop_price'], $id, ID_SHOP);
+                    rollback_flush();
+                    $fixed = true;
+                } catch (Throwable $e) {
+                    $fixLine .= '  → EROARE: ' . $e->getMessage();
+                }
+            } else {
+                $fixed = true;
+            }
+            if ($fixed) {
+                $counts['prices_fixed']++;
+                $status = 'fixed';
+            }
+            logln($fixLine);
+        }
+    }
+    if ($status !== 'ok' && $status !== 'fixed') {
         fputcsv($csv, [
             $id, $sku, (string) $p['name'], (int) $p['active'], $y['price_eur'], $expected,
             $rrp ?? '', $rrp !== null ? round($rrp - $expected, 2) : '', (float) $p['shop_price'],
@@ -783,8 +854,10 @@ if ($opt['apply']) {
     logln(sprintf('Scris: %d produse, %d imagini (%d eșuate), %d descrieri, %d categorii',
         $counts['products_changed'], $counts['images_added'], $counts['images_failed'], $counts['desc_set'], $counts['cat_set']));
 }
-logln(sprintf('Prețuri (curs %.2f): ok %d, DIFERITE %d, furnizori divergenți %d, fără furnizor %d, fără preț Yamaha %d → %s',
-    $opt['rate'], $priceStats['ok'], $priceStats['diff'], $priceStats['multi'], $priceStats['no_supplier'], $priceStats['no_yamaha_price'],
+logln(sprintf('Prețuri (curs %.2f): ok %d, DIFERITE (1 furnizor) %d%s, mai mulți furnizori identici %d, furnizori divergenți %d, fără furnizor %d, fără preț Yamaha %d → %s',
+    $opt['rate'], $priceStats['ok'], $priceStats['diff'],
+    $opt['fix_prices'] ? sprintf(' (%s %d)', $opt['apply'] ? 'corectate' : 'de corectat', $counts['prices_fixed']) : '',
+    $priceStats['multi_identical'], $priceStats['multi'], $priceStats['no_supplier'], $priceStats['no_yamaha_price'],
     basename($csvFile)));
 
 if ($opt['apply']) {
