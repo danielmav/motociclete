@@ -82,6 +82,7 @@ final class Bootstrap
         $container = [
             'settings'  => $settings,
             'db'        => $db,
+            'cache_dir' => $root . '/storage/cache',
             'app_settings' => $appSettings,
             'bikershop' => new BikerShop\Client($db, $settings['db']['bikershop']),
             'catalog'   => new Catalog\Repository($db),

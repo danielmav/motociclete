@@ -25,6 +25,10 @@ final class HomeController
     private Hero $hero;
     private News $news;
     private \App\Support\Settings $settings;
+    private string $cacheDir;
+
+    /** BikerShop teaser rotates a few times a day; the live query is remote. */
+    private const ACCESSORIES_TTL = 6 * 3600;
 
     /** @param array<string,mixed> $container */
     public function __construct(private Twig $twig, array $container)
@@ -34,11 +38,12 @@ final class HomeController
         $this->hero      = $container['hero'];
         $this->news      = $container['news'];
         $this->settings  = $container['app_settings'];
+        $this->cacheDir  = (string) ($container['cache_dir'] ?? sys_get_temp_dir());
     }
 
     public function index(Request $request, Response $response): Response
     {
-        $accessories = $this->bikershop->featuredProducts(6);
+        $accessories = $this->featuredAccessories(6);
 
         // Secțiunea „Modele eligibile programul RABLA" înlocuiește „Modele de pus în
         // garaj" doar când e activată din admin ȘI există modele marcate eligibile.
@@ -59,6 +64,31 @@ final class HomeController
             'tour'            => $this->virtualTour(),
             'articles'        => $this->news->latest(3),
         ]);
+    }
+
+    /**
+     * "Accesorii din BikerShop" teaser, file-cached (storage/cache/home_accessories.cache).
+     * The pick is random per refresh, so the strip still rotates, but the
+     * remote BikerShop query no longer runs on every home page view.
+     * An empty result (BikerShop down) is not cached, so the strip recovers
+     * as soon as the connection does.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function featuredAccessories(int $limit): array
+    {
+        $file = rtrim($this->cacheDir, '/\\') . '/home_accessories.cache';
+        if (is_file($file) && (time() - filemtime($file)) < self::ACCESSORIES_TTL) {
+            $data = @unserialize((string) file_get_contents($file));
+            if (is_array($data) && $data !== []) {
+                return $data;
+            }
+        }
+        $data = $this->bikershop->featuredProducts($limit);
+        if ($data !== [] && (is_dir($this->cacheDir) || @mkdir($this->cacheDir, 0775, true))) {
+            @file_put_contents($file, serialize($data), LOCK_EX);
+        }
+        return $data;
     }
 
     /**

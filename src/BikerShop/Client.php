@@ -56,44 +56,80 @@ final class Client
         $shop = $this->shopId; // trusted config int, inlined (named params can't repeat)
         $lang = $this->langId;
         $limit = max(1, $limit);
-        // Random teaser: pick distinct products at several random id anchors and
-        // scan forward to the first match. Avoids ORDER BY RAND() over 300k+ rows
-        // (≈1s) and the clustering of a single-window scan, while staying fast
-        // (PK range seek + LIMIT 1). INNER JOIN on the cover image so every card
-        // shows a photo.
-        $sql = "
-            SELECT  pr.id_product,
-                    pl.name,
-                    pl.link_rewrite,
-                    COALESCE(ps.price, pr.price) AS price,
-                    (SELECT t.rate FROM {$p}tax_rule trl JOIN {$p}tax t ON t.id_tax = trl.id_tax
-                      WHERE trl.id_tax_rules_group = pr.id_tax_rules_group AND t.active = 1 LIMIT 1) AS tax_rate,
-                    m.name AS manufacturer,
-                    img.id_image
-            FROM        {$p}product       pr
-            JOIN        {$p}product_shop  ps  ON ps.id_product = pr.id_product AND ps.id_shop = {$shop}
-            JOIN        {$p}product_lang  pl  ON pl.id_product = pr.id_product AND pl.id_lang = {$lang} AND pl.id_shop = {$shop}
-            JOIN        {$p}image         img ON img.id_product = pr.id_product AND img.cover = 1
-            LEFT JOIN   {$p}manufacturer  m   ON m.id_manufacturer = pr.id_manufacturer
-            WHERE   ps.active = 1 AND pr.id_product >= :anchor
-            ORDER BY pr.id_product
-            LIMIT   1
+
+        // Random teaser in two cheap steps. Only ~136k of ~720k products have a
+        // cover image and many of those are inactive, so "first active product
+        // with a cover from a random id upwards" (the old approach) scanned
+        // ~100k index rows per pick (≈0.5 s each, 3–10 s per page).
+        // 1) Pool: a slice of cover images from a random anchor on the small
+        //    ps_image PK (index range, ~1 ms). 2) Details for a random sample of
+        //    that pool by primary key, filtered on active. Repeat with a new
+        //    anchor if the slice was mostly inactive. At most PER_ANCHOR picks
+        //    per slice, so the teaser mixes several corners of the catalogue
+        //    instead of six neighbouring ids.
+        $poolSize = 300;
+        $perAnchor = 2;
+        $poolSql = "
+            SELECT id_image, id_product
+            FROM   {$p}image
+            WHERE  cover = 1 AND id_image >= :anchor
+            ORDER BY id_image
+            LIMIT  {$poolSize}
         ";
 
         try {
-            $max = (int) $this->pdo->query("SELECT MAX(id_product) FROM {$p}product")->fetchColumn();
-            $stmt = $this->pdo->prepare($sql);
+            $maxImg = (int) $this->pdo->query("SELECT MAX(id_image) FROM {$p}image")->fetchColumn();
+            $pool = $this->pdo->prepare($poolSql);
             $rows = [];
             $seen = [];
-            // A few extra tries to cover the (rare) anchor that lands past the
-            // last matching product or hits an already-picked id.
-            for ($i = 0, $tries = 0; count($rows) < $limit && $tries < $limit * 5; $tries++) {
-                $stmt->execute([':anchor' => random_int(1, max(1, $max - 50))]);
-                $r = $stmt->fetch();
-                if ($r && empty($seen[$r['id_product']])) {
-                    $seen[$r['id_product']] = true;
+            for ($tries = 0; count($rows) < $limit && $tries < $limit * 2; $tries++) {
+                $pool->execute([':anchor' => random_int(1, max(1, $maxImg - $poolSize))]);
+                $imgByProduct = [];
+                foreach ($pool->fetchAll() as $r) {
+                    $imgByProduct[(int) $r['id_product']] ??= (int) $r['id_image'];
+                }
+                $ids = array_diff(array_keys($imgByProduct), array_keys($seen));
+                if ($ids === []) {
+                    continue;
+                }
+                shuffle($ids);
+                $ids = array_slice($ids, 0, $perAnchor * 10);
+
+                $ph = [];
+                $bind = [];
+                foreach (array_values($ids) as $i => $id) {
+                    $ph[] = ":i{$i}";
+                    $bind[":i{$i}"] = $id;
+                }
+                $stmt = $this->pdo->prepare("
+                    SELECT  pr.id_product,
+                            pl.name,
+                            pl.link_rewrite,
+                            COALESCE(ps.price, pr.price) AS price,
+                            (SELECT t.rate FROM {$p}tax_rule trl JOIN {$p}tax t ON t.id_tax = trl.id_tax
+                              WHERE trl.id_tax_rules_group = pr.id_tax_rules_group AND t.active = 1 LIMIT 1) AS tax_rate,
+                            m.name AS manufacturer
+                    FROM        {$p}product       pr
+                    JOIN        {$p}product_shop  ps  ON ps.id_product = pr.id_product AND ps.id_shop = {$shop}
+                    JOIN        {$p}product_lang  pl  ON pl.id_product = pr.id_product AND pl.id_lang = {$lang} AND pl.id_shop = {$shop}
+                    LEFT JOIN   {$p}manufacturer  m   ON m.id_manufacturer = pr.id_manufacturer
+                    WHERE   ps.active = 1 AND pr.id_product IN (" . implode(',', $ph) . ")
+                ");
+                $stmt->execute($bind);
+                $found = $stmt->fetchAll();
+                shuffle($found);
+                $picked = 0;
+                foreach ($found as $r) {
+                    $id = (int) $r['id_product'];
+                    if (isset($seen[$id])) {
+                        continue;
+                    }
+                    $seen[$id] = true;
+                    $r['id_image'] = $imgByProduct[$id] ?? null;
                     $rows[] = $r;
-                    $i++;
+                    if (++$picked >= $perAnchor || count($rows) >= $limit) {
+                        break;
+                    }
                 }
             }
         } catch (Throwable) {
@@ -611,7 +647,7 @@ final class Client
             'name'         => (string) $r['name'],
             'manufacturer' => $r['manufacturer'] ?? '',
             'price'        => round($excl * (1 + $rate / 100), 2), // brut RON, cu TVA
-            'image'        => $this->imageUrl($r['id_image'] ?? null, $r['link_rewrite']),
+            'image'        => $this->imageUrl(isset($r['id_image']) ? (int) $r['id_image'] : null, (string) $r['link_rewrite']),
             'url'          => $this->productUrl((int) $r['id_product'], (string) $r['link_rewrite']),
         ];
     }
