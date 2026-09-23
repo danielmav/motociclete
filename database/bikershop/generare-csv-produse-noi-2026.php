@@ -196,14 +196,26 @@ function productExists(mysqli $conn, $reference){
     return $found;
 }
 
-/** EAN din feedul B2B: exact pe cod_globe (referință+mărime); fallback pe cod dacă are un singur EAN. */
-function eanFor(mysqli $conn, $combSKU, $baseSKU){
+/** Mărimea de pe site → codul de mărime din feedul B2B (dainese2026_b2b.size). */
+function b2bSize($size){
+    $s = strtoupper(trim($size));
+    $map = [
+        'ONE SIZE' => 'N', 'ONESIZE' => 'N', 'OS' => 'N', 'TU' => 'N', 'UNI' => 'N', 'U' => 'N',
+        'XXL' => 'XX', '2XL' => 'XX', 'XXXL' => '3X', '3XL' => '3X',
+        'M/S' => 'MS', 'M-S' => 'MS', 'M/L' => 'ML', 'M-L' => 'ML',
+    ];
+    return $map[$s] ?? $s;
+}
+
+/** EAN din feedul B2B: exact pe cod_globe (referință+mărime B2B); fallback pe cod dacă are un singur EAN. */
+function eanFor(mysqli $conn, $baseSKU, $size){
     static $stG = null, $stC = null;
     if ($stG === null) {
         $stG = $conn->prepare("SELECT ean FROM dainese2026_b2b WHERE cod_globe = ? AND ean <> '' LIMIT 1");
         $stC = $conn->prepare("SELECT DISTINCT ean FROM dainese2026_b2b WHERE cod = ? AND ean <> '' LIMIT 2");
     }
-    $stG->bind_param("s", $combSKU);
+    $codGlobe = $baseSKU . b2bSize($size);
+    $stG->bind_param("s", $codGlobe);
     $stG->execute();
     $stG->bind_result($ean);
     $hit = $stG->fetch() ? trim((string)$ean) : '';
@@ -217,6 +229,18 @@ function eanFor(mysqli $conn, $combSKU, $baseSKU){
     while ($stC->fetch()) $list[] = trim((string)$ean);
     $stC->free_result();
     return count($list) === 1 ? $list[0] : '';
+}
+
+/** Prețul retail EUR din feedul B2B (pret_euro) pentru un cod, sau 0 dacă lipsește. */
+function b2bPriceEur(mysqli $conn, $baseSKU){
+    static $st = null;
+    if ($st === null) $st = $conn->prepare("SELECT MAX(pret_euro) FROM dainese2026_b2b WHERE cod = ? AND pret_euro > 0");
+    $st->bind_param("s", $baseSKU);
+    $st->execute();
+    $st->bind_result($eur);
+    $val = $st->fetch() ? (float)$eur : 0.0;
+    $st->free_result();
+    return $val;
 }
 
 /* ================= MODE: step (pagină + generare) ================= */
@@ -461,6 +485,13 @@ foreach($products as $product){
         $price = number_format($price, 2, '.', '');
     }
 
+    // fără preț pe pagină → prețul retail din feedul B2B (aceeași conversie EUR → RON)
+    $priceNote = '';
+    if ((float)$price <= 0 && ($eur = b2bPriceEur($conn, $baseSKU)) > 0) {
+        $price = number_format($eur * 5.25, 2, '.', '');
+        $priceNote = " [preț din B2B: $eur EUR]";
+    }
+
     /* DESCRIPTION */
     $description="";
     $descNode=$xpath->query("//div[@id='details']//div[contains(@class,'offcanvas-body')]")->item(0);
@@ -494,9 +525,13 @@ foreach($products as $product){
 
     /* ================= WRITE CSV ================= */
 
+    $eanHits = 0;
+
     foreach($sizes as $size){
 
         $combSKU = $baseSKU . $size;
+        $ean     = eanFor($conn, $baseSKU, $size);
+        if ($ean !== '') $eanHits++;
 
         fputcsv($csv, [
             $productName,
@@ -512,10 +547,13 @@ foreach($products as $product){
             808,
             $imageList,
             0,
-            eanFor($conn, $combSKU, $baseSKU),
+            $ean,
             $supplierRef
         ], ";");
     }
+
+    echo h("   ↳ ref $baseSKU | EAN " . ($eanHits ? "$eanHits/" . count($sizes) : "lipsă în B2B") . $priceNote) . "\n";
+    flush();
 
     $i++; $added++;
     usleep(150000);
