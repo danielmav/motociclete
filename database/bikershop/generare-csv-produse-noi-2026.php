@@ -1,6 +1,6 @@
 <?php
 /**
- * Generare CSV produse noi 2026 (Dainese / AGV / MOMO) — o categorie pe rând.
+ * Generare CSV produse noi 2026 (Dainese / AGV / TCX) — o categorie pe rând.
  *
  * Copie pe server: ~/public_html/tool/generare-csv-produse-noi-2026.php
  *
@@ -20,35 +20,47 @@ set_time_limit(0);
 
 $DW  = "https://www.dainese.com/on/demandware.store/Sites-dainese-row-Site/en_RO/Search-UpdateGrid?cgid=";
 $AGV = "https://www.agv.com/on/demandware.store/Sites-agv-row-Site/en_RO/Search-UpdateGrid?cgid=";
+$TCX = "https://www.tcxboots.com/on/demandware.store/Sites-tcx-row-Site/en_RO/Search-UpdateGrid?cgid=";
 
 $categories = [
 
-    /* BARBATI */
-    "men_jackets"   => $DW . "motorbike-men-jackets&start=0&sz=200",
-    "men_pants"     => $DW . "motorbike-men-pants&start=0&sz=200",
-    "men_gloves"    => $DW . "motorbike-men-gloves&start=0&sz=200",
-    "men_boots"     => $DW . "motorbike-men-boots&start=0&sz=200",
-    "men_shoes"     => $DW . "motorbike-men-shoes&start=0&sz=200",
-    "men_layers"    => $DW . "motorbike-men-technical_layers&start=0&sz=200",
-    "men_casual"    => $DW . "motorbike-men-casual_wear&start=0&sz=200",
+    /* BARBATI (subcategoriile = exact reuniunea lui motorbike-men, verificat sept. 2026) */
+    "men_jackets"       => $DW . "motorbike-men-jackets&start=0&sz=200",
+    "men_pants"         => $DW . "motorbike-men-pants&start=0&sz=200",
+    "men_leather_suits" => $DW . "motorbike-men-leather_suits&start=0&sz=200",
+    "men_gloves"        => $DW . "motorbike-men-gloves&start=0&sz=200",
+    "men_boots"         => $DW . "motorbike-men-boots&start=0&sz=200",
+    "men_shoes"         => $DW . "motorbike-men-shoes&start=0&sz=200",
+    "men_layers"        => $DW . "motorbike-men-technical_layers&start=0&sz=200",
+    "men_casual"        => $DW . "motorbike-men-casual_wear&start=0&sz=200",
 
     /* FEMEI */
-    "women_jackets" => $DW . "motorbike-women-jackets&start=0&sz=200",
-    "women_pants"   => $DW . "motorbike-women-pants&start=0&sz=200",
-    "women_gloves"  => $DW . "motorbike-women-gloves&start=0&sz=200",
-    "women_boots"   => $DW . "motorbike-women-boots&start=0&sz=200",
-    "women_shoes"   => $DW . "motorbike-women-shoes&start=0&sz=200",
-    "women_layers"  => $DW . "motorbike-women-technical_layers&start=0&sz=200",
-    "women_casual"  => $DW . "motorbike-women-casual_wear&start=0&sz=200",
+    "women_jackets"       => $DW . "motorbike-women-jackets&start=0&sz=200",
+    "women_pants"         => $DW . "motorbike-women-pants&start=0&sz=200",
+    "women_leather_suits" => $DW . "motorbike-women-leather_suits&start=0&sz=200",
+    "women_gloves"        => $DW . "motorbike-women-gloves&start=0&sz=200",
+    "women_boots"         => $DW . "motorbike-women-boots&start=0&sz=200",
+    "women_shoes"         => $DW . "motorbike-women-shoes&start=0&sz=200",
+    "women_layers"        => $DW . "motorbike-women-technical_layers&start=0&sz=200",
+    "women_casual"        => $DW . "motorbike-women-casual_wear&start=0&sz=200",
+
+    /* PROTECTII + ACCESORII — pe categoria parinte: subcategoriile NU acopera tot
+       (protections 72 vs 68 in subcategorii, accessories 37 vs 19) */
+    "protections" => $DW . "motorbike-protections&start=0&sz=200",
+    "accessories" => $DW . "motorbike-accessories&start=0&sz=200",
 
     /* AGV — site propriu (Sites-agv-row-Site); cgid-urile vechi agv_helmets-* de pe
-       dainese.com întorc un subset învechit (ex. open face 22 din 51) */
+       dainese.com intorc un subset invechit (ex. open face 22 din 51).
+       MOMO Design (FGTR Classic/EVO) e inclus in open_face. */
     "agv_full_face" => $AGV . "full_face&start=0&sz=200",
     "agv_flip_up"   => $AGV . "flip_up&start=0&sz=200",
     "agv_open_face" => $AGV . "open_face&start=0&sz=200",
 
-    /* MOMO */
-    "momodesign"    => $DW . "motorbike-momodesign-momodesign_helmets&start=0&sz=200",
+    /* TCX — site propriu (Sites-tcx-row-Site) */
+    "tcx_touring"     => $TCX . "tcx-touring&start=0&sz=200",
+    "tcx_urban"       => $TCX . "tcx-urban&start=0&sz=200",
+    "tcx_woman"       => $TCX . "tcx-woman&start=0&sz=200",
+    "tcx_accessories" => $TCX . "tcx-accessories&start=0&sz=200",
 ];
 
 $catNames = array_keys($categories);
