@@ -11,7 +11,12 @@
  *   ?status=N    → JSON {"exists":bool} — pagina îl interoghează după click pe download;
  *                  când fișierul a dispărut, trece automat la ?step=N+1.
  *
- * Derivat din dainese_json.php (aceeași logică de scraping / format CSV).
+ * Optimizări față de dainese_json.php:
+ *   - referința (Product Reference Code) se derivă din codul din URL-ul produsului ÎNAINTE de a
+ *     descărca pagina; dacă există deja în ps_product.reference, produsul e SĂRIT (fără fetch);
+ *   - coloane noi la finalul CSV-ului: EAN13 (din dainese2026_b2b pe cod_globe = referință+mărime,
+ *     feedul B2B) și Supplier Reference (codul original, nemodificat, din URL/pagină).
+ * DB: require __connect.php ($conn, mysqli) — citire doar (ps_product, dainese2026_b2b).
  */
 
 set_time_limit(0);
@@ -168,7 +173,58 @@ function normalizeTitle($text){
 
 function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
+/** Codul original din URL-ul produsului (…-2118469001003.html → 2118469001003) sau ''. */
+function urlCode($link){
+    return preg_match('/-([A-Za-z0-9]{6,})\.html(?:\?.*)?$/', $link, $m) ? strtoupper($m[1]) : '';
+}
+
+/** Referința PrestaShop din codul original: primele 2 caractere tăiate (ca în dainese_json.php). */
+function refFromCode($code){
+    return strlen($code) > 5 ? substr($code, 2) : $code;
+}
+
+/* ================= DB (read-only) ================= */
+
+function productExists(mysqli $conn, $reference){
+    static $st = null;
+    if ($st === null) $st = $conn->prepare("SELECT id_product FROM ps_product WHERE reference = ? LIMIT 1");
+    $st->bind_param("s", $reference);
+    $st->execute();
+    $st->bind_result($id);
+    $found = $st->fetch() ? (int)$id : 0;
+    $st->free_result();
+    return $found;
+}
+
+/** EAN din feedul B2B: exact pe cod_globe (referință+mărime); fallback pe cod dacă are un singur EAN. */
+function eanFor(mysqli $conn, $combSKU, $baseSKU){
+    static $stG = null, $stC = null;
+    if ($stG === null) {
+        $stG = $conn->prepare("SELECT ean FROM dainese2026_b2b WHERE cod_globe = ? AND ean <> '' LIMIT 1");
+        $stC = $conn->prepare("SELECT DISTINCT ean FROM dainese2026_b2b WHERE cod = ? AND ean <> '' LIMIT 2");
+    }
+    $stG->bind_param("s", $combSKU);
+    $stG->execute();
+    $stG->bind_result($ean);
+    $hit = $stG->fetch() ? trim((string)$ean) : '';
+    $stG->free_result();
+    if ($hit !== '') return $hit;
+
+    $stC->bind_param("s", $baseSKU);
+    $stC->execute();
+    $stC->bind_result($ean);
+    $list = [];
+    while ($stC->fetch()) $list[] = trim((string)$ean);
+    $stC->free_result();
+    return count($list) === 1 ? $list[0] : '';
+}
+
 /* ================= MODE: step (pagină + generare) ================= */
+
+require_once __DIR__ . '/__connect.php';   // $conn (mysqli, bikershop_ps9)
+if (!isset($conn) || !($conn instanceof mysqli)) {
+    die("Conexiunea DB (\$conn din __connect.php) lipseste.");
+}
 
 $step = isset($_GET['step']) ? (int)$_GET['step'] : 0;
 $self = basename(__FILE__);
@@ -288,14 +344,30 @@ fputcsv($csv,[
     "Final Price With Tax",
     "Category Default ID",
     "Product Image Urls",
-    "Active"
+    "Active",
+    "EAN13",
+    "Supplier Reference"
 ],";");
 
 /* ================= PRODUCTS LOOP ================= */
 
 $i = 1;
+$added = 0;
+$skipped = 0;
 
 foreach($products as $product){
+
+    /* ===== referința din URL → skip dacă există deja pe bikershop (fără fetch) ===== */
+    $origCode = urlCode($product['link']);
+    $baseSKU  = $origCode !== '' ? refFromCode($origCode) : '';
+
+    if ($baseSKU !== '' && ($pid = productExists($conn, $baseSKU))) {
+        echo h("$catName → $i : SKIP (există #$pid, ref $baseSKU) — " . $product['name']) . "
+";
+        flush();
+        $i++; $skipped++;
+        continue;
+    }
 
     $html = getHTML($product['link']);
     if(!$html) continue;
@@ -342,26 +414,27 @@ foreach($products as $product){
 
     /* ================= BASE SKU ================= */
 
-    $baseSKU = $sku;
+    // fără cod în URL: din span.product-sku (SKU + 3 caractere cod mărime), ca în dainese_json.php
+    if ($baseSKU === '' && $sku !== '') {
+        $origCode = strlen($sku) > 5 ? substr($sku, 0, -3) : $sku;
+        $baseSKU  = refFromCode($origCode);
 
-    if(strlen($baseSKU) > 5){
-        $baseSKU = substr($baseSKU, 2);
-        $baseSKU = substr($baseSKU, 0, -3);
-    }
-
-    // fallback 1: codul din URL (…-20199T21304001.html) — paginile fără span.product-sku
-    // (ex. accesorii TCX). Codul din URL n-are sufixul de mărime → doar primele 2 caractere se taie.
-    if(empty($baseSKU) && preg_match('/-([A-Za-z0-9]{6,})\.html(?:\?.*)?$/', $product['link'], $m)){
-        $baseSKU = strtoupper($m[1]);
-        if(strlen($baseSKU) > 5){
-            $baseSKU = substr($baseSKU, 2);
+        if ($baseSKU !== '' && ($pid = productExists($conn, $baseSKU))) {
+            echo h("   ↳ SKIP (există #$pid, ref $baseSKU)") . "
+";
+            flush();
+            $i++; $skipped++;
+            continue;
         }
     }
 
-    // fallback 2: hash din link
-    if(empty($baseSKU)){
-        $baseSKU = substr(md5($product['link']),0,10);
+    // fallback: hash din link
+    if($baseSKU === ''){
+        $baseSKU  = substr(md5($product['link']),0,10);
+        $origCode = $sku;
     }
+
+    $supplierRef = $origCode !== '' ? $origCode : $sku;
 
     /* PRICE */
     $priceNode = $xpath->query("//span[contains(@class,'sales')]")->item(0);
@@ -438,15 +511,20 @@ foreach($products as $product){
             $price,
             808,
             $imageList,
-            0
+            0,
+            eanFor($conn, $combSKU, $baseSKU),
+            $supplierRef
         ], ";");
     }
 
-    $i++;
+    $i++; $added++;
     usleep(150000);
 }
 
 fclose($csv);
+
+echo "Produse noi în CSV: $added | sărite (există deja pe bikershop): $skipped
+";
 
 echo "✔ CSV generat: " . h(basename($filename)) . " (" . number_format(filesize($filename)) . " bytes)\n";
 echo "</div>";
