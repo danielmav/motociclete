@@ -22,8 +22,8 @@ declare(strict_types=1);
  *
  * Ce face pentru fiecare produs ACTIV din BikerShop al cărui `reference` e un SKU Yamaha:
  *   1. imagini  — dacă produsul n-are NICIO imagine: descarcă pozele variantei de pe CDN-ul
- *                 Yamaha și le adaugă prin clasele PrestaShop (Image + ImageManager::resize
- *                 pentru toate tipurile de imagine + formatele configurate); prima = cover.
+ *                 Yamaha și le adaugă prin clasa PrestaShop `Image` + redimensionare GD locală
+ *                 (toate tipurile de imagine + formatele configurate; vezi local_resize); prima = cover.
  *                 Produsele care au deja imagini NU sunt atinse.
  *   2. descriere — dacă `description` e goală: RO (id_lang=1) din `description`, EN (id_lang=2)
  *                 din `internalDescription` (fallback RO). Descrierile existente NU sunt suprascrise.
@@ -137,6 +137,23 @@ function logln(string $line): void
 }
 
 $rollback = [];
+/** Scrie liniile de rollback imediat (o rulare întreruptă nu trebuie să piardă istoricul). */
+function rollback_flush(): void
+{
+    global $rollback, $rbFile, $opt;
+    if (!$opt['apply'] || !$rollback) {
+        return;
+    }
+    if (!is_file($rbFile)) {
+        file_put_contents($rbFile, "-- Rollback pentru rularea din " . date('c') . "
+-- (fișierele imagine rămân pe disc)
+");
+    }
+    file_put_contents($rbFile, implode("
+", $rollback) . "
+", FILE_APPEND);
+    $rollback = [];
+}
 
 // ---------------------------------------------------------------------------
 // Bootstrap PrestaShop (același tipar ca modules/advrider_related/cli/sync.php)
@@ -290,10 +307,10 @@ do {
             }
         }
         $master = $master ?? ($p['variants'][0] ?? []);
-        $masterImgs = array_values(array_unique(array_map(
+        $masterImgs = array_values(array_filter(array_unique(array_map(
             static fn ($im) => (string) ($im['url'] ?? ''),
             $master['images'] ?? []
-        )));
+        )), static fn (string $u) => (bool) preg_match('/\.(jpe?g|png|webp)(\?|$)/i', $u)));
 
         foreach (($p['variants'] ?? []) as $v) {
             $raw = (string) ($v['sku'] ?? '');
@@ -301,10 +318,11 @@ do {
             if ($sku === '') {
                 continue;
             }
+            // Doar imagini: în `images` apar și PDF-uri (instrucțiuni de montaj).
             $imgs = array_values(array_filter(array_unique(array_map(
                 static fn ($im) => (string) ($im['url'] ?? ''),
                 $v['images'] ?? []
-            ))));
+            )), static fn (string $u) => (bool) preg_match('/\.(jpe?g|png|webp)(\?|$)/i', $u)));
             if (!$imgs) {
                 $imgs = array_values(array_filter($masterImgs));
             }
@@ -404,12 +422,81 @@ logln(sprintf('Tipuri imagine: %s | formate: %s',
     implode(',', array_map(static fn ($t) => $t['name'], $imageTypes)), implode(',', $formats)));
 
 /**
+ * Redimensionare locală cu GD, același algoritm ca ImageManager::resize / writeImageOnDisk
+ * (fundal alb, centrat, PS_IMAGE_GENERATION_METHOD). NU folosim ImageManager::resize pentru că
+ * declanșează hook-ul `actionOnImageResizeAfter`, pe care teamwant_redis îl tratează fără
+ * id_product → curățare oarbă a cache-ului Redis, ~4 s per apel (27 s per imagine).
+ * Cache-ul Redis al produsului e oricum invalidat de hook-ul din Image::add().
+ */
+function local_resize(string $src, string $dst, ?int $dstW, ?int $dstH, string $fmt): bool
+{
+    static $cache = [];
+    $key = $src;
+    if (!isset($cache[$key])) {
+        $cache = []; // o singură sursă în memorie
+        $info = @getimagesize($src);
+        if (!$info) {
+            return false;
+        }
+        $im = match ($info[2]) {
+            IMAGETYPE_PNG  => @imagecreatefrompng($src),
+            IMAGETYPE_WEBP => @imagecreatefromwebp($src),
+            default        => @imagecreatefromjpeg($src),
+        };
+        if (!$im) {
+            return false;
+        }
+        $cache[$key] = ['im' => $im, 'w' => (int) $info[0], 'h' => (int) $info[1]];
+    }
+    $srcIm = $cache[$key]['im'];
+    $srcW  = $cache[$key]['w'];
+    $srcH  = $cache[$key]['h'];
+
+    $dstW = $dstW ?: $srcW;
+    $dstH = $dstH ?: $srcH;
+    $method = (int) Configuration::get('PS_IMAGE_GENERATION_METHOD');
+    $wDiff = $dstW / $srcW;
+    $hDiff = $dstH / $srcH;
+    if ($wDiff > 1 && $hDiff > 1) {
+        $nextW = $srcW;
+        $nextH = $srcH;
+    } elseif ($method === 2 || ($method === 0 && $wDiff > $hDiff)) {
+        $nextH = $dstH;
+        $nextW = (int) (($srcW * $nextH) / $srcH);
+        $dstW  = $method === 0 ? $dstW : $nextW;
+    } else {
+        $nextW = $dstW;
+        $nextH = (int) ($srcH * $dstW / $srcW);
+        $dstH  = $method === 0 ? $dstH : $nextH;
+    }
+    $out = imagecreatetruecolor($dstW, $dstH);
+    $white = imagecolorallocate($out, 255, 255, 255);
+    imagefill($out, 0, 0, $white);
+    imagecopyresampled($out, $srcIm, (int) (($dstW - $nextW) / 2), (int) (($dstH - $nextH) / 2), 0, 0, $nextW, $nextH, $srcW, $srcH);
+    $ok = match ($fmt) {
+        'png'  => imagepng($out, $dst, (int) (Configuration::get('PS_PNG_QUALITY') ?: 7)),
+        'webp' => imagewebp($out, $dst, (int) (Configuration::get('PS_WEBP_QUALITY') ?: 80)),
+        'avif' => function_exists('imageavif') ? imageavif($out, $dst, (int) (Configuration::get('PS_AVIF_QUALITY') ?: 90)) : false,
+        default => imagejpeg($out, $dst, (int) (Configuration::get('PS_JPEG_QUALITY') ?: 90)),
+    };
+    imagedestroy($out);
+    if ($ok) {
+        @chmod($dst, 0664);
+    }
+    return (bool) $ok;
+}
+
+/**
  * Adaugă o imagine unui produs prin API-ul PrestaShop. Întoarce id_image sau null.
  */
 function add_product_image(int $idProduct, string $url, bool $cover, array $legends, array $shops, array $imageTypes, array $formats, string $tmpDir, ?string &$err): ?int
 {
+    global $imgTiming;
     $err = null;
+    $tm = microtime(true);
     $bin = http_get($url, 60);
+    $imgTiming['dl'] = ($imgTiming['dl'] ?? 0) + microtime(true) - $tm;
+    $tm = microtime(true);
     if ($bin === null || strlen($bin) < 1000) {
         $err = 'download eșuat';
         return null;
@@ -435,21 +522,26 @@ function add_product_image(int $idProduct, string $url, bool $cover, array $lege
             return null;
         }
         $image->associateTo($shops, $idProduct);
+        $imgTiming['add'] = ($imgTiming['add'] ?? 0) + microtime(true) - $tm;
+        $tm = microtime(true);
         $path = $image->getPathForCreation();
         if (!$path) {
             throw new RuntimeException('getPathForCreation');
         }
-        if (!ImageManager::resize($tmp, $path . '.jpg')) {
+        if (!local_resize($tmp, $path . '.jpg', null, null, 'jpg')) {
             throw new RuntimeException('resize original');
         }
         foreach ($imageTypes as $t) {
             foreach ($formats as $fmt) {
-                if (!ImageManager::resize($tmp, sprintf('%s-%s.%s', $path, stripslashes($t['name']), $fmt), (int) $t['width'], (int) $t['height'], $fmt)) {
+                if (!local_resize($tmp, sprintf('%s-%s.%s', $path, stripslashes($t['name']), $fmt), (int) $t['width'], (int) $t['height'], $fmt)) {
                     throw new RuntimeException('resize ' . $t['name'] . '.' . $fmt);
                 }
             }
         }
+        $imgTiming['resize'] = ($imgTiming['resize'] ?? 0) + microtime(true) - $tm;
+        $tm = microtime(true);
         Hook::exec('actionWatermark', ['id_image' => (int) $image->id, 'id_product' => $idProduct]);
+        $imgTiming['hook'] = ($imgTiming['hook'] ?? 0) + microtime(true) - $tm;
     } catch (Throwable $e) {
         $err = $e->getMessage();
         try {
@@ -486,6 +578,7 @@ try {
 }
 
 $changed = 0;
+$imgTiming = [];
 foreach ($products as $id => $p) {
     $sku = strtoupper(trim((string) $p['reference']));
     $y   = $catalog[$sku] ?? null;
@@ -578,6 +671,8 @@ foreach ($products as $id => $p) {
     }
 
     $notes = [];
+    $timing = [];
+    $t0 = microtime(true);
     try {
         // ---- imagini ----
         if ($needImg) {
@@ -611,6 +706,10 @@ foreach ($products as $id => $p) {
                 $rollback[] = "DELETE FROM {$prefix}image WHERE id_image IN ({$ids});";
                 $notes[] = 'imagini ' . $ids;
             }
+            $timing[] = sprintf('img %.1fs [%s]', microtime(true) - $t0,
+                implode(' ', array_map(static fn ($k, $v) => sprintf('%s %.1f', $k, $v), array_keys($imgTiming), $imgTiming)));
+            $imgTiming = [];
+            $t0 = microtime(true);
         }
 
         // ---- descrieri ----
@@ -646,6 +745,8 @@ foreach ($products as $id => $p) {
             $counts['cat_set']++;
         }
 
+        $timing[] = sprintf('sql %.1fs', microtime(true) - $t0);
+        $t0 = microtime(true);
         $db->execute("UPDATE {$prefix}product SET date_upd = NOW() WHERE id_product = " . (int) $id);
         $db->execute("UPDATE {$prefix}product_shop SET date_upd = NOW() WHERE id_product = " . (int) $id);
 
@@ -657,13 +758,15 @@ foreach ($products as $id => $p) {
             } catch (Throwable $e) {
                 $notes[] = 'redis: ' . $e->getMessage();
             }
+            $timing[] = sprintf('redis %.1fs', microtime(true) - $t0);
         }
         $counts['products_changed']++;
     } catch (Throwable $e) {
         $notes[] = 'EROARE: ' . $e->getMessage();
     }
 
-    logln($line . ($notes ? '  → ' . implode('; ', $notes) : ''));
+    rollback_flush();
+    logln($line . ($notes ? '  → ' . implode('; ', $notes) : '') . ($timing ? '  (' . implode(', ', $timing) . ')' : ''));
 }
 fclose($csv);
 
@@ -685,8 +788,8 @@ logln(sprintf('Prețuri (curs %.2f): ok %d, DIFERITE %d, furnizori divergenți %
     basename($csvFile)));
 
 if ($opt['apply']) {
-    if ($rollback) {
-        file_put_contents($rbFile, "-- Rollback pentru rularea din " . date('c') . "\n-- (fișierele imagine rămân pe disc)\n" . implode("\n", $rollback) . "\n");
+    rollback_flush();
+    if (is_file($rbFile)) {
         logln('Rollback: ' . basename($rbFile));
     }
     logln('Log: ' . basename($logFile));

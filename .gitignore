@@ -30,3 +30,4 @@ package-lock.json
 
 # Newsletter Brevo: fragmente de template (conțin id-uri/URL-uri din contul Brevo) — se copiază manual pe server
 /storage/newsletter/
+/storage/yamaha_enrich/
