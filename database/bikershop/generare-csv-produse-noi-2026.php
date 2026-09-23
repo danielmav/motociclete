@@ -349,6 +349,16 @@ foreach($products as $product){
         $baseSKU = substr($baseSKU, 0, -3);
     }
 
+    // fallback 1: codul din URL (…-20199T21304001.html) — paginile fără span.product-sku
+    // (ex. accesorii TCX). Codul din URL n-are sufixul de mărime → doar primele 2 caractere se taie.
+    if(empty($baseSKU) && preg_match('/-([A-Za-z0-9]{6,})\.html(?:\?.*)?$/', $product['link'], $m)){
+        $baseSKU = strtoupper($m[1]);
+        if(strlen($baseSKU) > 5){
+            $baseSKU = substr($baseSKU, 2);
+        }
+    }
+
+    // fallback 2: hash din link
     if(empty($baseSKU)){
         $baseSKU = substr(md5($product['link']),0,10);
     }
