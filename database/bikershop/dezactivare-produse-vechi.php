@@ -26,9 +26,14 @@ declare(strict_types=1);
  *
  * Dezactivare (per produs, în tranzacție):
  *   - `ps_product` + `ps_product_shop` (toate shop-urile): active = 0, visibility = 'none';
+ *   - `redirect_type` = '301-category' în `ps_product` ȘI `ps_product_shop` (coloanele din tabela shop
+ *     au prioritate la încărcare) — către categoria implicită: setarea globală a
+ *     magazinului e '404-displayed', care lasă pagina produsului inactiv vizibilă (cu status 404 și
+ *     mesajul „nu mai este disponibil"); cu redirectul pagina dispare efectiv de pe site;
  *   - DELETE din `ps_product_supplier` (toate rândurile produsului) → fără furnizor, modulul
  *     supplierpricing NU îl mai reactivează (SUPPLIERPRICING_DISABLE_NO_SUPPLIER_PRODUCTS).
- *   - invalidare cache Redis (modulul teamwant_redis) dacă PrestaShop e pe disc (--ps-root).
+ *   - rescriere cache Redis (modulul teamwant_redis: `overrideObjectCache()` per shop/limbă — hook-ul
+ *     `hookActionObjectProductUpdateAfter` NU atinge cache-ul obiectului) dacă PrestaShop e pe disc.
  *
  * Rulare:
  *   php dezactivare-produse-vechi.php [opțiuni]
@@ -44,6 +49,7 @@ declare(strict_types=1);
  *   --limit=N            maxim N produse dezactivate (rulări în tranșe)
  *   --show-kept          listează și produsele păstrate, cu motivul (verificarea regulilor)
  *   --no-redis           nu invalida cache-ul Redis
+ *   --keep-redirect      nu schimba redirect_type (lasă comportamentul global '404-displayed')
  *   --ps-root=PATH       rădăcina PrestaShop (implicit /home2/bikershop/public_html dacă există);
  *                        de aici se citesc credențialele DB (app/config/parameters.php) și se
  *                        încarcă PrestaShop pentru Redis. Fără PrestaShop pe disc (rulare locală)
@@ -77,6 +83,7 @@ const BRAND_ALIASES = [
 const ID_SHOP_MAIN = 1;
 const LANG_RO      = 1;
 const PREFIX_MIN   = 8; // lungimea minimă a referinței pentru potrivirea „codprodus începe cu"
+const REDIRECT_TYPE = '301-category'; // id_type_redirected = 0 → categoria implicită a produsului
 
 $opt = [
     'apply'            => false,
@@ -87,6 +94,7 @@ $opt = [
     'limit'            => 0,
     'show_kept'        => false,
     'redis'            => true,
+    'redirect'         => true,
     'ps_root'          => is_dir('/home2/bikershop/public_html') ? '/home2/bikershop/public_html' : null,
 ];
 foreach (array_slice($argv, 1) as $a) {
@@ -100,6 +108,8 @@ foreach (array_slice($argv, 1) as $a) {
         $opt['show_kept'] = true;
     } elseif ($a === '--no-redis') {
         $opt['redis'] = false;
+    } elseif ($a === '--keep-redirect') {
+        $opt['redirect'] = false;
     } elseif (str_starts_with($a, '--brand=')) {
         $ids = [];
         foreach (explode(',', substr($a, 8)) as $b) {
@@ -528,18 +538,41 @@ if ($opt['apply'] && $opt['redis'] && $old && $opt['ps_root'] && is_file($opt['p
             define('_PS_ADMIN_DIR_', $adminDir ?? $root . '/admin');
         }
         require $root . '/config/config.inc.php';
-        $redis = Module::isEnabled('teamwant_redis') ? Module::getInstanceByName('teamwant_redis') : null;
-        logln('PrestaShop ' . _PS_VERSION_ . ' încărcat pentru invalidarea cache-ului Redis' . ($redis ? '' : ' (modulul teamwant_redis lipsește)'));
+        $redis = Module::isEnabled('teamwant_redis');
+        logln('PrestaShop ' . _PS_VERSION_ . ' încărcat pentru rescrierea cache-ului Redis' . ($redis ? '' : ' (modulul teamwant_redis lipsește)'));
     } catch (Throwable $e) {
         logln('Redis: PrestaShop nu s-a încărcat (' . $e->getMessage() . ') — cache-ul rămâne până la TTL');
         $redis = null;
     }
 }
 
+/**
+ * Rescrie în Redis datele obiectului Product (toate combinațiile shop × limbă), ca frontul să vadă
+ * noile valori: modulul teamwant_redis cache-uiește query-ul de încărcare (EntityMapper) și doar
+ * `overrideObjectCache()` din override-ul lui ObjectModel îl actualizează.
+ */
+function refresh_redis_product(int $id): void
+{
+    foreach ([1, 2] as $shop) {
+        foreach ([null, 1, 2] as $lang) {
+            try {
+                $p = new Product($id, false, $lang, $shop);
+                if (method_exists($p, 'overrideObjectCache')) {
+                    $p->overrideObjectCache($lang);
+                }
+            } catch (Throwable $e) {
+                logln("    redis #{$id} ({$shop}/{$lang}): " . $e->getMessage());
+            }
+        }
+    }
+}
+
 $stSupplier = $pdo->prepare("SELECT * FROM {$prefix}product_supplier WHERE id_product = :id");
-$stShops    = $pdo->prepare("SELECT id_shop, active, visibility FROM {$prefix}product_shop WHERE id_product = :id");
-$stProd     = $pdo->prepare("SELECT active, visibility FROM {$prefix}product WHERE id_product = :id");
+$stShops    = $pdo->prepare("SELECT id_shop, active, visibility, redirect_type, id_type_redirected FROM {$prefix}product_shop WHERE id_product = :id");
+$stProd     = $pdo->prepare("SELECT active, visibility, redirect_type, id_type_redirected FROM {$prefix}product WHERE id_product = :id");
 $upProd     = $pdo->prepare("UPDATE {$prefix}product SET active = 0, visibility = 'none', date_upd = NOW() WHERE id_product = :id");
+$upRedirect = $pdo->prepare("UPDATE {$prefix}product SET redirect_type = '" . REDIRECT_TYPE . "', id_type_redirected = 0 WHERE id_product = :id");
+$upRedirectShop = $pdo->prepare("UPDATE {$prefix}product_shop SET redirect_type = '" . REDIRECT_TYPE . "', id_type_redirected = 0 WHERE id_product = :id");
 $upShop     = $pdo->prepare("UPDATE {$prefix}product_shop SET active = 0, visibility = 'none', date_upd = NOW() WHERE id_product = :id");
 $delSup     = $pdo->prepare("DELETE FROM {$prefix}product_supplier WHERE id_product = :id");
 
@@ -568,13 +601,13 @@ foreach ($old as $id => $p) {
         // rollback: starea de dinainte
         $stProd->execute([':id' => $id]);
         if ($cur = $stProd->fetch()) {
-            $rollback[] = sprintf("UPDATE {$prefix}product SET active = %d, visibility = %s WHERE id_product = %d;",
-                (int) $cur['active'], $pdo->quote($cur['visibility']), $id);
+            $rollback[] = sprintf("UPDATE {$prefix}product SET active = %d, visibility = %s, redirect_type = %s, id_type_redirected = %d WHERE id_product = %d;",
+                (int) $cur['active'], $pdo->quote($cur['visibility']), $pdo->quote((string) $cur['redirect_type']), (int) $cur['id_type_redirected'], $id);
         }
         $stShops->execute([':id' => $id]);
         foreach ($stShops as $s) {
-            $rollback[] = sprintf("UPDATE {$prefix}product_shop SET active = %d, visibility = %s WHERE id_product = %d AND id_shop = %d;",
-                (int) $s['active'], $pdo->quote($s['visibility']), $id, (int) $s['id_shop']);
+            $rollback[] = sprintf("UPDATE {$prefix}product_shop SET active = %d, visibility = %s, redirect_type = %s, id_type_redirected = %d WHERE id_product = %d AND id_shop = %d;",
+                (int) $s['active'], $pdo->quote($s['visibility']), $pdo->quote((string) $s['redirect_type']), (int) $s['id_type_redirected'], $id, (int) $s['id_shop']);
         }
         $stSupplier->execute([':id' => $id]);
         foreach ($stSupplier as $s) {
@@ -585,6 +618,10 @@ foreach ($old as $id => $p) {
 
         $upProd->execute([':id' => $id]);
         $upShop->execute([':id' => $id]);
+        if ($opt['redirect']) {
+            $upRedirect->execute([':id' => $id]);
+            $upRedirectShop->execute([':id' => $id]);
+        }
         $delSup->execute([':id' => $id]);
         $deleted = $delSup->rowCount();
 
@@ -593,12 +630,8 @@ foreach ($old as $id => $p) {
         $done++;
         logln($line . " (furnizori șterși: {$deleted})");
 
-        if ($redis && method_exists($redis, 'hookActionObjectProductUpdateAfter')) {
-            try {
-                $redis->hookActionObjectProductUpdateAfter(['object' => new Product($id)]);
-            } catch (Throwable $e) {
-                logln("    redis: " . $e->getMessage());
-            }
+        if ($redis) {
+            refresh_redis_product($id);
         }
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {

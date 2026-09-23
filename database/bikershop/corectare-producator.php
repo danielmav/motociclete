@@ -309,8 +309,8 @@ if ($opt['apply'] && $opt['redis'] && $todo && $opt['ps_root'] && is_file($opt['
             define('_PS_ADMIN_DIR_', $adminDir ?? $root . '/admin');
         }
         require $root . '/config/config.inc.php';
-        $redis = Module::isEnabled('teamwant_redis') ? Module::getInstanceByName('teamwant_redis') : null;
-        logln('PrestaShop ' . _PS_VERSION_ . ' încărcat pentru invalidarea cache-ului Redis' . ($redis ? '' : ' (modulul teamwant_redis lipsește)'));
+        $redis = Module::isEnabled('teamwant_redis');
+        logln('PrestaShop ' . _PS_VERSION_ . ' încărcat pentru rescrierea cache-ului Redis' . ($redis ? '' : ' (modulul teamwant_redis lipsește)'));
     } catch (Throwable $e) {
         logln('Redis: PrestaShop nu s-a încărcat (' . $e->getMessage() . ') — cache-ul rămâne până la TTL');
         $redis = null;
@@ -345,11 +345,18 @@ foreach ($todo as $id => $p) {
         $rollback = [];
         $done++;
         logln($line);
-        if ($redis && method_exists($redis, 'hookActionObjectProductUpdateAfter')) {
-            try {
-                $redis->hookActionObjectProductUpdateAfter(['object' => new Product($id)]);
-            } catch (Throwable $e) {
-                logln('    redis: ' . $e->getMessage());
+        if ($redis) {
+            foreach ([1, 2] as $shop) {
+                foreach ([null, 1, 2] as $lang) {
+                    try {
+                        $po = new Product($id, false, $lang, $shop);
+                        if (method_exists($po, 'overrideObjectCache')) {
+                            $po->overrideObjectCache($lang); // rescrie cache-ul obiectului (teamwant_redis)
+                        }
+                    } catch (Throwable $e) {
+                        logln('    redis: ' . $e->getMessage());
+                    }
+                }
             }
         }
     } catch (Throwable $e) {
