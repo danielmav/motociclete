@@ -216,6 +216,11 @@ return function (App $app, Twig $twig, array $container): void {
         return (new \App\Controllers\FinanceController($twig, $container))->page($request, $response);
     });
 
+    // --- Informarea armonizată UE privind garanția legală (Reg. UE 2025/1960) ---
+    $app->get('/garantia-legala', function ($request, $response) use ($twig) {
+        return $twig->render($response, 'legal-guarantee.twig', ['canonical_path' => '/garantia-legala']);
+    });
+
     // --- Modele eligibile programul RABLA (listare indexabilă, grupată pe tip) ---
     $app->get('/programul-rabla', function ($request, $response) use ($twig, $container) {
         return (new \App\Controllers\RablaController($twig, $container))->page($request, $response);

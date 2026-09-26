@@ -412,3 +412,11 @@
 /* Overlay-ul de căutare e alb → iconițele din el rămân închise la culoare. */
 .headerv2 .search .iconbtn { color: var(--ink); }
 .headerv2 .search .iconbtn:hover { color: var(--red); background: var(--surface); }
+
+/* Link „Garanția legală" în bara întunecată (Reg. UE 2025/1960). */
+.headerv2 .legalg-link--header { color: #fff; font-size: .82rem; padding: .45rem .7rem; margin-right: .35rem; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; white-space: nowrap; }
+.headerv2 .legalg-link--header:hover { color: var(--red); border-color: var(--red); }
+@media (max-width: 1280px) {
+    .headerv2 .legalg-link--header { padding: .45rem; border-color: transparent; }
+    .headerv2 .legalg-link--header .legalg-link__text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}

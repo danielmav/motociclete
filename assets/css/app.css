@@ -1334,3 +1334,18 @@ html:not(.js) .about-carousel__slide + .about-carousel__slide { margin-top: .5re
     .acc-layout { grid-template-columns: 1fr; }
     .acc-sidebar { position: static; }
 }
+
+/* ---- Garanția legală (Reg. UE 2025/1960): link + modal + pagina /garantia-legala ---- */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.legalg-link { display: inline-flex; align-items: center; gap: .45rem; text-decoration: none; font-weight: 600; }
+.legalg-link svg { flex: 0 0 auto; }
+.legalg-link--product { margin-top: 1rem; color: #0E47A1; font-size: .92rem; }
+.legalg-link--product:hover .legalg-link__text { text-decoration: underline; }
+.modal--legalg .modal__dialog { max-width: 760px; padding: 2.4rem 1.2rem 1.2rem; }
+.legalg-notice { margin: 0; }
+.legalg-notice__img { display: block; }
+/* Informarea se afișează întreagă, fără crop/deformare — doar scalată proporțional. */
+.legalg-notice__img img { display: block; width: 100%; height: auto; }
+.legalg-notice__caption { margin-top: .8rem; font-size: .95rem; text-align: center; }
+.legalg-notice__caption a { font-weight: 600; color: #0E47A1; }
+.page-head + .legalg-notice { max-width: 900px; margin: 0 auto; }

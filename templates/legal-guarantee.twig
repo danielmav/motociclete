@@ -1,0 +1,19 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Garanția legală de conformitate | Dual Motors{% endblock %}
+{% block description %}Informarea armonizată UE privind garanția legală de conformitate de minimum doi ani pentru bunurile cumpărate de la Dual Motors (Regulamentul UE 2025/1960).{% endblock %}
+
+{% block content %}
+<article class="section">
+    <div class="container container--narrow">
+        <header class="page-head">
+            <span class="kicker">Drepturile consumatorului</span>
+            <h1 class="page-title">Garanția legală de conformitate</h1>
+        </header>
+
+        {% include 'partials/legal-guarantee-notice.twig' %}
+
+        <p class="finance-back"><a class="link-arrow" href="{{ base }}/">← Înapoi la showroom</a></p>
+    </div>
+</article>
+{% endblock %}
