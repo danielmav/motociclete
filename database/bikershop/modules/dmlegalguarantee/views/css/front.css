@@ -1,0 +1,25 @@
+/* Garanția legală (Reg. UE 2025/1960) — dmlegalguarantee */
+.dmlg { font-size: .9rem; line-height: 1.4; }
+.dmlg__link { display: inline-flex; align-items: center; gap: .4rem; font-weight: 600; color: #0E47A1; text-decoration: none; }
+.dmlg__link:hover span { text-decoration: underline; }
+.dmlg__icon { flex: 0 0 auto; }
+.dmlg .dmlg__icon path { fill: none !important; }
+.dmlg--product .dmlg__link, .dmlg--checkout .dmlg__link, .dmlg--footer .dmlg__link { color: #0E47A1 !important; }
+.dmlg__more { color: #666; font-size: .82rem; }
+.dmlg__more a { color: #0E47A1; }
+.dmlg--nav { display: inline-block; margin-left: 1rem; }
+.dmlg--nav .dmlg__link { color: inherit; font-weight: 600; }
+.dmlg--product { margin: 1rem 0; }
+.dmlg--checkout { margin: 0 0 1rem; padding: .75rem 1rem; border: 1px solid #d6e0f5; background: #f4f7fd; border-radius: 4px; }
+.dmlg--footer { text-align: center; padding: .75rem 1rem; }
+
+body.dmlg-open { overflow: hidden; }
+.dmlg-modal { position: fixed; inset: 0; z-index: 100000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.dmlg-modal[hidden] { display: none; }
+.dmlg-modal__overlay { position: absolute; inset: 0; background: rgba(17,17,17,.6); }
+.dmlg-modal__dialog { position: relative; width: 100%; max-width: 760px; max-height: 92vh; overflow: auto; background: #fff; border-radius: 6px; padding: 2.4rem 1.2rem 1.2rem; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+.dmlg-modal__x { position: absolute; top: .4rem; right: .7rem; border: 0; background: none; font-size: 1.9rem; line-height: 1; cursor: pointer; color: #555; }
+/* Informarea se afișează întreagă, fără crop/deformare — doar scalată proporțional. */
+.dmlg-modal__img { display: block; width: 100%; height: auto; max-width: none; }
+.dmlg-modal__caption { margin: .8rem 0 0; text-align: center; font-size: .95rem; }
+.dmlg-modal__caption a { font-weight: 600; color: #0E47A1; }
