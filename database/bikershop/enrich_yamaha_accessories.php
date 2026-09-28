@@ -8,7 +8,7 @@ declare(strict_types=1);
  * din catalogul public Yamaha (endpointul hyperdrive) și raportează prețurile divergente.
  *
  * RULEAZĂ PE SERVERUL BIKERSHOP (are nevoie de PrestaShop pe disc: clase + img/p/):
- *   /usr/local/bin/ea-php84 /home2/bikershop/tools/yamaha-enrich/enrich_yamaha_accessories.php [opțiuni]
+ *   /usr/local/bin/ea-php84 /home2/bikershop/public_html/tool/enrich_yamaha_accessories.php [opțiuni]
  *
  * Opțiuni:
  *   --apply            scrie efectiv (implicit = dry-run, doar raportează)
@@ -40,7 +40,7 @@ declare(strict_types=1);
  *                 Nu scrie prețuri: modulul supplierpricing le guvernează (vezi CLAUDE.md).
  *
  * NU scrie niciodată în ps_product.price / active. Fiecare rulare cu --apply produce
- * logs/enrich-<ts>.log + logs/rollback-<ts>.sql (revine la starea dinainte; fișierele
+ * logs/enrich-<ts>.log + logs/rollback-enrich-<ts>.sql (revine la starea dinainte; fișierele
  * imagine rămân pe disc, dar orfane).
  *
  * Copia canonică a scriptului e în repo-ul portalului (database/bikershop/); pe server
@@ -145,7 +145,7 @@ $tmpDir  = $baseDir . '/tmp';
 
 $ts       = date('Ymd-His');
 $logFile  = $logDir . "/enrich-{$ts}.log";
-$rbFile   = $logDir . "/rollback-{$ts}.sql";
+$rbFile   = $logDir . "/rollback-enrich-{$ts}.sql";
 $csvFile  = $logDir . "/prices-{$ts}.csv";
 $lockFile = $tmpDir . '/enrich.lock';
 

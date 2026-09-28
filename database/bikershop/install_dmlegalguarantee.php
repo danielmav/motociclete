@@ -1,6 +1,10 @@
 <?php
 // Instalează modulul dmlegalguarantee pe BikerShop (CLI) și (re)înregistrează hook-urile pe toate shop-urile.
 // Rulare: ea-php84 install_dmlegalguarantee.php [--uninstall]
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit("Doar din linia de comandă.\n");
+}
 define('_PS_ADMIN_DIR_', '/home2/bikershop/public_html/__admin322y');
 require '/home2/bikershop/public_html/config/config.inc.php';
 Shop::setContext(Shop::CONTEXT_ALL);
