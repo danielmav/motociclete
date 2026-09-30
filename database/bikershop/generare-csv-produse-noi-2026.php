@@ -464,6 +464,17 @@ foreach($products as $product){
     $priceNode = $xpath->query("//span[contains(@class,'sales')]")->item(0);
     $price = 0;
 
+    // produs la reducere: span.sales = prețul REDUS, prețul de listă e în span.strike-through.list
+    // (căutat doar în același bloc .price, ca să nu prindem reducerea unui produs recomandat)
+    $salePriceNote = '';
+    if ($priceNode) {
+        $listNode = $xpath->query("ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' price ')][1]//span[contains(@class,'strike-through')]", $priceNode)->item(0);
+        if ($listNode && preg_match('/\d/', $listNode->textContent)) {
+            $salePriceNote = " [preț de listă " . cleanText($listNode->textContent) . ", redus pe site la " . cleanText($priceNode->textContent) . "]";
+            $priceNode = $listNode;
+        }
+    }
+
     if($priceNode){
 
         $rawPrice = trim($priceNode->textContent);
@@ -552,7 +563,7 @@ foreach($products as $product){
         ], ";");
     }
 
-    echo h("   ↳ ref $baseSKU | EAN " . ($eanHits ? "$eanHits/" . count($sizes) : "lipsă în B2B") . $priceNote) . "\n";
+    echo h("   ↳ ref $baseSKU | EAN " . ($eanHits ? "$eanHits/" . count($sizes) : "lipsă în B2B") . $priceNote . $salePriceNote) . "\n";
     flush();
 
     $i++; $added++;
