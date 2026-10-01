@@ -409,7 +409,11 @@ final class FeedSync
             if ($s === '' || in_array($s, self::SKU_STOP, true)) {
                 continue;
             }
-            // brandul + codul modelului întregi, restul prescurtate la 4 litere
+            // brandul + codul modelului întregi, restul prescurtate la 4 litere. Prefixul e mereu
+            // „cfmoto-" (și la CFLITE), ca referințele BikerShop (producătorul = CFMoto).
+            if ($i === 0 && $s === 'cflite') {
+                $s = 'cfmoto';
+            }
             $parts[] = ($i <= 1 || preg_match('/\d/', $s)) ? $s : substr($s, 0, 4);
         }
         return implode('-', $parts) . ($year ? '-' . $year : '');
