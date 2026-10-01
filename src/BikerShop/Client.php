@@ -457,6 +457,41 @@ final class Client
     }
 
     /**
+     * Motocicletele de pe BikerShop cu referința începând cu $prefix (ex. „cfmoto-") —
+     * referința lor e refolosită drept cod de produs pe portal (database/sync_cfmoto_feed.php).
+     * Prefixul = LIKE ancorat la început → folosește indexul `reference`.
+     * @return array<int,array{id_product:int,reference:string,name:string,active:int}>
+     */
+    public function productsByReferencePrefix(string $prefix): array
+    {
+        if ($prefix === '' || !$this->isAvailable()) {
+            return [];
+        }
+        $p = $this->prefix;
+        $shop = $this->shopId;
+        $lang = $this->langId;
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT pr.id_product, pr.reference, pl.name, COALESCE(ps.active, 0) AS active
+                FROM      {$p}product      pr
+                JOIN      {$p}product_lang pl ON pl.id_product = pr.id_product AND pl.id_lang = {$lang} AND pl.id_shop = {$shop}
+                LEFT JOIN {$p}product_shop ps ON ps.id_product = pr.id_product AND ps.id_shop = {$shop}
+                WHERE pr.reference LIKE :pfx
+                ORDER BY pr.id_product
+            ");
+            $stmt->execute([':pfx' => addcslashes($prefix, '%_') . '%']);
+            return array_map(static fn ($r) => [
+                'id_product' => (int) $r['id_product'],
+                'reference'  => (string) $r['reference'],
+                'name'       => (string) $r['name'],
+                'active'     => (int) $r['active'],
+            ], $stmt->fetchAll());
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /**
      * Look up BikerShop LeoPartsFilter IDs for a local product.
      * Used by database/migrate_fitment.php to populate lp_* columns.
      *

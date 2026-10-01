@@ -124,10 +124,16 @@
         {% endif %}
         {% if brand == 'cfmoto' %}
         <div class="adm-grid2" style="margin-top:.8rem">
-            <label>ID feed ATVROM <span class="adm-help">Coloana ID din feed-ul importatorului. Cât timp e completat, prețul și reducerea se suprascriu în fiecare noapte din feed (editările manuale de preț se pierd). Gol = preț gestionat manual.</span>
-                <input type="text" name="feed_id" value="{{ p.feed_id|default('') }}" placeholder="ex. 252559" inputmode="numeric">
+            <label>ID feed ATVROM <span class="adm-help">ID-ul (ID-urile, separate prin virgulă = variante, ex. LOW / TALL SEAT) din feed-ul importatorului. Cât timp e completat, prețul, reducerea și variantele se suprascriu din feed la fiecare sincronizare (editările manuale de preț se pierd). Gol = preț gestionat manual.</span>
+                <input type="text" name="feed_ids" value="{{ p.feed_ids|default('') }}" placeholder="ex. 252559 sau 186369,258880">
+            </label>
+            <label>Cod produs <span class="adm-help">În stilul referințelor BikerShop (ex. cfmoto-1000mt-high-2026); culoarea se adaugă doar pe BikerShop, la combinație.</span>
+                <input type="text" name="sku" value="{{ p.sku|default('') }}" placeholder="ex. cfmoto-450mt-2026">
             </label>
         </div>
+        <label style="margin-top:.8rem;display:block">Referință furnizor (ATVROM) <span class="adm-help">Completată automat din feed, pentru comparație (nu conține culoarea).</span>
+            <input type="text" name="supplier_ref" value="{{ p.supplier_ref|default('') }}" readonly>
+        </label>
         {% endif %}
     </div>
 

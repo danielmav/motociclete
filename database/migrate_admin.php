@@ -34,7 +34,17 @@ ensure_column($pdo, 'products', 'variants_json', 'ALTER TABLE `products` ADD COL
 ensure_column($pdo, 'products', 'rabla_eligible', 'ALTER TABLE `products` ADD COLUMN `rabla_eligible` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_active`');
 ensure_column($pdo, 'site_messages', 'anonymized_at', 'ALTER TABLE `site_messages` ADD COLUMN `anonymized_at` DATETIME NULL');
 ensure_column($pdo, 'service_bookings', 'anonymized_at', 'ALTER TABLE `service_bookings` ADD COLUMN `anonymized_at` DATETIME NULL');
-ensure_column($pdo, 'products', 'feed_id', 'ALTER TABLE `products` ADD COLUMN `feed_id` INT UNSIGNED NULL AFTER `bs_product_id`, ADD KEY `idx_feed` (`feed_id`)');
+// Sincronizare CFMOTO (feed ATVROM): ID-urile din feed (mai multe = variante), codul de
+// produs în stilul BikerShop și referința furnizorului. `feed_id` (INT) a fost înlocuit de `feed_ids`.
+ensure_column($pdo, 'products', 'feed_ids', 'ALTER TABLE `products` ADD COLUMN `feed_ids` VARCHAR(255) NULL AFTER `bs_product_id`');
+ensure_column($pdo, 'products', 'sku', 'ALTER TABLE `products` ADD COLUMN `sku` VARCHAR(64) NULL AFTER `feed_ids`, ADD KEY `idx_sku` (`sku`)');
+ensure_column($pdo, 'products', 'supplier_ref', 'ALTER TABLE `products` ADD COLUMN `supplier_ref` VARCHAR(255) NULL AFTER `sku`');
+$old = $pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products' AND COLUMN_NAME = 'feed_id'")->fetchColumn();
+if ((int) $old > 0) {
+    $pdo->exec("UPDATE products SET feed_ids = feed_id WHERE feed_ids IS NULL AND feed_id IS NOT NULL");
+    $pdo->exec('ALTER TABLE `products` DROP COLUMN `feed_id`');
+    echo "  - products.feed_id (-> feed_ids)\n";
+}
 ensure_column($pdo, 'product_images', 'caption', 'ALTER TABLE `product_images` ADD COLUMN `caption` VARCHAR(160) NULL AFTER `filename`');
 
 echo "migrate_admin: done.\n";

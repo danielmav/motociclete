@@ -492,7 +492,7 @@ final class Repository
         'brand', 'category_id', 'name', 'subtitle', 'slug', 'year', 'price', 'discount_pct', 'licence',
         'cover_image', 'excerpt', 'description', 'promo_html', 'details_html', 'variants_json',
         'specs_engine', 'specs_chassis', 'specs_dimensions', 'specs_connectivity',
-        'video', 'keywords', 'is_active', 'position', 'yamaha_pid', 'bs_product_id', 'feed_id',
+        'video', 'keywords', 'is_active', 'position', 'yamaha_pid', 'bs_product_id', 'feed_ids', 'sku', 'supplier_ref',
         // NOTE: `rabla_eligible` NU e aici intenționat — se gestionează exclusiv prin
         // toggle-ul din lista de produse (setRablaEligible), ca să nu fie resetat de
         // upsert-ul generic la fiecare salvare din formularul de editare.

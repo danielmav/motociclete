@@ -17,12 +17,17 @@ use Throwable;
  * - Prețurile din feed sunt EUR FĂRĂ TVA → ×1,21. `products.price` = prețul de vânzare
  *   (SALE_PRICE), `discount_pct` = reducerea față de PRICE (Repository::oldPrice() reface
  *   prețul vechi tăiat din ele).
- * - Legătura produs↔feed = `products.feed_id` (= coloana ID din feed). Produsele nelegate
- *   se leagă automat pe nume normalizat + an (vezi link()); cazurile ambigue se leagă
- *   manual (admin, câmpul „ID feed ATVROM", sau CLI --link=PID:FEED).
+ * - Legătura produs↔feed = `products.feed_ids` (ID-urile din feed, separate prin virgulă).
+ *   Un produs cu ≥2 rânduri = model cu VARIANTE (ex. 800MT-X LOW SEAT / TALL SEAT) →
+ *   `variants_json` (tabelul „Variante și prețuri", ca la Yamaha), prețul produsului = cea
+ *   mai mică variantă. Nelegatele se leagă automat pe nume normalizat + an (vezi
+ *   proposeLinks()); cazurile ambigue se leagă manual (admin sau CLI --link).
+ * - `products.sku` = cod produs în stilul referințelor BikerShop (`cfmoto-1000mt-high-2026`,
+ *   culoarea e pe combinație acolo): referința BikerShop dacă modelul există acolo, altfel
+ *   generat. `products.supplier_ref` = referința ATVROM (slug-ul din LINK, fără culoare).
  * - Produse noi: rândurile din feed nelegate ȘI nevăzute niciodată (`cfmoto_feed_seen`)
- *   → produs INACTIV complet (descriere, specificații, imagini). Un produs nou șters din
- *   admin NU se recreează (rândul rămâne „văzut").
+ *   → produs INACTIV complet (descriere, specificații, imagini), numele „<model> - <an>".
+ *   Un produs nou șters din admin NU se recreează (rândul rămâne „văzut").
  * - Produsele legate care dispar din feed doar se RAPORTEAZĂ (nu se dezactivează).
  */
 final class FeedSync
@@ -30,6 +35,12 @@ final class FeedSync
     public const FEED_URL = 'https://advrider.ro/_catalog/csv/magicparser/atvrom/unitati.php';
     private const VAT = 1.21;
     private const BRANDS = ['CFMOTO', 'CFLITE'];
+
+    /** Sufixele care fac dintr-un rând de feed o VARIANTĂ a aceluiași model (înălțimea șeii). */
+    private const VARIANT_RE = '/\s+((?:LOW|TALL|HIGH|STANDARD|STD)\s+SEAT)\s*$/i';
+
+    /** Cuvinte omise din codul de produs generat (ca în referințele BikerShop). */
+    private const SKU_STOP = ['abs', 'euro', '5', 'seat', 'edition', 'ed'];
 
     /** „Tip motocicleta" din feed → slug-ul categoriei CFMOTO de pe portal (primul care se potrivește). */
     private const TYPE_CATEGORY = [
@@ -72,6 +83,9 @@ final class FeedSync
         'Rezervor'         => ['specs_dimensions', 'Rezervor'],
         'Culori'           => ['specs_dimensions', 'Culori'],
     ];
+
+    /** @var array<string,string> cheie normName|an → referința BikerShop */
+    private array $bsRefs = [];
 
     public function __construct(private PDO $pdo, private string $mediaBase) {}
 
@@ -151,16 +165,22 @@ final class FeedSync
             if (!$year && preg_match("/'(\d{2})\s*$/", $title, $m)) {
                 $year = 2000 + (int) $m[1];
             }
+            $name = trim((string) preg_replace("/\s*'\d{2}\s*$/", '', $title));
+            $variant = preg_match(self::VARIANT_RE, $name, $vm) ? strtoupper((string) preg_replace('/\s+/', ' ', $vm[1])) : '';
+            $link = trim($row['LINK']);
             $out[$id] = [
                 'id'          => $id,
                 'title'       => $title,
-                'name'        => trim((string) preg_replace("/\s*'\d{2}\s*$/", '', $title)),
+                'name'        => $name,
+                'base'        => $variant !== '' ? trim((string) preg_replace(self::VARIANT_RE, '', $name)) : $name,
+                'variant'     => $variant,
                 'brand'       => strtoupper(trim($row['BRAND'])),
                 'year'        => $year ?: null,
                 'list_eur'    => $list,
                 'sale_eur'    => $sale > 0 && $sale < $list ? $sale : $list,
                 'description' => trim($row['DESCRIPTION']),
-                'link'        => trim($row['LINK']),
+                'link'        => $link,
+                'ref'         => basename((string) parse_url($link, PHP_URL_PATH)),
                 'images'      => array_values(array_filter(array_map('trim', explode(',', $row['IMAGES'])))),
                 'attrs'       => $attrs,
             ];
@@ -178,6 +198,13 @@ final class FeedSync
         return ['price' => $sale, 'discount_pct' => $pct, 'list' => $list];
     }
 
+    /** ID-urile de feed dintr-o valoare „252559, 186369" → [252559, 186369]. @return int[] */
+    public static function ids(?string $s): array
+    {
+        preg_match_all('/\d+/', (string) $s, $m);
+        return array_values(array_unique(array_map('intval', $m[0])));
+    }
+
     // ===================== legare produs ↔ feed =====================
 
     /** Cheie de comparație: fără brand, an, „Euro 5+", punctuație. */
@@ -192,78 +219,124 @@ final class FeedSync
         return str_replace(' ', '', trim($s));
     }
 
-    /** @return array<int,array<string,mixed>> produsele CFMOTO din portal */
+    /** @return array<int,array<string,mixed>> produsele CFMOTO din portal (+ `ids` = feed_ids parsate) */
     public function products(): array
     {
-        return $this->pdo->query(
-            "SELECT id, name, slug, year, price, discount_pct, is_active, feed_id
+        $rows = $this->pdo->query(
+            "SELECT id, name, slug, year, price, discount_pct, is_active, feed_ids, sku, supplier_ref, variants_json
              FROM products WHERE brand = 'cfmoto' ORDER BY is_active DESC, id"
         )->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as &$r) {
+            $r['ids'] = self::ids($r['feed_ids']);
+        }
+        return $rows;
     }
 
     /**
-     * Propune legături pentru produsele fără feed_id: nume normalizat identic ȘI același an
-     * (sau anul lipsă în portal și un singur rând în feed). Un rând de feed se leagă de un
-     * singur produs (prioritate: activ). Ambiguități → raportate, nelegate.
-     * @return array{links:array<int,int>, ambiguous:array<int,string>, reserved:array<int,bool>}
+     * Propune legături pentru produsele nelegate, pe nume normalizat + an:
+     *  1. nume complet identic, un singur rând → leagă;
+     *  2. numele = modelul de bază al unor VARIANTE (LOW/TALL SEAT…) → leagă toate variantele;
+     *  3. numele = prefixul unui singur rând → leagă; mai multe → AMBIGUU (raportat, nelegat,
+     *     iar rândurile candidate nu se creează ca produse noi).
+     * Un rând de feed se leagă de un singur produs (prioritate: activ).
+     * @return array{links:array<int,int[]>, ambiguous:array<int,string>, reserved:array<int,bool>}
      */
     public function proposeLinks(array $feed, array $products): array
     {
         $taken = [];
         foreach ($products as $p) {
-            if ($p['feed_id']) {
-                $taken[(int) $p['feed_id']] = true;
+            foreach ($p['ids'] as $fid) {
+                $taken[$fid] = true;
             }
-        }
-        $byName = [];
-        foreach ($feed as $f) {
-            $byName[self::normName($f['name'])][] = $f;
         }
         $links = [];
         $ambiguous = [];
-        $reserved = [];   // rânduri de feed candidate la o legare ambiguă → nu se creează ca noi
+        $reserved = [];
         foreach ($products as $p) {
-            if ($p['feed_id']) {
+            if ($p['ids']) {
                 continue;
             }
             $key = self::normName($p['name']);
-            $free = static fn (array $c): array => array_values(array_filter(
-                $c,
-                static fn ($f) => !isset($taken[$f['id']]) && (!$p['year'] || (int) $f['year'] === (int) $p['year'])
-            ));
-            $cands = $free($byName[$key] ?? []);
-            // Fallback: numele din portal e prefixul unor variante din feed
-            // („800MT-X" → „800MT-X LOW SEAT" / „TALL SEAT"). Unic → leagă; altfel ambiguu.
-            if (!$cands && $key !== '') {
-                foreach ($byName as $k => $rows) {
-                    if (str_starts_with((string) $k, $key)) {
-                        array_push($cands, ...$free($rows));
+            if ($key === '') {
+                continue;
+            }
+            $free = array_filter($feed, static fn ($f) => !isset($taken[$f['id']]) && (!$p['year'] || (int) $f['year'] === (int) $p['year']));
+
+            $cands = array_filter($free, static fn ($f) => self::normName($f['name']) === $key);
+            if (count($cands) !== 1) {
+                $variants = array_filter($free, static fn ($f) => $f['variant'] !== '' && self::normName($f['base']) === $key);
+                if ($variants) {
+                    $cands = $variants;
+                } elseif (!$cands) {
+                    $cands = array_filter($free, static fn ($f) => str_starts_with(self::normName($f['name']), $key));
+                    if (count($cands) > 1) {
+                        foreach ($cands as $f) {
+                            $reserved[$f['id']] = true;
+                        }
+                        $ambiguous[(int) $p['id']] = implode(', ', array_map(static fn ($f) => "#{$f['id']} {$f['title']}", $cands));
+                        continue;
                     }
                 }
             }
-            if (count($cands) === 1) {
-                $links[(int) $p['id']] = $cands[0]['id'];
-                $taken[$cands[0]['id']] = true;
-            } elseif (count($cands) > 1) {
+            if ($cands) {
+                $links[(int) $p['id']] = array_keys($cands);
                 foreach ($cands as $f) {
-                    $reserved[$f['id']] = true;
+                    $taken[$f['id']] = true;
                 }
-                $ambiguous[(int) $p['id']] = implode(', ', array_map(static fn ($f) => "#{$f['id']} {$f['title']}", $cands));
             }
         }
         return ['links' => $links, 'ambiguous' => $ambiguous, 'reserved' => $reserved];
     }
 
-    public function link(int $productId, ?int $feedId): void
+    /** @param int[] $feedIds */
+    public function link(int $productId, array $feedIds): void
     {
-        $this->pdo->prepare("UPDATE products SET feed_id = :f WHERE id = :id AND brand = 'cfmoto'")
-            ->execute([':f' => $feedId, ':id' => $productId]);
+        $this->pdo->prepare("UPDATE products SET feed_ids = :f WHERE id = :id AND brand = 'cfmoto'")
+            ->execute([':f' => $feedIds ? implode(',', $feedIds) : null, ':id' => $productId]);
     }
 
-    // ===================== prețuri =====================
+    // ===================== prețuri / variante / coduri =====================
 
     /**
-     * Diferențele de preț pentru produsele legate + produsele legate care lipsesc din feed.
+     * Ce trebuie scris pe un produs legat, din rândurile lui de feed: preț (cea mai mică
+     * variantă), reducere, variante (doar la ≥2 rânduri) și referința furnizorului.
+     * Null dacă niciun rând legat nu mai e în feed.
+     */
+    public function target(array $p, array $feed): ?array
+    {
+        $rows = array_values(array_filter(array_map(static fn ($id) => $feed[$id] ?? null, $p['ids'])));
+        if (!$rows) {
+            return null;
+        }
+        usort($rows, static fn ($a, $b) => $a['sale_eur'] <=> $b['sale_eur']);
+        $pr = self::pricing($rows[0]);
+        $variants = $p['variants_json'];
+        if (count($rows) >= 2) {
+            $out = [];
+            foreach ($rows as $r) {
+                $out[] = [
+                    'version'      => $this->variantLabel($r, $rows),
+                    'transmission' => '',
+                    'price'        => self::pricing($r)['price'],
+                    'sku'          => $this->generateSku($r['name'], $r['year']),
+                    'supplier_ref' => $r['ref'],
+                    'feed_id'      => $r['id'],
+                ];
+            }
+            $variants = (string) json_encode($out, JSON_UNESCAPED_UNICODE);
+        }
+        return [
+            'price'         => $pr['price'],
+            'discount_pct'  => $pr['discount_pct'],
+            'list'          => $pr['list'],
+            'variants_json' => $variants,
+            'supplier_ref'  => implode(',', array_map(static fn ($r) => $r['ref'], $rows)),
+            'titles'        => implode(' / ', array_map(static fn ($r) => $r['title'], $rows)),
+        ];
+    }
+
+    /**
+     * Diferențele pentru produsele legate + produsele legate care lipsesc din feed.
      * @return array{changes:array<int,array<string,mixed>>, missing:array<int,array<string,mixed>>}
      */
     public function priceDiff(array $feed, array $products): array
@@ -271,26 +344,99 @@ final class FeedSync
         $changes = [];
         $missing = [];
         foreach ($products as $p) {
-            $fid = (int) ($p['feed_id'] ?? 0);
-            if (!$fid) {
+            if (!$p['ids']) {
                 continue;
             }
-            if (!isset($feed[$fid])) {
+            $t = $this->target($p, $feed);
+            if ($t === null) {
                 $missing[] = $p;
                 continue;
             }
-            $new = self::pricing($feed[$fid]);
-            if ((int) $p['price'] !== $new['price'] || abs((float) $p['discount_pct'] - $new['discount_pct']) > 0.009) {
-                $changes[] = $p + ['new_price' => $new['price'], 'new_pct' => $new['discount_pct'], 'list' => $new['list'], 'feed_title' => $feed[$fid]['title']];
+            if ((int) $p['price'] !== $t['price']
+                || abs((float) $p['discount_pct'] - $t['discount_pct']) > 0.009
+                || (string) $p['variants_json'] !== (string) $t['variants_json']
+                || (string) $p['supplier_ref'] !== $t['supplier_ref']) {
+                $changes[] = $p + ['t' => $t];
             }
         }
         return ['changes' => $changes, 'missing' => $missing];
     }
 
-    public function applyPrice(int $productId, int $price, float $pct): void
+    public function applyTarget(int $productId, array $t): void
     {
-        $this->pdo->prepare("UPDATE products SET price = :p, discount_pct = :d WHERE id = :id")
-            ->execute([':p' => $price, ':d' => $pct, ':id' => $productId]);
+        $this->pdo->prepare(
+            "UPDATE products SET price = :p, discount_pct = :d, variants_json = :v, supplier_ref = :r WHERE id = :id"
+        )->execute([':p' => $t['price'], ':d' => $t['discount_pct'], ':v' => $t['variants_json'] ?: null, ':r' => $t['supplier_ref'], ':id' => $productId]);
+    }
+
+    /**
+     * Referințele motocicletelor CFMOTO de pe BikerShop (cod produs reutilizat).
+     * @param array<int,array{reference:string,name:string}> $rows
+     */
+    public function setBikershopRefs(array $rows): void
+    {
+        foreach ($rows as $r) {
+            $year = preg_match('/\b(20\d{2})\s*$/', $r['name'], $m) ? (int) $m[1]
+                : (preg_match('/\s(2\d)\s*$/', $r['name'], $m) ? 2000 + (int) $m[1] : 0);
+            $this->bsRefs[self::normName($r['name']) . '|' . $year] = $r['reference'];
+        }
+    }
+
+    /** Codul de produs pentru un produs fără `sku`: referința BikerShop sau generat. */
+    public function skuFor(array $p): string
+    {
+        return $this->bsRefs[self::normName($p['name']) . '|' . (int) $p['year']]
+            ?? $this->generateSku((string) $p['name'], $p['year'] ? (int) $p['year'] : null);
+    }
+
+    public function setSku(int $productId, string $sku): void
+    {
+        $this->pdo->prepare("UPDATE products SET sku = :s WHERE id = :id")->execute([':s' => $sku, ':id' => $productId]);
+    }
+
+    /**
+     * Cod în stilul referințelor BikerShop: brand-model[-prescurtări]-an, fără ABS/Euro/Edition
+     * (ex. „CFMOTO 800MT Explore Edition - 2026" → cfmoto-800mt-expl-2026). Fără culoare.
+     */
+    public function generateSku(string $name, ?int $year): string
+    {
+        $name = (string) preg_replace("/\s*-\s*20\d{2}\s*$|'\d{2}\s*$|\s2\d\s*$|\b20\d{2}\b/", ' ', $name);
+        $name = (string) preg_replace('/\beuro\s*5\s*\+?/i', ' ', $name);
+        $words = preg_split('/\s+/', trim($name)) ?: [];
+        $parts = [];
+        foreach ($words as $i => $w) {
+            $s = slugify($w);
+            if ($s === '' || in_array($s, self::SKU_STOP, true)) {
+                continue;
+            }
+            // brandul + codul modelului întregi, restul prescurtate la 4 litere
+            $parts[] = ($i <= 1 || preg_match('/\d/', $s)) ? $s : substr($s, 0, 4);
+        }
+        return implode('-', $parts) . ($year ? '-' . $year : '');
+    }
+
+    /** Eticheta unei variante: sufixul de șa sau ce diferă de prefixul comun al numelor. */
+    private function variantLabel(array $r, array $rows): string
+    {
+        if ($r['variant'] !== '') {
+            return $r['variant'];
+        }
+        $names = array_map(static fn ($x) => preg_split('/\s+/', $x['name']) ?: [], $rows);
+        $common = 0;
+        while (true) {
+            $w = $names[0][$common] ?? null;
+            if ($w === null) {
+                break;
+            }
+            foreach ($names as $n) {
+                if (($n[$common] ?? null) !== $w) {
+                    break 2;
+                }
+            }
+            $common++;
+        }
+        $rest = trim(implode(' ', array_slice(preg_split('/\s+/', $r['name']) ?: [], $common)));
+        return $rest !== '' ? $rest : $r['name'];
     }
 
     // ===================== produse noi =====================
@@ -300,12 +446,32 @@ final class FeedSync
     {
         $linked = [];
         foreach ($products as $p) {
-            if ($p['feed_id']) {
-                $linked[(int) $p['feed_id']] = true;
+            foreach ($p['ids'] as $fid) {
+                $linked[$fid] = true;
             }
         }
         $seen = array_flip(array_map('intval', $this->pdo->query("SELECT feed_id FROM cfmoto_feed_seen")->fetchAll(PDO::FETCH_COLUMN)));
         return array_filter($feed, static fn ($f) => !isset($linked[$f['id']]) && !isset($seen[$f['id']]));
+    }
+
+    /**
+     * Grupează rândurile noi: variantele aceluiași model (LOW/TALL SEAT, același an) → un produs.
+     * @return array<int,array<int,array<string,mixed>>> listă de grupuri (rândurile unui produs)
+     */
+    public static function groupRows(array $rows): array
+    {
+        $groups = [];
+        foreach ($rows as $f) {
+            $key = $f['variant'] !== '' ? 'v|' . self::normName($f['base']) . '|' . $f['year'] : 'r|' . $f['id'];
+            $groups[$key][] = $f;
+        }
+        // O „variantă" singură în grup rămâne produs separat cu numele complet.
+        return array_values(array_map(static function (array $g): array {
+            if (count($g) === 1) {
+                $g[0]['base'] = $g[0]['name'];
+            }
+            return $g;
+        }, $groups));
     }
 
     /** Marchează rândurile din feed ca „văzute" (+ produsul legat). */
@@ -313,8 +479,8 @@ final class FeedSync
     {
         $byFeed = [];
         foreach ($products as $p) {
-            if ($p['feed_id']) {
-                $byFeed[(int) $p['feed_id']] = (int) $p['id'];
+            foreach ($p['ids'] as $fid) {
+                $byFeed[$fid] = (int) $p['id'];
             }
         }
         $st = $this->pdo->prepare(
@@ -327,13 +493,17 @@ final class FeedSync
         }
     }
 
-    /** Datele complete ale unui produs nou (fără imagini), din rândul de feed. */
-    public function shapeProduct(array $f): array
+    /**
+     * Datele complete ale unui produs nou (fără imagini), dintr-un grup de rânduri de feed
+     * (1 rând = model simplu; ≥2 = variante). Textul/specificațiile vin din primul rând.
+     */
+    public function shapeProduct(array $group): array
     {
+        $f = $group[0];
         $a = $f['attrs'];
-        $pr = self::pricing($f);
         $brandWord = $f['brand'] === 'CFLITE' ? 'CFLITE' : 'CFMOTO';
-        $name = (string) preg_replace('/^(CFMOTO|CFLITE)\s+/i', $brandWord . ' ', $f['name']);
+        $model = (string) preg_replace('/^(CFMOTO|CFLITE)\s+/i', $brandWord . ' ', $f['base']);
+        $name = $model . ($f['year'] ? ' - ' . $f['year'] : '');
 
         $specs = ['specs_engine' => '', 'specs_chassis' => '', 'specs_dimensions' => ''];
         foreach (self::SPEC_MAP as $key => [$col, $label]) {
@@ -346,21 +516,25 @@ final class FeedSync
         }
 
         [$excerpt, $description] = $this->shapeDescription($f['description']);
-        $slugBase = slugify($name) . ($f['year'] ? '-' . $f['year'] : '');
+        $p = ['name' => $name, 'year' => $f['year'], 'ids' => array_column($group, 'id'), 'variants_json' => null];
+        $t = $this->target($p, array_column($group, null, 'id'));
 
         return [
             'brand'        => 'cfmoto',
             'category_id'  => $this->categoryFor((string) ($a['Tip motocicleta'] ?? '')),
             'name'         => $name,
-            'slug'         => $this->uniqueSlug($slugBase),
+            'slug'         => $this->uniqueSlug(slugify($name)),
             'year'         => $f['year'],
-            'price'        => $pr['price'],
-            'discount_pct' => $pr['discount_pct'],
+            'price'        => $t['price'],
+            'discount_pct' => $t['discount_pct'],
+            'variants_json' => $t['variants_json'],
             'licence'      => $this->licence($a),
             'excerpt'      => $excerpt,
             'description'  => $description,
             'rabla_eligible' => isset($a['Programul Rabla']) ? 1 : 0,
-            'feed_id'      => $f['id'],
+            'feed_ids'     => implode(',', $p['ids']),
+            'sku'          => $this->skuFor($p),
+            'supplier_ref' => $t['supplier_ref'],
         ] + $specs;
     }
 
@@ -368,17 +542,19 @@ final class FeedSync
      * Creează produsul INACTIV + descarcă imaginile (prima = cover, toate = galerie).
      * @return int id-ul produsului nou
      */
-    public function createProduct(array $f): int
+    public function createProduct(array $group): int
     {
-        $d = $this->shapeProduct($f);
+        $d = $this->shapeProduct($group);
         $imgs = [];
-        foreach ($f['images'] as $url) {
-            $base = strtolower(basename((string) parse_url($url, PHP_URL_PATH)));
-            if (str_starts_with($base, 'banner')) {
-                continue; // bannere „unbox video" etc., nu fotografii de produs
-            }
-            if ($file = $this->grab($url, 'motociclete', $f['id'])) {
-                $imgs[] = $file;
+        foreach ($group as $f) {
+            foreach ($f['images'] as $url) {
+                $base = strtolower(basename((string) parse_url($url, PHP_URL_PATH)));
+                if (str_starts_with($base, 'banner')) {
+                    continue; // bannere „unbox video" etc., nu fotografii de produs
+                }
+                if (($file = $this->grab($url, 'motociclete', $f['id'])) && !in_array($file, $imgs, true)) {
+                    $imgs[] = $file;
+                }
             }
         }
         $cover = null;
@@ -394,8 +570,9 @@ final class FeedSync
         }
         $pos = (int) $this->pdo->query("SELECT COALESCE(MAX(position), 0) + 1 FROM products WHERE brand = 'cfmoto'")->fetchColumn();
 
-        $cols = ['brand', 'category_id', 'name', 'slug', 'year', 'price', 'discount_pct', 'licence', 'cover_image',
-            'excerpt', 'description', 'specs_engine', 'specs_chassis', 'specs_dimensions', 'is_active', 'rabla_eligible', 'position', 'feed_id'];
+        $cols = ['brand', 'category_id', 'name', 'slug', 'year', 'price', 'discount_pct', 'variants_json', 'licence', 'cover_image',
+            'excerpt', 'description', 'specs_engine', 'specs_chassis', 'specs_dimensions', 'is_active', 'rabla_eligible', 'position',
+            'feed_ids', 'sku', 'supplier_ref'];
         $d['cover_image'] = $cover;
         $d['is_active'] = 0;
         $d['position'] = $pos;
