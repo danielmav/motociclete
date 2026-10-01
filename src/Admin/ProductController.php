@@ -231,6 +231,9 @@ final class ProductController extends BaseController
             // Produsul-motocicletă de pe BikerShop (tab OEM). Câmp ascuns pre-completat
             // → se păstrează la editări; setat de import sau de migrate_bs_models.php.
             'bs_product_id' => ((int) ($body['bs_product_id'] ?? 0)) ?: null,
+            // Rândul din feed-ul importatorului CFMOTO (ATVROM) — prețul se sincronizează
+            // zilnic din el (database/sync_cfmoto_feed.php). Gol -> NULL (nesincronizat).
+            'feed_id'      => ($brand === 'cfmoto' && preg_match('/\d+/', (string) ($body['feed_id'] ?? ''), $fm)) ? (int) $fm[0] : null,
         ];
         foreach (self::SPECS as $key => $col) {
             $data[$col] = $this->buildSpecTable(

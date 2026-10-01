@@ -38,6 +38,8 @@ return [
         // service (programare + cerere din garage) -> service@ (fallback la dealer).
         'dealer'    => $_ENV['MAIL_DEALER'] ?? ($_ENV['MAIL_FROM'] ?? 'info@motociclete.com.ro'),
         'service'   => $_ENV['MAIL_SERVICE'] ?? ($_ENV['MAIL_DEALER'] ?? 'service@motociclete.com.ro'),
+        // Notificările sincronizării CFMOTO (modele noi de activat) — database/sync_cfmoto_feed.php.
+        'feed_notify' => $_ENV['FEED_NOTIFY_EMAIL'] ?? ($_ENV['MAIL_DEALER'] ?? 'info@motociclete.com.ro'),
         'smtp_host' => $_ENV['SMTP_HOST'] ?? '',
         'smtp_port' => (int) ($_ENV['SMTP_PORT'] ?? 587),
         'smtp_user' => $_ENV['SMTP_USER'] ?? '',

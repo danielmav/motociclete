@@ -122,6 +122,13 @@
             {% if p.bs_product_id|default(0) %}Fitment BikerShop (piese OEM): legat de produsul #{{ p.bs_product_id }}.{% else %}Fitment BikerShop: nelegat. Rulează <code>migrate_bs_models.php</code> pentru maparea pe nume.{% endif %}
         </p>
         {% endif %}
+        {% if brand == 'cfmoto' %}
+        <div class="adm-grid2" style="margin-top:.8rem">
+            <label>ID feed ATVROM <span class="adm-help">Coloana ID din feed-ul importatorului. Cât timp e completat, prețul și reducerea se suprascriu în fiecare noapte din feed (editările manuale de preț se pierd). Gol = preț gestionat manual.</span>
+                <input type="text" name="feed_id" value="{{ p.feed_id|default('') }}" placeholder="ex. 252559" inputmode="numeric">
+            </label>
+        </div>
+        {% endif %}
     </div>
 
     <div class="adm-fieldset">
