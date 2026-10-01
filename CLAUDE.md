@@ -257,6 +257,7 @@ default `/dm-control`; citită în `config/settings.php` ca `admin.path`). NU ma
 
 - Toate query-urile = prepared statements. **Codul portalului NU scrie niciodată în BikerShop** la runtime (chiar dacă userul de DB are GRANT ALL); scrierile de mentenanță se fac doar din scripturi punctuale, cu backup prealabil.
 - **PDO native prepares (emulate=false): un placeholder numit NU se poate repeta.** `id_shop`/`id_lang` (int-uri din config, de încredere) sunt inline în SQL; doar inputul user rămâne bound. ⚠️ Helperele de repo `all()`/`one()` prind `Throwable` → întorc `[]`/`null`, deci un placeholder repetat (eroare `HY093`) apare ca **rezultat gol, fără eroare** (vezi bug-ul de căutare din garage). Pt. căutare multi-coloană generează placeholdere unice (ex. `:s{i}_{j}`).
+- PDO întoarce coloanele numerice ca STRING (BikerShop/MariaDB și prod) → `(int)` înainte de `===`/chei de array; altfel comparația pică tăcut.
 - Cumpărarea rămâne pe BikerShop: produsele fac link la `bikershop.ro/{id}-{slug}.html`; imagini `bikershop.ro/{id_image}-large_default/{slug}.jpg` (servite public, 200).
 - Prețuri BikerShop = **RON (Lei)** (moneda default a shopului, `PS_CURRENCY_DEFAULT=1`; EUR secundar la rate ~0.19). `ps_product_shop.price` e **fără TVA**; `Client::shapeProduct` aplică cota reală din `tax_rules_group` (de regulă 21%) → brut, afișat „Lei" cu 2 zecimale. Prețurile **motocicletelor** sunt în EUR (alt flux). Reducerile `specific_price` NU sunt citite (preț standard).
 - ⚠️ **Prețurile și starea activ/inactiv de pe BikerShop sunt guvernate de modulul `supplierpricing`** (sursa în `documente/supplierpricing/`, gitignored). NU scrie direct în `ps_product.price` / `ps_product_shop.price` / `active` — cronul le suprascrie la următoarea rulare.
@@ -284,16 +285,18 @@ elegant pentru fotografii (până vin imaginile reale).
 
 Rulează direct cu Laragon — fără build step. `composer install`, apoi vizitează
 `http://motociclete.test`. `/health` raportează `bikershop` + `catalog` + `news`.
-După editări `app.css`/`app.js`: bump `?v=N` în `layout.twig` (cache-bust).
+După editări `app.css`/`app.js`: bump `?v=N` în `layout.twig` (cache-bust). Admin: `admin.css`/`admin.js` au `?v=N` separat în `templates/admin/layout.twig`.
 **Loguri pe server:** PHP `~/logs/motociclete_com_ro.php.error.log` (nu are URL-ul!) → corelează timestamp-ul (UTC, +3h) cu access log-ul
 `~/access-logs/motociclete.com.ro.dualmotors.ro-ssl_log` (ora locală; rotit lunar în `~/logs/*-ssl_log-<Lună>-2026.gz`, `zcat`).
 `405 Method Not Allowed` în log = scanere care fac `POST /graphql`, `POST /stiri.php` etc. pe rute GET-only (catch-all `/{slug}`), NU un bug;
 `POST /autodiscover/autodiscover.xml → 400` nu trece prin Slim (răspunde serviciul autodiscover al cPanel la Outlook).
 Bash tool: `cd` relativ poate eșua („cwd reset") → folosește căi absolute în comenzi cu mai mulți pași.
 Editări de cod cu regex (`\b`, `\d`) → tool-ul Edit sau string-uri Python `r"""…"""`; string-urile normale Python strică escape-urile (`\b` = backspace).
+Editări multi-linie de cod → tool-urile Edit/Write, nu `python - <<'EOF'` în Bash (heredoc-ul cu `'''`/ghilimele tipografice dă „unexpected EOF"); dacă chiar trebuie script, scrie-l în `$TEMP/x.py` și rulează-l.
 `mysql.exe -N` pe Windows scoate `\r` la capăt de linie → `| tr -d '\r'` înainte să folosești valorile în `curl`/variabile (altfel `http=000`).
 **Auto-classifier-ul blochează comenzile ssh care combină** extragerea unei parole (`MYSQL_PWD=$(grep …)`) cu scrieri de fișiere/config pe server → împarte în comenzi separate (read-only vs. write); pentru fișiere modificate, `scp` din copia locală în loc de `printf >>` pe server.
 Valori din `.env`-ul de pe server în `ssh '…'`: quoting-ul (`\x27`) nu merge în `tr` → mai simplu citește datele din pagina live (`curl | grep`) sau rulează un `tmp_*.php` pe server cu `ea-php81` (și șterge-l).
+Scripturi temporare pe server: scrie `tmp_*.php` LOCAL și `scp`, apoi `ssh host 'php tmp.php; rm tmp.php'` — heredoc-ul în `ssh '…'` a rulat de două ori fără output.
 **Joburi lungi pe server prin ssh:** `ssh host 'nohup … &'` e blocat de auto-classifier → rulează comanda ssh în foreground cu `run_in_background` (timeout 600 s); când Bash tool taie ssh-ul, procesul PHP remote **continuă** (verificat) → scriptul trebuie să aibă lock file + log/rollback scris incremental, iar progresul se urmărește din log (`tail`), nu din output-ul ssh. `pgrep -f "<pattern>"` rulat prin `ssh host '…'` se potrivește și pe propriul shell → numără cu `-c` și scade 1 sau folosește un pattern cu binarul complet.
 Rapoartele CSV pentru client (ex. prețuri de verificat) se pun în `storage/yamaha_enrich/` (gitignored), nu în `documente/`.
 Screenshot: Chrome NU e pe PATH în Bash → cale completă
