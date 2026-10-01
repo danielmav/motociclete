@@ -17,6 +17,8 @@ declare(strict_types=1);
  *   --no-create          nu creează produse noi
  *   --no-deactivate      nu dezactivează nimic
  *   --force              trece peste plasa de siguranță (dezactivare > jumătate din produse)
+ *   --new-inactive       creează produsele noi INACTIVE (test/verificare în BO; rularea normală
+ *                        următoare le activează, fiind active pe portal)
  *   --url=URL            exportul portalului (implicit https://www.motociclete.com.ro/api/export/cfmoto)
  *   --token-file=PATH    fișierul cu EXPORT_TOKEN (implicit ~/.cfmoto_export_token, în afara docroot)
  *   --ps-root=PATH       rădăcina PrestaShop (implicit /home2/bikershop/public_html)
@@ -51,6 +53,7 @@ $opt = [
     'create'     => true,
     'deactivate' => true,
     'force'      => false,
+    'new_inactive' => false,
     'url'        => 'https://www.motociclete.com.ro/api/export/cfmoto',
     'token_file' => (getenv('HOME') ?: '/home2/bikershop') . '/.cfmoto_export_token',
     'ps_root'    => '/home2/bikershop/public_html',
@@ -64,6 +67,8 @@ foreach (array_slice($argv, 1) as $a) {
         $opt['deactivate'] = false;
     } elseif ($a === '--force') {
         $opt['force'] = true;
+    } elseif ($a === '--new-inactive') {
+        $opt['new_inactive'] = true;
     } elseif (str_starts_with($a, '--only=')) {
         $opt['only'] = strtolower(trim(substr($a, 7)));
     } elseif (str_starts_with($a, '--url=')) {
@@ -308,8 +313,10 @@ function rewrite_ref(string $current, int $special, int $rrp): ?string
 function bs_name(array $p): string
 {
     $name = trim((string) preg_replace('/\s+-\s+(20\d{2})\s*$/', ' $1', (string) $p['name']));
-    if (!empty($p['year']) && !preg_match('/\b20\d{2}\s*$/', $name)) {
-        $name .= ' ' . (int) $p['year'];
+    $year = !empty($p['year']) ? (int) $p['year']
+        : (preg_match('/-(20\d{2})$/', (string) $p['sku'], $m) ? (int) $m[1] : 0);  // anul din cod
+    if ($year && !preg_match('/\b20\d{2}\s*$/', $name)) {
+        $name .= ' ' . $year;
     }
     return $name;
 }
@@ -625,7 +632,7 @@ foreach ($portalActive as $sku => $p) {
         $prod->id_shop_default   = ID_SHOP;
         $prod->id_tax_rules_group = TAX_RULES_GROUP;
         $prod->price             = round($rrp / VAT_RATE, 6);
-        $prod->active            = 1;
+        $prod->active            = $opt['new_inactive'] ? 0 : 1;
         $prod->visibility        = 'both';
         $prod->condition         = 'new';
         $prod->show_price        = 1;
