@@ -121,6 +121,9 @@
         <p class="adm-muted" style="margin-top:.4rem;font-size:.85em">
             {% if p.bs_product_id|default(0) %}Fitment BikerShop (piese OEM): legat de produsul #{{ p.bs_product_id }}.{% else %}Fitment BikerShop: nelegat. Rulează <code>migrate_bs_models.php</code> pentru maparea pe nume.{% endif %}
         </p>
+        <label style="margin-top:.8rem;display:block">Cod BikerShop <span class="adm-help">Referința produsului de pe BikerShop (ex. mt-09-2026). Modelele ACTIVE cu cod se sincronizează noaptea pe BikerShop (preț, creare dacă lipsește; dezactivare când le scoți din ofertă). Gol = se completează cu slug-ul la salvare (motociclete/scutere/ATV); „-” = exclus din sincronizare.</span>
+            <input type="text" name="sku" value="{{ p.sku|default('') }}" placeholder="ex. mt-09-2026">
+        </label>
         {% endif %}
         {% if brand == 'cfmoto' %}
         <div class="adm-grid2" style="margin-top:.8rem">
@@ -198,21 +201,23 @@
     {% endfor %}
 
     <div class="adm-fieldset">
-        <span class="adm-fieldset__t">Prețuri variante <span class="adm-help">apare ca tabul „Preturi” doar la modelele cu mai multe variante (ex. putere/transmisie). Prețul = EUR cu TVA; se afișează EUR + RON (la curs). Gol = fără tab.</span></span>
+        <span class="adm-fieldset__t">Prețuri variante <span class="adm-help">apare ca tabul „Preturi” doar la modelele cu mai multe variante (ex. putere/transmisie). Prețul = EUR cu TVA; se afișează EUR + RON (la curs). Gol = fără tab. „Cod BikerShop” = referința produsului SEPARAT de pe BikerShop care ia prețul acestei variante (ex. mt-07-y-amt-2026); gol = varianta nu are produs propriu acolo.</span></span>
         <div class="adm-rows" id="variant-rows" data-rows style="margin-top:.6rem">
             {% for r in variantRows|default([]) %}
-                <div class="adm-row adm-row--3">
+                <div class="adm-row adm-row--4">
                     <input type="text" name="var_version[]" value="{{ r.version }}" placeholder="Versiune (ex. Maxima / 35kW A2)">
                     <input type="text" name="var_transmission[]" value="{{ r.transmission }}" placeholder="Transmisie (ex. Y-AMT)">
                     <input type="number" name="var_price[]" value="{{ r.price }}" placeholder="Preț EUR">
+                    <input type="text" name="var_bs_ref[]" value="{{ r.bs_ref }}" placeholder="Cod BikerShop (opțional)">
                     <button type="button" class="adm-row__del" data-row-del>×</button>
                 </div>
             {% endfor %}
             <template data-row-tpl>
-                <div class="adm-row adm-row--3">
+                <div class="adm-row adm-row--4">
                     <input type="text" name="var_version[]" placeholder="Versiune (ex. Maxima / 35kW A2)">
                     <input type="text" name="var_transmission[]" placeholder="Transmisie (ex. Y-AMT)">
                     <input type="number" name="var_price[]" placeholder="Preț EUR">
+                    <input type="text" name="var_bs_ref[]" placeholder="Cod BikerShop (opțional)">
                     <button type="button" class="adm-row__del" data-row-del>×</button>
                 </div>
             </template>

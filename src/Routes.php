@@ -41,9 +41,9 @@ return function (App $app, Twig $twig, array $container): void {
     $app->post('/api/lead/oferta',    $lead('oferta'));
     $app->post('/api/lead/test-ride', $lead('testRide'));
 
-    // --- Export catalog CFMOTO pt. sincronizarea BikerShop (token EXPORT_TOKEN) ---
-    $app->get('/api/export/cfmoto', function ($request, $response) use ($container) {
-        return (new \App\Controllers\ExportController($container))->cfmoto($request, $response);
+    // --- Export catalog moto (Yamaha + CFMOTO) pt. sincronizarea BikerShop (token EXPORT_TOKEN) ---
+    $app->get('/api/export/bikershop', function ($request, $response) use ($container) {
+        return (new \App\Controllers\ExportController($container))->bikershop($request, $response);
     });
 
     // Health check (handy while wiring things up).

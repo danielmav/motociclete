@@ -220,7 +220,8 @@ final class ProductController extends BaseController
             'variants_json' => $this->buildVariantsJson(
                 (array) ($body['var_version'] ?? []),
                 (array) ($body['var_transmission'] ?? []),
-                (array) ($body['var_price'] ?? [])
+                (array) ($body['var_price'] ?? []),
+                (array) ($body['var_bs_ref'] ?? [])
             ),
             'video'        => trim((string) ($body['video'] ?? '')) ?: null,
             'keywords'     => trim((string) ($body['keywords'] ?? '')),
@@ -238,6 +239,15 @@ final class ProductController extends BaseController
             'sku'          => trim((string) ($body['sku'] ?? '')) ?: null,
             'supplier_ref' => trim((string) ($body['supplier_ref'] ?? '')) ?: null,
         ];
+        // Yamaha: codul BikerShop implicit = slug-ul, doar pentru motociclete/scutere/ATV (fără mașini
+        // de golf); „-" = exclus explicit din sincronizarea BikerShop.
+        if ($brand === 'yamaha' && $data['sku'] === null && $data['category_id']) {
+            $cat = $this->repo()->categoryById((int) $data['category_id']);
+            $top = $cat && $cat['parent_id'] ? $this->repo()->categoryById((int) $cat['parent_id']) : $cat;
+            if ($cat && $top && in_array($top['slug'], ['motociclete', 'scutere', 'atvuri'], true) && $cat['slug'] !== 'masini-de-golf') {
+                $data['sku'] = $data['slug'];
+            }
+        }
         foreach (self::SPECS as $key => $col) {
             $data[$col] = $this->buildSpecTable(
                 (array) ($body['spec_' . $key . '_label'] ?? []),
@@ -484,13 +494,14 @@ final class ProductController extends BaseController
                 'version'      => (string) ($r['version'] ?? ''),
                 'transmission' => (string) ($r['transmission'] ?? ''),
                 'price'        => (int) ($r['price'] ?? 0),
+                'bs_ref'       => (string) ($r['bs_ref'] ?? ''),
             ];
         }
         return $out;
     }
 
     /** Build variants_json from the parallel editor arrays (empty -> ''). */
-    private function buildVariantsJson(array $versions, array $transmissions, array $prices): string
+    private function buildVariantsJson(array $versions, array $transmissions, array $prices, array $bsRefs = []): string
     {
         $rows = [];
         foreach ($versions as $i => $v) {
@@ -500,7 +511,13 @@ final class ProductController extends BaseController
             if ($version === '' && $trans === '' && $price === 0) {
                 continue;
             }
-            $rows[] = ['version' => $version, 'transmission' => $trans, 'price' => $price];
+            $row = ['version' => $version, 'transmission' => $trans, 'price' => $price];
+            // Produsul SEPARAT de pe BikerShop care ia prețul acestei variante (ex. mt-07-y-amt-2026).
+            $bsRef = trim((string) ($bsRefs[$i] ?? ''));
+            if ($bsRef !== '') {
+                $row['bs_ref'] = $bsRef;
+            }
+            $rows[] = $row;
         }
         return $rows === [] ? '' : (string) json_encode($rows, JSON_UNESCAPED_UNICODE);
     }

@@ -4,26 +4,29 @@
 declare(strict_types=1);
 
 /**
- * Sincronizează motocicletele CFMOTO de pe BikerShop (PrestaShop 9) cu portalul
- * motociclete.com.ro. Portalul = sursa de adevăr (lanț: feed ATVROM → portal, unde Daniel
- * verifică și activează → BikerShop). Legătura = `ps_product.reference` = `products.sku`.
+ * Sincronizează motocicletele/scuterele/ATV-urile Yamaha + CFMOTO de pe BikerShop (PrestaShop 9)
+ * cu portalul motociclete.com.ro. Portalul = sursa de adevăr (CFMOTO: feed ATVROM → portal, unde
+ * Daniel verifică și activează → BikerShop). Legătura = `ps_product.reference` = `products.sku`;
+ * variantele portalului cu „Cod BikerShop" (ex. Y-AMT) = produse separate aici (doar preț).
  *
  * RULEAZĂ PE SERVERUL BIKERSHOP (are nevoie de PrestaShop pe disc: clase + img/p/):
- *   /usr/local/bin/ea-php84 /home2/bikershop/public_html/tool/sync_cfmoto_bikershop.php [opțiuni]
+ *   /usr/local/bin/ea-php84 /home2/bikershop/public_html/tool/sync_moto_bikershop.php [opțiuni]
  *
  * Opțiuni:
  *   --apply              scrie efectiv (implicit = dry-run, doar raportează)
- *   --only=SKU           un singur produs (ex. cfmoto-450mt-2026)
+ *   --only=SKU           un singur cod (ex. cfmoto-450mt-2026, mt-09-2026)
  *   --no-create          nu creează produse noi
  *   --no-deactivate      nu dezactivează nimic
  *   --force              trece peste plasa de siguranță (dezactivare > jumătate din produse)
  *   --new-inactive       creează produsele noi INACTIVE (test/verificare în BO; rularea normală
  *                        următoare le activează, fiind active pe portal)
- *   --url=URL            exportul portalului (implicit https://www.motociclete.com.ro/api/export/cfmoto)
+ *   --brand=yamaha|cfmoto  doar un brand (prețuri/creare/dezactivare)
+ *   --url=URL            exportul portalului (implicit https://www.motociclete.com.ro/api/export/bikershop)
  *   --token-file=PATH    fișierul cu EXPORT_TOKEN (implicit ~/.cfmoto_export_token, în afara docroot)
  *   --ps-root=PATH       rădăcina PrestaShop (implicit /home2/bikershop/public_html)
  *
- * Ce face, pe produsele BikerShop cu producătorul CFMoto și referința `cfmoto-*`:
+ * Ce face, pe produsele BikerShop din categoria 810 (Motociclete, Scutere, ATV-uri) cu producătorul
+ * Yamaha (41) sau CFMoto (498):
  *   1. PREȚ  — produs ACTIV pe portal + existent pe BikerShop: rescrie câmpurile special|rrp din
  *              `ps_product_supplier.product_supplier_reference` (furnizorul 11, „stoc|special|rrp",
  *              stocul rămâne) = lei cu TVA, exact ca pe portal (EUR × curs BRD); ps_product(.shop)
@@ -35,7 +38,8 @@ declare(strict_types=1);
  *   3. VECHI — produs ACTIV pe BikerShop al cărui cod e INACTIV pe portal sau lipsește de acolo:
  *              active=0, visibility='none', redirect 301-category (ps_product ȘI ps_product_shop) +
  *              DELETE din ps_product_supplier (altfel supplierpricing îl reactivează).
- * Fiecare rulare --apply scrie log + rollback SQL în tool/logs/ (cfmoto-sync-*). Produsele create
+ * Modelele fără preț pe portal („la cerere") sunt sărite la preț și la creare (rămân active).
+ * Fiecare rulare --apply scrie log + rollback SQL în tool/logs/ (moto-sync-*). Produsele create
  * nu au rollback SQL — se șterg din BO dacă e cazul.
  */
 
@@ -54,7 +58,8 @@ $opt = [
     'deactivate' => true,
     'force'      => false,
     'new_inactive' => false,
-    'url'        => 'https://www.motociclete.com.ro/api/export/cfmoto',
+    'brand'      => null,
+    'url'        => 'https://www.motociclete.com.ro/api/export/bikershop',
     'token_file' => (getenv('HOME') ?: '/home2/bikershop') . '/.cfmoto_export_token',
     'ps_root'    => '/home2/bikershop/public_html',
 ];
@@ -70,7 +75,9 @@ foreach (array_slice($argv, 1) as $a) {
     } elseif ($a === '--new-inactive') {
         $opt['new_inactive'] = true;
     } elseif (str_starts_with($a, '--only=')) {
-        $opt['only'] = strtolower(trim(substr($a, 7)));
+        $opt['only'] = mb_strtolower(trim(substr($a, 7)));
+    } elseif (str_starts_with($a, '--brand=') && in_array(substr($a, 8), ['yamaha', 'cfmoto'], true)) {
+        $opt['brand'] = substr($a, 8);
     } elseif (str_starts_with($a, '--url=')) {
         $opt['url'] = substr($a, 6);
     } elseif (str_starts_with($a, '--token-file=')) {
@@ -88,13 +95,20 @@ foreach (array_slice($argv, 1) as $a) {
 // ---------------------------------------------------------------------------
 const ID_SHOP         = 1;
 const LANGS           = [1, 2];
-const MANUFACTURER    = 498;   // CFMoto
+const MANUFACTURERS   = ['yamaha' => 41, 'cfmoto' => 498];
 const SUPPLIER        = 11;    // „Import manual Motociclete"
 const TAX_RULES_GROUP = 1;
 const ATTR_GROUP_COLOR = 19;   // „Culoare"
 const CAT_ROOT        = 810;   // Motociclete, Scutere, ATV-uri
-const CAT_MOTO        = 818;   // Motociclete (implicită)
+const CAT_MOTO        = 818;   // Motociclete (implicită la CFMOTO)
+/** CFMOTO (categorii plate pe portal) → subcategoria din „Motociclete". */
 const CAT_BY_PORTAL   = ['sport' => 811, 'naked' => 812, 'heritage' => 813, 'touring-travel' => 816];
+/** Yamaha: categoria top a portalului → [părinte BikerShop, subcategorii]; implicită = subcategoria. */
+const CAT_YAMAHA = [
+    'motociclete' => [818, ['supersport' => 811, 'hyper-naked' => 812, 'sport-heritage' => 813, 'sport-touring' => 815, 'adventure' => 816, 'competitie' => 817]],
+    'scutere'     => [819, ['sport' => 823, 'urban-mobility' => 824]],
+    'atvuri'      => [820, ['utilitare' => 826, 'sport' => 828, 'recreational' => 829]],
+];
 const DEFAULT_STOCK   = 30;
 const VAT_RATE        = 1.21;  // = SUPPLIERPRICING_VAT_RATE (cronul face price = rrp / 1.21)
 const REDIRECT_TYPE   = '301-category';
@@ -116,9 +130,9 @@ $tmpDir  = $baseDir . '/tmp';
 @mkdir($tmpDir, 0775, true);
 
 $ts       = date('Ymd-His');
-$logFile  = $logDir . "/cfmoto-sync-{$ts}.log";
-$rbFile   = $logDir . "/rollback-cfmoto-sync-{$ts}.sql";
-$lockFile = $tmpDir . '/cfmoto-sync.lock';
+$logFile  = $logDir . "/moto-sync-{$ts}.log";
+$rbFile   = $logDir . "/rollback-moto-sync-{$ts}.sql";
+$lockFile = $tmpDir . '/moto-sync.lock';
 
 $lock = fopen($lockFile, 'c');
 if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
@@ -144,7 +158,7 @@ function rollback_flush(): void
         return;
     }
     if (!is_file($rbFile)) {
-        file_put_contents($rbFile, "-- Rollback sync_cfmoto_bikershop din " . date('c') . "\n-- (produsele CREATE nu sunt incluse — se șterg din BO)\n");
+        file_put_contents($rbFile, "-- Rollback sync_moto_bikershop din " . date('c') . "\n-- (produsele CREATE nu sunt incluse — se șterg din BO)\n");
     }
     file_put_contents($rbFile, implode("\n", $rollback) . "\n", FILE_APPEND);
     $rollback = [];
@@ -163,7 +177,7 @@ function http_get(string $url, int $timeout = 60, array $headers = []): ?string
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_TIMEOUT        => $timeout,
-            CURLOPT_HTTPHEADER     => array_merge(['User-Agent: Mozilla/5.0 (compatible; BikerShop cfmoto sync)'], $headers),
+            CURLOPT_HTTPHEADER     => array_merge(['User-Agent: Mozilla/5.0 (compatible; BikerShop moto sync)'], $headers),
         ]);
         $body = curl_exec($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
@@ -191,9 +205,27 @@ if (!is_array($export) || !isset($export['products']) || !is_array($export['prod
 }
 $portal = [];
 foreach ($export['products'] as $p) {
-    $sku = strtolower(trim((string) ($p['sku'] ?? '')));
+    if ($opt['brand'] && ($p['brand'] ?? '') !== $opt['brand']) {
+        continue;
+    }
+    $sku = mb_strtolower(trim((string) ($p['sku'] ?? '')));
     if ($sku !== '' && !isset($portal[$sku])) {
-        $portal[$sku] = $p;
+        $portal[$sku] = $p + ['is_variant' => false];
+    }
+}
+// Variantele cu produs propriu pe BikerShop (ex. Y-AMT): intrări doar-de-preț, active odată cu modelul.
+foreach ($export['products'] as $p) {
+    if ($opt['brand'] && ($p['brand'] ?? '') !== $opt['brand']) {
+        continue;
+    }
+    foreach ((array) ($p['variant_products'] ?? []) as $v) {
+        $sku = mb_strtolower(trim((string) ($v['sku'] ?? '')));
+        if ($sku !== '' && !isset($portal[$sku])) {
+            $portal[$sku] = [
+                'sku' => $sku, 'brand' => $p['brand'], 'active' => !empty($p['active']), 'is_variant' => true,
+                'name' => $p['name'] . ' — ' . $v['label'], 'special_ron' => (int) $v['special_ron'], 'rrp_ron' => (int) $v['rrp_ron'],
+            ];
+        }
     }
 }
 $portalActive = array_filter($portal, static fn ($p) => !empty($p['active']));
@@ -242,27 +274,29 @@ if ($idEmployee) {
     Context::getContext()->employee = new Employee($idEmployee);
 }
 
-logln(sprintf('sync_cfmoto_bikershop %s — PrestaShop %s, PHP %s, export %s (%d produse, %d active, curs %s)',
-    $opt['apply'] ? 'APPLY' : 'DRY-RUN', _PS_VERSION_, PHP_VERSION, (string) ($export['generated_at'] ?? '?'),
-    count($portal), count($portalActive), (string) ($export['rate'] ?? '?')));
+logln(sprintf('sync_moto_bikershop %s%s — PrestaShop %s, PHP %s, export %s (%d coduri, %d active, curs %s)',
+    $opt['apply'] ? 'APPLY' : 'DRY-RUN', $opt['brand'] ? ' [' . $opt['brand'] . ']' : '', _PS_VERSION_, PHP_VERSION,
+    (string) ($export['generated_at'] ?? '?'), count($portal), count($portalActive), json_encode($export['rates'] ?? [])));
 logln(str_repeat('─', 100));
 
 // ---------------------------------------------------------------------------
-// Produsele CFMOTO de pe BikerShop
+// Vehiculele Yamaha/CFMOTO de pe BikerShop = produsele din categoria 810 (rămân în ea și dezactivate)
 // ---------------------------------------------------------------------------
+$mans = $opt['brand'] ? [MANUFACTURERS[$opt['brand']]] : array_values(MANUFACTURERS);
 $rows = $db->executeS("
     SELECT p.id_product, p.reference, p.price, p.active, p.visibility, p.redirect_type, p.id_type_redirected,
-           ps.price AS shop_price, pl.name
-    FROM {$prefix}product p
+           p.id_manufacturer, ps.price AS shop_price, pl.name
+    FROM {$prefix}category_product cp
+    JOIN {$prefix}product p ON p.id_product = cp.id_product
     LEFT JOIN {$prefix}product_shop ps ON ps.id_product = p.id_product AND ps.id_shop = " . ID_SHOP . "
     LEFT JOIN {$prefix}product_lang pl ON pl.id_product = p.id_product AND pl.id_lang = 1 AND pl.id_shop = " . ID_SHOP . "
-    WHERE p.id_manufacturer = " . MANUFACTURER . " AND (p.reference LIKE 'cfmoto-%' OR p.reference LIKE 'cflite-%')
-    ORDER BY p.id_product") ?: [];
+    WHERE cp.id_category = " . CAT_ROOT . " AND p.id_manufacturer IN (" . implode(',', $mans) . ") AND p.reference <> ''
+    ORDER BY p.active, p.id_product") ?: [];
 $bs = [];
 foreach ($rows as $r) {
-    $bs[strtolower(trim((string) $r['reference']))] = $r;
+    $bs[mb_strtolower(trim((string) $r['reference']))] = $r; // la referințe duplicate câștigă produsul activ
 }
-logln(sprintf('BikerShop: %d motociclete CFMOTO (%d active)', count($bs), count(array_filter($bs, static fn ($r) => (int) $r['active'] === 1))));
+logln(sprintf('BikerShop: %d vehicule Yamaha/CFMOTO în categoria %d (%d active)', count($bs), CAT_ROOT, count(array_filter($bs, static fn ($r) => (int) $r['active'] === 1))));
 
 $redis = null;
 try {
@@ -316,16 +350,31 @@ function rewrite_ref(string $current, int $special, int $rrp): ?string
     return implode('|', $parts);
 }
 
-/** Numele pe BikerShop: „CFMOTO 450MT - 2026" → „CFMOTO 450MT 2026" (anul adăugat dacă lipsește). */
+/**
+ * Numele pe BikerShop, în formatul produselor existente: CFMOTO „CFMOTO 450MT 2026" (fără „ - "),
+ * Yamaha „Grizzly 700 EPS - 2024". Anul se adaugă dacă lipsește.
+ */
 function bs_name(array $p): string
 {
-    $name = trim((string) preg_replace('/\s+-\s+(20\d{2})\s*$/', ' $1', (string) $p['name']));
     $year = !empty($p['year']) ? (int) $p['year']
         : (preg_match('/-(20\d{2})$/', (string) $p['sku'], $m) ? (int) $m[1] : 0);  // anul din cod
-    if ($year && !preg_match('/\b20\d{2}\s*$/', $name)) {
-        $name .= ' ' . $year;
+    $base = trim((string) preg_replace('/\s*-?\s*20\d{2}\s*$/', '', (string) $p['name']));
+    if (!$year) {
+        return trim((string) $p['name']);
     }
-    return $name;
+    return $base . (($p['brand'] ?? '') === 'yamaha' ? ' - ' : ' ') . $year;
+}
+
+/** Categoriile BikerShop ale unui model nou: [toate, implicita]. */
+function bs_categories(array $p): array
+{
+    if (($p['brand'] ?? '') === 'yamaha') {
+        [$parent, $subs] = CAT_YAMAHA[$p['top'] ?? ''] ?? [null, []];
+        $sub = $subs[$p['category'] ?? ''] ?? null;
+        return [array_values(array_filter([CAT_ROOT, $parent, $sub])), $sub ?? $parent ?? CAT_ROOT];
+    }
+    $sub = CAT_BY_PORTAL[$p['category'] ?? ''] ?? null;
+    return [array_values(array_filter([CAT_ROOT, CAT_MOTO, $sub])), CAT_MOTO];
 }
 
 $counts = ['price' => 0, 'same' => 0, 'reactivated' => 0, 'created' => 0, 'deactivated' => 0, 'errors' => 0];
@@ -342,6 +391,9 @@ foreach ($portalActive as $sku => $p) {
         continue;
     }
     $id = (int) $b['id_product'];
+    if ((int) $p['special_ron'] <= 0) {
+        continue; // „la cerere" pe portal → prețul de pe BikerShop rămâne cum e
+    }
     $special = (int) $p['special_ron'];
     $rrp = max((int) $p['rrp_ron'], $special); // special > rrp invalidează produsul în supplierpricing
     $notes = [];
@@ -620,11 +672,20 @@ foreach ($portalActive as $sku => $p) {
     if (($opt['only'] && $opt['only'] !== $sku) || isset($bs[$sku])) {
         continue;
     }
+    if (!empty($p['is_variant'])) {
+        logln(sprintf('! variantă fără produs pe BikerShop: %s (%s) — nu se creează automat', $sku, $p['name']));
+        continue;
+    }
+    if ((int) $p['special_ron'] <= 0) {
+        logln(sprintf('· sărit (fără preț pe portal): %s %s', $sku, $p['name']));
+        continue;
+    }
     $name    = bs_name($p);
     $special = (int) $p['special_ron'];
     $rrp     = max((int) $p['rrp_ron'], $special);
     $colors  = colors_of($p);
-    $cat     = CAT_BY_PORTAL[$p['category']] ?? null;
+    [$cats, $catDefault] = bs_categories($p);
+    $cat     = implode('+', $cats);
     $imgUrls = array_values(array_unique(array_filter(array_merge(
         [$p['cover'] ?? null], array_column($colors, 'url'), (array) ($p['gallery'] ?? [])
     ))));
@@ -652,10 +713,10 @@ foreach ($portalActive as $sku => $p) {
         }
         $prod->description_short = array_fill_keys(LANGS, $short !== '' ? '<p>' . htmlspecialchars($short, ENT_QUOTES, 'UTF-8') . '</p>' : '');
         $prod->reference         = $sku;
-        $prod->id_manufacturer   = MANUFACTURER;
+        $prod->id_manufacturer   = MANUFACTURERS[$p['brand']] ?? MANUFACTURERS['cfmoto'];
         $prod->id_supplier       = SUPPLIER;
         $prod->supplier_reference = $colors ? '' : DEFAULT_STOCK . "|{$special}|{$rrp}";
-        $prod->id_category_default = CAT_MOTO;
+        $prod->id_category_default = $catDefault;
         $prod->id_shop_default   = ID_SHOP;
         $prod->id_tax_rules_group = TAX_RULES_GROUP;
         $prod->price             = round($rrp / VAT_RATE, 6);
@@ -672,7 +733,7 @@ foreach ($portalActive as $sku => $p) {
             throw new RuntimeException('Product::add');
         }
         $id = (int) $prod->id;
-        $prod->updateCategories(array_values(array_filter([CAT_ROOT, CAT_MOTO, $cat])));
+        $prod->updateCategories($cats);
 
         // imagini: cover, culori, galerie
         $imgIds = [];
