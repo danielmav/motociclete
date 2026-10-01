@@ -256,7 +256,7 @@ $rows = $db->executeS("
     FROM {$prefix}product p
     LEFT JOIN {$prefix}product_shop ps ON ps.id_product = p.id_product AND ps.id_shop = " . ID_SHOP . "
     LEFT JOIN {$prefix}product_lang pl ON pl.id_product = p.id_product AND pl.id_lang = 1 AND pl.id_shop = " . ID_SHOP . "
-    WHERE p.id_manufacturer = " . MANUFACTURER . " AND p.reference LIKE 'cfmoto-%'
+    WHERE p.id_manufacturer = " . MANUFACTURER . " AND (p.reference LIKE 'cfmoto-%' OR p.reference LIKE 'cflite-%')
     ORDER BY p.id_product") ?: [];
 $bs = [];
 foreach ($rows as $r) {

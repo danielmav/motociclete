@@ -86,9 +86,9 @@ echo 'Feed: ' . count($feed) . " motociclete CFMOTO/CFLITE noi\n";
 
 // Codurile de produs existente pe BikerShop (refolosite ca `sku`).
 $bs = new Client($db, $settings['db']['bikershop']);
-$bsRows = $bs->productsByReferencePrefix('cfmoto-');
+$bsRows = array_merge($bs->productsByReferencePrefix('cfmoto-'), $bs->productsByReferencePrefix('cflite-'));
 $sync->setBikershopRefs($bsRows);
-echo $bs->isAvailable() ? 'BikerShop: ' . count($bsRows) . " referințe cfmoto-*\n" : "AVERTISMENT: BikerShop indisponibil — codurile lipsă se generează (fără referința BikerShop)\n";
+echo $bs->isAvailable() ? 'BikerShop: ' . count($bsRows) . " referințe cfmoto-*/cflite-*\n" : "AVERTISMENT: BikerShop indisponibil — codurile lipsă se generează (fără referința BikerShop)\n";
 
 // --- legare automată ------------------------------------------------------------
 $products = $sync->products();
