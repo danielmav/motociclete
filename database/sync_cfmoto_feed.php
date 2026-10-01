@@ -112,13 +112,19 @@ $unlinked = array_filter($products, static fn ($p) => !$p['ids']);
 
 // --- coduri de produs lipsă ------------------------------------------------------
 $skus = 0;
+// Coduri unice: cele existente + cele atribuite acum (produsele active vin primele → păstrează codul curat).
+$used = array_flip(array_filter(array_map(static fn ($p) => strtolower(trim((string) $p['sku'])), $products)));
 foreach ($products as $p) {
     if (trim((string) $p['sku']) === '') {
         // Anul lipsă pe site (ex. „450SR ABS") → anul din rândul de feed legat.
         if (!$p['year'] && $p['ids'] && isset($feed[$p['ids'][0]])) {
             $p['year'] = $feed[$p['ids'][0]]['year'];
         }
-        $sku = $sync->skuFor($p);
+        $base = $sku = $sync->skuFor($p);
+        for ($n = 2; isset($used[strtolower($sku)]); $n++) {
+            $sku = $base . '-' . $n;
+        }
+        $used[strtolower($sku)] = true;
         echo sprintf("  cod: #%d %-40s → %s\n", $p['id'], mb_substr((string) $p['name'], 0, 40), $sku);
         $skus++;
         if ($apply) {
