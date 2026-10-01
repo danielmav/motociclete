@@ -235,6 +235,13 @@ Context::getContext()->shop = new Shop(ID_SHOP);
 $db     = Db::getInstance();
 $prefix = _DB_PREFIX_;
 
+// Mișcările de stoc (StockAvailable::setQuantity → StockMvt) cer un angajat în context; din CLI
+// nu există → primul SuperAdmin activ.
+$idEmployee = (int) $db->getValue("SELECT id_employee FROM {$prefix}employee WHERE active = 1 AND id_profile = 1 ORDER BY id_employee");
+if ($idEmployee) {
+    Context::getContext()->employee = new Employee($idEmployee);
+}
+
 logln(sprintf('sync_cfmoto_bikershop %s — PrestaShop %s, PHP %s, export %s (%d produse, %d active, curs %s)',
     $opt['apply'] ? 'APPLY' : 'DRY-RUN', _PS_VERSION_, PHP_VERSION, (string) ($export['generated_at'] ?? '?'),
     count($portal), count($portalActive), (string) ($export['rate'] ?? '?')));
@@ -541,6 +548,25 @@ function add_product_image(int $idProduct, string $url, bool $cover, string $leg
     return (int) $image->id;
 }
 
+/** Hex aproximativ din numele culorii (ultimul cuvânt recunoscut câștigă: „Nebula Black" → negru). */
+function color_hex(string $name): string
+{
+    $map = [
+        'black' => '#000000', 'negru' => '#000000', 'white' => '#ffffff', 'alb' => '#ffffff', 'ivory' => '#fffff0',
+        'grey' => '#808080', 'gray' => '#808080', 'gri' => '#808080', 'silver' => '#c0c0c0', 'titanium' => '#8a8d8f',
+        'blue' => '#1f5fbf', 'albastru' => '#1f5fbf', 'teal' => '#008080', 'cyan' => '#00bcd4',
+        'green' => '#2e8b57', 'verde' => '#2e8b57', 'lime' => '#9acd32', 'red' => '#e10600', 'rosu' => '#e10600',
+        'bordeaux' => '#800020', 'orange' => '#ff7f00', 'portocaliu' => '#ff7f00', 'yellow' => '#ffd700', 'galben' => '#ffd700',
+    ];
+    $hex = '#cccccc';
+    foreach (preg_split('/[^a-z]+/', strtolower(Tools::replaceAccentedChars($name))) ?: [] as $w) {
+        if (isset($map[$w])) {
+            $hex = $map[$w];
+        }
+    }
+    return $hex;
+}
+
 /** Id-ul atributului de culoare (grupul „Culoare"), creat dacă nu există. */
 function color_attribute(string $name, bool $apply): ?int
 {
@@ -555,7 +581,7 @@ function color_attribute(string $name, bool $apply): ?int
     $a = new $cls();
     $a->id_attribute_group = ATTR_GROUP_COLOR;
     $a->name = array_fill_keys(LANGS, mb_substr($name, 0, 128));
-    $a->color = '';
+    $a->color = color_hex($name); // grupul e de tip „color" → fără hex, frontul arată un pătrat gol
     $a->add();
     return (int) $a->id ?: null;
 }
@@ -614,6 +640,7 @@ foreach ($portalActive as $sku => $p) {
         continue;
     }
 
+    $id = 0;
     try {
         $prod = new Product();
         $prod->name              = array_fill_keys(LANGS, $name);
@@ -639,6 +666,7 @@ foreach ($portalActive as $sku => $p) {
         $prod->available_for_order = 1;
         $prod->out_of_stock      = 2;
         $prod->minimal_quantity  = 1;
+        $prod->low_stock_threshold = 0; // NULL strică editorul de combinații din BO (PS 9)
         $prod->product_type      = $colors ? 'combinations' : 'standard';
         if (!$prod->add()) {
             throw new RuntimeException('Product::add');
@@ -671,6 +699,7 @@ foreach ($portalActive as $sku => $p) {
             $comb->reference = $sku . '-' . slug($c['name']);
             $comb->price = 0;
             $comb->minimal_quantity = 1;
+            $comb->low_stock_threshold = 0;
             $comb->default_on = $first ? 1 : null;
             $comb->add();
             $comb->setAttributes([$attr]);
@@ -711,7 +740,17 @@ foreach ($portalActive as $sku => $p) {
         logln($line . " → #{$id}" . ($errs ? '  ⚠ ' . implode('; ', array_filter($errs)) : ''));
     } catch (Throwable $e) {
         $counts['errors']++;
-        logln($line . '  → EROARE ' . $e->getMessage());
+        // Fără produse pe jumătate create (fără furnizor/combinații): șterge-l, rularea următoare reia.
+        $cleanup = '';
+        if ($id) {
+            try {
+                (new Product($id))->delete();
+                $cleanup = " (produsul parțial #{$id} a fost șters)";
+            } catch (Throwable $e2) {
+                $cleanup = " (ATENȚIE: produsul parțial #{$id} NU s-a putut șterge: " . $e2->getMessage() . ')';
+            }
+        }
+        logln($line . '  → EROARE ' . $e->getMessage() . $cleanup);
     }
 }
 
