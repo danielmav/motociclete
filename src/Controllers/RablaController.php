@@ -16,15 +16,24 @@ use Slim\Views\Twig;
 final class RablaController
 {
     private Catalog $catalog;
+    private \App\Support\Settings $settings;
+    private string $base;
 
     /** @param array<string,mixed> $container */
     public function __construct(private Twig $twig, array $container)
     {
-        $this->catalog = $container['catalog'];
+        $this->catalog  = $container['catalog'];
+        $this->settings = $container['app_settings'];
+        $this->base     = (string) ($container['settings']['app']['base_path'] ?? '');
     }
 
     public function page(Request $request, Response $response): Response
     {
+        // Programul oprit din Setări → pagina nu mai e disponibilă (302: revine la reactivare).
+        if (!$this->settings->bool('rabla_home_section', false)) {
+            return $response->withHeader('Location', $this->base . '/')->withStatus(302);
+        }
+
         return $this->twig->render($response, 'catalog/rabla.twig', [
             'groups'         => $this->catalog->rablaEligibleGrouped(),
             'year'           => (int) date('Y'),

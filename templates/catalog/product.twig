@@ -86,7 +86,7 @@
                 {% if p.cat_name %}<span class="chip">{{ p.cat_name }}</span>{% endif %}
                 {% if p.year %}<span class="chip chip--ghost">{{ p.year }}</span>{% endif %}
                 {% if p.licence %}<span class="chip chip--permis">Permis {{ p.licence }}</span>{% endif %}
-                {% if p.rabla_eligible and rablaCfg and rablaCfg.page_html %}<button type="button" class="chip chip--rabla" data-modal-open="rabla">Eligibil programul RABLA</button>{% endif %}
+                {% if rabla_enabled and p.rabla_eligible and rablaCfg and rablaCfg.page_html %}<button type="button" class="chip chip--rabla" data-modal-open="rabla">Eligibil programul RABLA</button>{% endif %}
             </div>
 
             {% set brandRate = brand == 'cfmoto' ? currency.rate_cfmoto : (brand == 'yamaha' ? currency.rate_yamaha : currency.rate) %}
@@ -407,7 +407,7 @@
 {% endif %}
 
 {# Programul RABLA în modal — doar la produsele marcate „Eligibil programul RABLA". #}
-{% if p.rabla_eligible and rablaCfg and rablaCfg.page_html %}
+{% if rabla_enabled and p.rabla_eligible and rablaCfg and rablaCfg.page_html %}
 <div class="modal" data-modal="rabla" hidden>
     <div class="modal__overlay" data-modal-close></div>
     <div class="modal__dialog modal__dialog--wide" role="dialog" aria-modal="true" aria-labelledby="modal-title-rabla">

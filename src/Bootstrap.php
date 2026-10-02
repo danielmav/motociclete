@@ -118,6 +118,10 @@ final class Bootstrap
         // Site-wide pop-up announcement (admin-managed, within its date window).
         $twig->getEnvironment()->addGlobal('announcement', $container['announcements']->current());
 
+        // Programul RABLA activ (Setări → „Activează secțiunea…"): când e oprit dispar
+        // de pe tot situl chip-urile „Eligibil RABLA", butonul din meniu și secțiunea de pe home.
+        $twig->getEnvironment()->addGlobal('rabla_enabled', $appSettings->bool('rabla_home_section', false));
+
         // Footer contact data (admin-managed): socials, address, departments, legal pages.
         $twig->getEnvironment()->addGlobal('site', [
             'social' => [

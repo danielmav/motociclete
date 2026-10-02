@@ -24,6 +24,7 @@ final class SeoController
     private string $base;
     private string $appUrl;
     private string $adminPath;
+    private bool $rablaEnabled;
 
     /** @param array<string,mixed> $container */
     public function __construct(array $container)
@@ -35,6 +36,7 @@ final class SeoController
         $this->base      = (string) ($container['settings']['app']['base_path'] ?? '');
         $this->appUrl    = rtrim((string) ($container['settings']['app']['url'] ?? ''), '/');
         $this->adminPath = (string) ($container['settings']['admin']['path'] ?? '/dm-control');
+        $this->rablaEnabled = $container['app_settings']->bool('rabla_home_section', false);
     }
 
     /** GET /robots.txt */
@@ -62,8 +64,12 @@ final class SeoController
     {
         $entries = [];
         // Static, high-value pages.
-        foreach (['/', '/despre_dual_motors', '/service', '/accesorii', '/finantare', '/programul-rabla', '/garantia-legala', '/blog', '/evenimente'] as $p) {
+        foreach (['/', '/despre_dual_motors', '/service', '/accesorii', '/finantare', '/garantia-legala', '/blog', '/evenimente'] as $p) {
             $entries[] = ['path' => $p, 'lastmod' => null];
+        }
+        // Pagina RABLA există doar cât programul e activat din Setări.
+        if ($this->rablaEnabled) {
+            $entries[] = ['path' => '/programul-rabla', 'lastmod' => null];
         }
         // Catalog (categories then products), blog, events, legal pages.
         $entries = array_merge(

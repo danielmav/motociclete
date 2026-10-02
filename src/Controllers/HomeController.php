@@ -46,7 +46,8 @@ final class HomeController
         $accessories = $this->featuredAccessories(6);
 
         // Secțiunea „Modele eligibile programul RABLA" înlocuiește „Modele de pus în
-        // garaj" doar când e activată din admin ȘI există modele marcate eligibile.
+        // garaj" doar când e activată din admin ȘI există modele marcate eligibile;
+        // altfel: 8 modele aleatorii, cele cu promoție primele.
         $rablaGroups = $this->settings->bool('rabla_home_section', false)
             ? $this->catalog->rablaEligibleGrouped()
             : [];
@@ -55,7 +56,7 @@ final class HomeController
             'canonical_path'  => '/',
             'heroSlides'      => $this->hero->slides(),
             'brands'          => $this->brands(),
-            'models'          => $this->catalog->randomModels(8),
+            'models'          => $rablaGroups ? [] : $this->catalog->randomModels(8),
             'rablaGroups'     => $rablaGroups,
             'rablaYear'       => (int) date('Y'),
             'makes'           => $this->bikershop->makes(),
