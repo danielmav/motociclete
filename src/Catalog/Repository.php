@@ -255,7 +255,7 @@ final class Repository
 
     /**
      * Random models from the 2026 range for the home "garage" strip;
-     * models on promotion (discount or promo box) come first.
+     * discounted models come first.
      * Falls back to the newest models if the 2026 range is empty.
      * @return array<int,array<string,mixed>>
      */
@@ -267,7 +267,7 @@ final class Repository
                     c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
              " . self::PROD_JOIN . "
              WHERE p.is_active = 1 AND p.year = :year
-             ORDER BY ((p.price > 0 AND p.discount_pct > 0) OR (p.promo_html IS NOT NULL AND p.promo_html <> '')) DESC, RAND()
+             ORDER BY (p.price > 0 AND p.discount_pct > 0) DESC, RAND()
              LIMIT " . (int) $limit,
             [':year' => $year]
         );
@@ -749,8 +749,10 @@ final class Repository
             'price'        => (int) $r['price'],
             'old_price'    => $this->oldPrice($r),
             'discount'     => (int) round((float) $r['discount_pct']),
-            // promoție = preț redus SAU conținut în promo_html → ribon pe card
-            'promo'        => $this->oldPrice($r) !== null || !empty($r['has_promo']),
+            // promoție = DOAR preț redus (ribon „Promoție" + preț vechi tăiat + −X% pe card);
+            // promo_html = „Ofertă specială" (ribon cu alt text + casetă pe pagina produsului).
+            'promo'        => $this->oldPrice($r) !== null,
+            'offer'        => !empty($r['has_promo']),
             'licence'      => $r['licence'],
             'rabla'        => !empty($r['rabla_eligible']),
             'cat'          => ucfirst((string) ($r['sub_slug'] ?: $r['top_slug'])),

@@ -4,6 +4,7 @@
 {% block description %}{{ category.description ? (category.description|striptags|trim|slice(0, 155)) : ('Descoperă modelele ' ~ category.name ~ ' ' ~ brandLabel ~ ' la Dual Motors — prețuri, dotări și drive test.') }}{% endblock %}
 
 {% block content %}
+{% import 'partials/_model_card_v2.twig' as cards %}
 
 {% include 'partials/breadcrumb.twig' %}
 
@@ -70,7 +71,7 @@
                     <a class="card-moto" href="{{ base }}{{ m.url }}">
                         <div class="card-moto__media{{ m.image ? '' : ' media-ph' }}">
                             {% if m.year %}<span class="badge">{{ m.year }}</span>{% endif %}
-                            {% if m.promo %}<span class="ribbon-promo">Promoție</span>{% endif %}
+                            {% if m.promo %}<span class="ribbon-promo">Promoție</span>{% elseif m.offer %}<span class="ribbon-promo ribbon-promo--offer">Ofertă specială</span>{% endif %}
                             <label class="card-compare" data-cmp title="Adaugă la comparație">
                                 <input type="checkbox" data-cmp-cb value="{{ m.slug }}" data-name="{{ m.name }}">
                                 <span class="card-compare__txt">Compară</span>
@@ -90,14 +91,7 @@
                             </div>
                             <h2 class="card-moto__name">{{ m.name }}</h2>
                             <div class="card-moto__foot">
-                                {% if m.price %}
-                                    {% set pr = prices(m.price, m.brand) %}
-                                    <span class="price">
-                                        <small>de la</small>
-                                        {{ pr.eur }}
-                                        <span class="price__ron">{{ pr.ron }}{% if m.old_price %} · <s>{{ prices(m.old_price, m.brand).eur }}</s>{% endif %}</span>
-                                    </span>
-                                {% endif %}
+                                {{ cards.price(m) }}
                                 <span class="link-arrow link-arrow--sm">Detalii <span aria-hidden="true">→</span></span>
                             </div>
                         </div>

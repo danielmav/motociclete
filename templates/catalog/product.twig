@@ -225,7 +225,7 @@
                 {% endif %}
                 {% if p.promo_html|trim is not empty %}
                     <div class="promo-box">
-                        <h3 class="promo-box__title">Nu rata această promoție</h3>
+                        <h3 class="promo-box__title">Ofertă specială</h3>
                         <div class="promo-box__body">{{ p.promo_html|raw }}</div>
                     </div>
                 {% endif %}
@@ -361,12 +361,13 @@
                 <header class="section__head">
                     <div><span class="kicker">Vezi și</span><h2 class="section__title">Modele similare</h2></div>
                 </header>
+                {% import 'partials/_model_card_v2.twig' as cards %}
                 <div class="grid grid--models">
                     {% for m in related %}
                         <a class="card-moto" href="{{ base }}{{ m.url }}">
                             <div class="card-moto__media{{ m.image ? '' : ' media-ph' }}">
                                 {% if m.year %}<span class="badge">{{ m.year }}</span>{% endif %}
-                                {% if m.promo %}<span class="ribbon-promo">Promoție</span>{% endif %}
+                                {% if m.promo %}<span class="ribbon-promo">Promoție</span>{% elseif m.offer %}<span class="ribbon-promo ribbon-promo--offer">Ofertă specială</span>{% endif %}
                                 {% if m.image %}
                                     <img src="{{ base }}{{ m.image }}" alt="{{ m.name }}" loading="lazy" width="900" height="600"
                                          onerror="this.closest('.card-moto__media').classList.add('media-ph');this.remove()">
@@ -375,10 +376,7 @@
                             <div class="card-moto__body">
                                 <h3 class="card-moto__name">{{ m.name }}</h3>
                                 <div class="card-moto__foot">
-                                    {% if m.price %}
-                                        {% set rp = prices(m.price, m.brand) %}
-                                        <span class="price"><small>de la</small> {{ rp.eur }}<span class="price__ron">{{ rp.ron }}</span></span>
-                                    {% endif %}
+                                    {{ cards.price(m) }}
                                     <span class="link-arrow link-arrow--sm">Detalii <span aria-hidden="true">→</span></span>
                                 </div>
                             </div>
