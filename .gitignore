@@ -35,3 +35,4 @@ package-lock.json
 # Artefacte de rulare ale scripturilor bikershop (rapoarte CSV, loguri, rollback, lock)
 /database/bikershop/logs/
 /database/bikershop/tmp/
+storage/nos/
