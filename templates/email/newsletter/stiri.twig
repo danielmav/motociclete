@@ -1,0 +1,33 @@
+{% extends '_base.twig' %}
+{% import '_macros.twig' as ui %}
+
+{% block body %}
+<tr><td class="pad" style="padding:8px 32px 16px"><h1 class="h1" style="margin:0;font-size:28px;line-height:1.25;color:#231f1e;text-align:center">{{ c.news.title_html|raw }}</h1></td></tr>
+<tr><td><a href="{{ utm(c.news.link, 'stire-imagine') }}"><img src="{{ c.news.image }}" width="600" alt="" style="display:block;width:100%;height:auto"></a></td></tr>
+<tr><td class="pad" style="padding:20px 32px 6px">{{ c.news.body_html|raw }}</td></tr>
+<tr><td style="padding:6px 32px 28px">{{ ui.button(utm(c.news.link, 'stire-buton'), c.news.button) }}</td></tr>
+
+{% for m in c.models %}
+{% set url = utm(m.url, 'model-' ~ loop.index) %}
+<tr><td style="padding:0 16px 16px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;border-radius:8px"><tr>
+<td class="col" width="50%" valign="middle" style="padding:16px"><a href="{{ url }}"><img src="{{ m.image }}" width="252" alt="{{ m.name }}" style="display:block;width:100%;height:auto;border-radius:8px"></a></td>
+<td class="col" width="50%" valign="middle" style="padding:16px">
+<h2 style="margin:0 0 6px;font-size:22px;line-height:1.25;color:#231f1e">{{ m.name }}</h2>
+<p style="margin:0 0 10px;line-height:1.4">{{ ui.price(m.price, m.price_old) }}</p>
+<p style="margin:0 0 14px;font-size:14px;line-height:1.5">{{ m.desc }}</p>
+{{ ui.button(url, 'Detalii') }}
+</td>
+</tr></table></td></tr>
+{% endfor %}
+
+<tr><td class="pad" align="center" style="padding:16px 32px 8px"><h2 style="margin:0;font-size:20px;line-height:1.3;color:#231f1e">Recomandările noastre de pe <a href="{{ utm('https://bikershop.ro/', 'titlu-produse') }}" style="color:#e3000f;text-decoration:none">www.bikershop.ro</a></h2></td></tr>
+{% for row in c.products|batch(3) %}
+<tr><td style="padding:0 8px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+{% for p in row %}
+<td class="col" width="33%" valign="top" align="center" style="padding:12px 8px">{{ ui.product(p, utm(p.url, 'produs-' ~ (loop.parent.loop.index0 * 3 + loop.index)), 178) }}</td>
+{% endfor %}
+</tr></table></td></tr>
+{% endfor %}
+
+{% include '_fixed.twig' %}
+{% endblock %}

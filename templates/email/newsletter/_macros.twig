@@ -1,0 +1,17 @@
+{# Elemente comune ale emailurilor de newsletter. Macro-urile nu văd variabilele
+   apelantului: primesc totul ca argumente (funcția utm() e disponibilă). #}
+
+{% macro button(url, label) %}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto"><tr><td style="background:#e3000f;border-radius:8px"><a href="{{ url }}" style="display:inline-block;padding:12px 28px;color:#ffffff;font-family:Ubuntu,Arial,sans-serif;font-size:16px;font-weight:700;text-decoration:none">{{ label }}</a></td></tr></table>
+{% endmacro %}
+
+{% macro price(now, old, pct) %}
+{% if old %}<span style="color:#858588;font-size:14px;text-decoration:line-through">{{ old }}</span>{% if pct %} <span style="color:#e3000f;font-size:13px;font-weight:700">−{{ pct }}%</span>{% endif %}<br>{% endif %}<strong style="color:#e3000f;font-size:18px">{{ now }}</strong>
+{% endmacro %}
+
+{% macro product(p, url, imgWidth) %}
+<a href="{{ url }}" style="text-decoration:none"><img src="{{ p.image }}" width="{{ imgWidth }}" alt="{{ p.name }}" style="display:block;width:100%;max-width:{{ imgWidth }}px;height:auto;margin:0 auto;border:0;border-radius:8px"></a>
+<p style="margin:10px 0 6px;font-size:14px;line-height:1.35;color:#231f1e;font-weight:700"><a href="{{ url }}" style="color:#231f1e;text-decoration:none">{{ p.name }}</a></p>
+<p style="margin:0 0 10px;line-height:1.4">{{ _self.price(p.price, p.price_old, p.pct) }}</p>
+<p style="margin:0"><a href="{{ url }}" style="color:#e3000f;font-size:14px;font-weight:700">Detalii</a></p>
+{% endmacro %}

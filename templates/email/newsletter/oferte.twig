@@ -1,0 +1,23 @@
+{% extends '_base.twig' %}
+{% import '_macros.twig' as ui %}
+
+{% block body %}
+<tr><td class="pad" style="padding:8px 32px 12px"><h1 class="h1" style="margin:0;font-size:28px;line-height:1.25;color:#231f1e;text-align:center">{{ c.news.title_html|raw }}</h1></td></tr>
+{% if c.news.image %}
+<tr><td><a href="{{ utm(c.news.link, 'intro-imagine') }}"><img src="{{ c.news.image }}" width="600" alt="" style="display:block;width:100%;height:auto"></a></td></tr>
+{% endif %}
+{% if c.news.body_html %}
+<tr><td class="pad" style="padding:16px 32px 4px;text-align:center">{{ c.news.body_html|raw }}</td></tr>
+{% endif %}
+
+{% for row in c.products|batch(2) %}
+<tr><td style="padding:0 8px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+{% for p in row %}
+<td class="col" width="50%" valign="top" align="center" style="padding:14px 8px">{{ ui.product(p, utm(p.url, 'produs-' ~ (loop.parent.loop.index0 * 2 + loop.index)), 268) }}</td>
+{% endfor %}
+{% if row|length == 1 %}<td class="col" width="50%" style="padding:14px 8px">&nbsp;</td>{% endif %}
+</tr></table></td></tr>
+{% endfor %}
+
+<tr><td style="padding:16px 32px 8px">{{ ui.button(utm(c.news.link, 'buton-magazin'), c.news.button) }}</td></tr>
+{% endblock %}

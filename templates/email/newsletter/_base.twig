@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<title>{{ c.subject }}</title>
+<style>
+body { margin:0; padding:0; background:#f5f5f5; }
+img { border:0; }
+p { margin:0 0 14px; }
+@media (max-width:620px) {
+  .col { display:block !important; width:100% !important; box-sizing:border-box; }
+  .pad { padding-left:16px !important; padding-right:16px !important; }
+  .nav a { display:inline-block !important; padding:4px 6px !important; }
+  .h1 { font-size:24px !important; }
+}
+</style>
+</head>
+<body style="margin:0;padding:0;background:#f5f5f5">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;line-height:1px;color:#f5f5f5">{{ c.preheader }}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5"><tr><td align="center" style="padding:16px 8px">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:#ffffff;border-radius:8px;font-family:Ubuntu,Arial,sans-serif;font-size:16px;line-height:1.5;color:#414141">
+<tr><td align="center" style="padding:10px 16px 0;font-size:12px"><a href="%%VIEW_URL%%" style="color:#858588">Vezi în browser</a></td></tr>
+<tr><td align="center" style="padding:12px 24px"><a href="{{ utm(site ~ '/', 'antet-logo') }}"><img src="{{ img }}/logo.png" width="180" alt="Dual Motors" style="display:block;width:180px;height:auto;margin:0 auto"></a></td></tr>
+<tr><td class="nav" align="center" style="padding:0 12px 16px;font-size:13px;line-height:1.9">
+{% for n in nav %}<a href="{{ utm(n.url, 'antet-' ~ loop.index) }}" style="color:#414141;font-weight:700;text-decoration:none;padding:0 6px;white-space:nowrap">{{ n.label }}</a> {% endfor %}
+</td></tr>
+{% block body %}{% endblock %}
+<tr><td style="padding:24px 16px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#231f1e;border-radius:8px"><tr><td class="pad" align="center" style="padding:24px 32px;color:#ffffff;font-size:13px;line-height:1.6">
+<img src="{{ img }}/logo.png" width="140" alt="Dual Motors" style="display:block;width:140px;height:auto;margin:0 auto 12px">
+<strong>Dual Tours SRL</strong><br>
+Dealer autorizat Yamaha și CFMOTO<br>
+{% if brand.address %}Showroom: {{ brand.address }}<br>{% endif %}
+{% if brand.schedule %}{{ brand.schedule }}<br>{% endif %}
+{% for d in brand.departments %}{% if d.phone %}{{ d.label }}: <a href="tel:{{ d.phone|replace({' ': ''}) }}" style="color:#ffffff;font-weight:700;text-decoration:none">{{ d.phone }}</a>{% if not loop.last %} · {% endif %}{% endif %}{% endfor %}
+</td></tr></table></td></tr>
+<tr><td class="pad" align="center" style="padding:16px 32px 24px;font-size:12px;line-height:1.6;color:#858588">
+<!--nl:personal-->Acest mesaj a fost trimis către %%EMAIL%%, pentru că ești abonat la newsletterul Dual Motors.<br>
+<a href="%%UNSUB_URL%%" style="color:#858588">Dezabonare</a> · <a href="%%PREFS_URL%%" style="color:#858588">Preferințe</a><br><!--/nl:personal-->
+© {{ year }} Dual Tours SRL · <a href="{{ utm(site ~ '/', 'footer') }}" style="color:#858588">motociclete.com.ro</a> · <a href="{{ utm('https://bikershop.ro/', 'footer') }}" style="color:#858588">bikershop.ro</a>
+</td></tr>
+</table>
+</td></tr></table>
+</body>
+</html>

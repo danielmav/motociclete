@@ -1,0 +1,19 @@
+{# Blocurile fixe ale newsletterului de știri (preluate din mesajele trimise până acum).
+   Un șablon inclus nu vede macro-urile importate de părinte, deci le importă el însuși. #}
+{% import '_macros.twig' as ui %}
+<tr><td class="pad" style="padding:28px 32px 8px">
+<h2 style="margin:0 0 10px;font-size:22px;line-height:1.3;color:#e3000f">Nou!</h2>
+<p style="margin:0 0 8px;font-weight:700;color:#231f1e">Pe BikerShop găsiți desenele tehnice ale tuturor pieselor pentru Yamaha și CFMOTO.</p>
+<p style="margin:0">Desenele la dimensiune completă oferă detalii despre fiecare piesă, ajutându-vă să identificați și să comandați piesele corecte de care aveți nevoie.</p>
+</td></tr>
+<tr><td style="padding:8px 16px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td class="col" width="50%" valign="top" style="padding:8px"><a href="{{ utm('https://bikershop.ro/content/11-piese-yamaha', 'desene-yamaha') }}"><img src="{{ img }}/desene-yamaha.jpg" width="268" alt="Desene tehnice piese Yamaha" style="display:block;width:100%;height:auto;border-radius:8px"></a></td>
+<td class="col" width="50%" valign="top" style="padding:8px"><a href="{{ utm('https://bikershop.ro/content/14-piese-cfmoto', 'desene-cfmoto') }}"><img src="{{ img }}/desene-cfmoto.jpg" width="268" alt="Desene tehnice piese CFMOTO" style="display:block;width:100%;height:auto;border-radius:8px"></a></td>
+</tr></table></td></tr>
+<tr><td class="pad" style="padding:28px 32px 8px">
+<h2 style="margin:0 0 10px;font-size:22px;line-height:1.3;color:#231f1e">23 ani de Dual Motors: din culisele unui sport intitulat business moto</h2>
+<p>Faptele vorbesc de la sine. 23 ani de excelență sună prea pretențios și ne place să credem că ceea ce facem noi este mai mult decât un simplu business. Este un stil de viață. Așa că preferăm să folosim termeni precum aventură, socializare, căutare, risc, satisfacție, iar lista rămâne deschisă.</p>
+<p style="margin:0">„Firma a fost înființată în 1997, dar business-ul efectiv a pornit în 2003, când am deschis în Bulevardul Ghencea, la parterul unui bloc, un magazin de 100 metri pătrați”, își aduce aminte Ciprian Popescu.</p>
+</td></tr>
+<tr><td style="padding:16px 16px 0"><a href="{{ utm(site ~ '/despre_dual_motors', '23-ani') }}"><img src="{{ img }}/23-ani.jpg" width="568" alt="Dual Motors" style="display:block;width:100%;height:auto;border-radius:8px"></a></td></tr>
+<tr><td style="padding:16px 32px 0">{{ ui.button(utm(site ~ '/despre_dual_motors', '23-ani'), 'Povestea noastră') }}</td></tr>
