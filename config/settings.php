@@ -47,6 +47,19 @@ return [
         'smtp_secure' => $_ENV['SMTP_SECURE'] ?? 'tls', // tls|ssl|''
     ],
 
+    // Newsletter propriu. Până la configurarea releului (NL_SMTP_*), trimiterea de test
+    // folosește SMTP-ul sitului; expeditorul final este noutati@news.motociclete.com.ro.
+    'newsletter' => [
+        'smtp_host'   => $_ENV['NL_SMTP_HOST'] ?? ($_ENV['SMTP_HOST'] ?? ''),
+        'smtp_port'   => (int) ($_ENV['NL_SMTP_PORT'] ?? ($_ENV['SMTP_PORT'] ?? 587)),
+        'smtp_user'   => $_ENV['NL_SMTP_USER'] ?? ($_ENV['SMTP_USER'] ?? ''),
+        'smtp_pass'   => $_ENV['NL_SMTP_PASS'] ?? ($_ENV['SMTP_PASS'] ?? ''),
+        'smtp_secure' => $_ENV['NL_SMTP_SECURE'] ?? ($_ENV['SMTP_SECURE'] ?? 'tls'),
+        'from'        => $_ENV['NL_FROM'] ?? ($_ENV['MAIL_FROM'] ?? 'noreply@motociclete.com.ro'),
+        'from_name'   => $_ENV['NL_FROM_NAME'] ?? 'Dual Motors',
+        'reply_to'    => $_ENV['NL_REPLY_TO'] ?? ($_ENV['MAIL_DEALER'] ?? 'info@motociclete.com.ro'),
+    ],
+
     'twig' => [
         'templates' => dirname(__DIR__) . '/templates',
         // File cache only when explicitly enabled (avoids write-permission issues on shared hosting).
