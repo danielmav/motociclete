@@ -15,6 +15,8 @@ declare(strict_types=1);
  *   C:/laragon/bin/php/php-8.1.10-Win32-vs16-x64/php.exe database/retention.php [--apply]
  *
  * NU atinge `clienti` / `service_requests` (bază legală: contract).
+ * Newsletter: șterge abonații neconfirmați după 30 de zile și golește IP-ul de la
+ * abonare; adresele dezabonate/respinse se PĂSTREAZĂ (lista de excluderi).
  */
 
 use App\Database;
@@ -29,6 +31,7 @@ const IP_DAYS       = 30;   // anonimizare IP (Stage A)
 const PII_DAYS      = 365;  // anonimizare restul PII (Stage B)
 const EMAILLOG_DAYS = 365;  // ștergere email_log
 const OTP_DAYS      = 7;    // ștergere coduri OTP
+const NL_PENDING_DAYS = 30; // ștergere abonați newsletter neconfirmați
 
 $apply = in_array('--apply', $argv, true);
 $pdo   = (new Database($settings['db']))->local();
@@ -97,6 +100,28 @@ $op(
     'client_otp delete (' . OTP_DAYS . 'z)',
     'SELECT COUNT(*) FROM client_otp WHERE created_at < (NOW() - INTERVAL ' . OTP_DAYS . ' DAY)',
     'DELETE FROM client_otp WHERE created_at < (NOW() - INTERVAL ' . OTP_DAYS . ' DAY)'
+);
+
+// 5. newsletter — abonați care n-au confirmat abonarea (30 zile). Nu au abonamente
+//    (se creează abia la confirmare), dar ștergem defensiv și eventualele rânduri orfane.
+$op(
+    'nl_subscriptions orfane pending (' . NL_PENDING_DAYS . 'z)',
+    "SELECT COUNT(*) FROM nl_subscriptions s JOIN nl_subscribers u ON u.id = s.subscriber_id
+     WHERE u.status = 'pending' AND u.created_at < (NOW() - INTERVAL " . NL_PENDING_DAYS . ' DAY)',
+    "DELETE s FROM nl_subscriptions s JOIN nl_subscribers u ON u.id = s.subscriber_id
+     WHERE u.status = 'pending' AND u.created_at < (NOW() - INTERVAL " . NL_PENDING_DAYS . ' DAY)'
+);
+$op(
+    'nl_subscribers pending delete (' . NL_PENDING_DAYS . 'z)',
+    "SELECT COUNT(*) FROM nl_subscribers WHERE status = 'pending' AND created_at < (NOW() - INTERVAL " . NL_PENDING_DAYS . ' DAY)',
+    "DELETE FROM nl_subscribers WHERE status = 'pending' AND created_at < (NOW() - INTERVAL " . NL_PENDING_DAYS . ' DAY)'
+);
+
+// newsletter — IP-ul de la abonare (30 zile)
+$op(
+    'nl_subscribers IP (' . IP_DAYS . 'z)',
+    'SELECT COUNT(*) FROM nl_subscribers WHERE created_at < (NOW() - INTERVAL ' . IP_DAYS . ' DAY) AND signup_ip IS NOT NULL',
+    'UPDATE nl_subscribers SET signup_ip = NULL WHERE created_at < (NOW() - INTERVAL ' . IP_DAYS . ' DAY) AND signup_ip IS NOT NULL'
 );
 
 if ($errors) {
