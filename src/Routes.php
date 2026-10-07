@@ -181,6 +181,13 @@ return function (App $app, Twig $twig, array $container): void {
     $app->post($adminBase . '/newsletter/abonati/adauga',                  $adminCtl('SubscriberController', 'add'));
     $app->post($adminBase . '/newsletter/abonati/sync',                    $adminCtl('SubscriberController', 'sync'));
     $app->post($adminBase . '/newsletter/abonati/{id:[0-9]+}/dezabonare',  $adminCtl('SubscriberController', 'unsubscribe'));
+    // Newsletter — campanii (compunere, previzualizare, test)
+    $app->get($adminBase . '/newsletter/campanii',                         $adminCtl('CampaignController', 'index'));
+    $app->get($adminBase . '/newsletter/campanii/{id:[0-9]+}',             $adminCtl('CampaignController', 'form'));
+    $app->post($adminBase . '/newsletter/campanii/{id:[0-9]+}',            $adminCtl('CampaignController', 'save'));
+    $app->get($adminBase . '/newsletter/campanii/{id:[0-9]+}/preview',     $adminCtl('CampaignController', 'preview'));
+    $app->post($adminBase . '/newsletter/campanii/{id:[0-9]+}/test',       $adminCtl('CampaignController', 'test'));
+    $app->post($adminBase . '/newsletter/campanii/{id:[0-9]+}/delete',     $adminCtl('CampaignController', 'delete'));
     // Finanțare — config UniCredit + pagina /finantare
     $app->get($adminBase . '/finantare',                     $adminCtl('FinanceController', 'index'));
     $app->post($adminBase . '/finantare',                    $adminCtl('FinanceController', 'save'));
@@ -317,6 +324,7 @@ return function (App $app, Twig $twig, array $container): void {
     $app->post('/newsletter/confirmare/{token:[a-f0-9]{32}}', $nl('confirm'));
     $app->get('/newsletter/dezabonare/{token:[a-f0-9]{32}}', $nl('prefs'));
     $app->post('/newsletter/dezabonare/{token:[a-f0-9]{32}}', $nl('prefsSave'));
+    $app->get('/newsletter/c/{id:[0-9]+}-{key:[a-f0-9]{16}}', $nl('view'));
 
 
     // --- Catalog (Yamaha + CFMOTO), backed by the local DB ---

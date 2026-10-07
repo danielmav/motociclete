@@ -1,0 +1,42 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'newsletter' %}
+{% block title %}Campanii newsletter{% endblock %}
+{% block actions %}
+    <a class="adm-btn" href="{{ admin_base }}/newsletter/abonati">Abonați</a>
+    <a class="adm-btn" href="{{ admin_base }}/newsletter">Generator Brevo</a>
+    <a class="adm-btn adm-btn--primary" href="{{ admin_base }}/newsletter/campanii/0">+ Campanie nouă</a>
+{% endblock %}
+
+{% block content %}
+    {% if msg %}<div class="adm-flash adm-flash--ok">{{ msg }}</div>{% endif %}
+    {% if err %}<div class="adm-flash adm-flash--err">{{ err }}</div>{% endif %}
+
+    {% set status_names = {draft: 'ciornă', queued: 'în coadă', sending: 'se trimite', paused: 'în pauză', sent: 'trimisă'} %}
+    <p class="adm-muted" style="margin-bottom:1rem">O campanie se compune și se salvează ca ciornă; o poți previzualiza și trimite ca test. Trimiterea către listă se adaugă într-o etapă următoare.</p>
+    <table class="adm-table">
+        <thead><tr><th>Subiect</th><th>Listă</th><th>Tip</th><th>Stare</th><th>Modificată</th><th></th></tr></thead>
+        <tbody>
+        {% for c in campaigns %}
+            <tr>
+                <td><strong>{{ c.subject ?: '(fără subiect)' }}</strong></td>
+                <td class="adm-muted">{{ lists[c.list_key] ?? c.list_key }}</td>
+                <td class="adm-muted">{{ c.type == 'oferte' ? 'oferte' : 'știri' }}</td>
+                <td>{% if c.status == 'draft' %}<span class="adm-badge adm-badge--off">ciornă</span>{% else %}<span class="adm-badge adm-badge--on">{{ status_names[c.status] ?? c.status }}</span>{% endif %}</td>
+                <td class="adm-muted">{{ (c.updated_at ?: c.created_at)|date('d.m.Y H:i') }}</td>
+                <td style="white-space:nowrap">
+                    <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/newsletter/campanii/{{ c.id }}">{{ c.status == 'draft' ? 'Editează' : 'Vezi' }}</a>
+                    {% if c.has_html %}<a class="adm-btn adm-btn--sm" href="{{ site_url }}/newsletter/c/{{ c.id }}-{{ c.view_key }}" target="_blank" rel="noopener">Pagina publică</a>{% endif %}
+                    {% if c.status == 'draft' %}
+                    <form method="post" action="{{ admin_base }}/newsletter/campanii/{{ c.id }}/delete" style="display:inline" onsubmit="return confirm('Ștergi ciorna?')">
+                        <input type="hidden" name="_csrf" value="{{ csrf }}">
+                        <button class="adm-btn adm-btn--sm adm-btn--danger" type="submit">Șterge</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="6" class="adm-muted">Nicio campanie încă. Începe cu „+ Campanie nouă".</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

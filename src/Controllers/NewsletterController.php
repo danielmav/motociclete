@@ -32,6 +32,7 @@ final class NewsletterController
 
     private Repository $repo;
     private Mailer $mailer;
+    private \App\Newsletter\Campaigns $campaigns;
     private string $base;
     private string $siteUrl;
 
@@ -40,6 +41,7 @@ final class NewsletterController
     {
         $this->repo    = $container['newsletter'];
         $this->mailer  = $container['mailer'];
+        $this->campaigns = $container['newsletter_campaigns'];
         $this->base    = (string) ($container['settings']['app']['base_path'] ?? '');
         $this->siteUrl = rtrim((string) ($container['settings']['app']['url'] ?? ''), '/') . $this->base;
     }
@@ -205,6 +207,28 @@ final class NewsletterController
         return $response
             ->withHeader('Location', $this->base . '/newsletter/dezabonare/' . $sub['token'] . '?salvat=1')
             ->withStatus(303);
+    }
+
+    /** GET /newsletter/c/{id}-{key} — „vezi în browser" (fără blocul personal). */
+    public function view(Request $request, Response $response, array $args): Response
+    {
+        $row = $this->campaigns->findPublic((int) ($args['id'] ?? 0), (string) ($args['key'] ?? ''));
+        if ($row === null || trim((string) ($row['html'] ?? '')) === '') {
+            throw new HttpNotFoundException($request);
+        }
+        $html = \App\Newsletter\Renderer::personalize(
+            \App\Newsletter\Renderer::stripPersonal((string) $row['html']),
+            [
+                'VIEW_URL'  => $this->siteUrl . '/newsletter/c/' . $row['id'] . '-' . $row['view_key'],
+                'UNSUB_URL' => $this->siteUrl . '/',
+                'PREFS_URL' => $this->siteUrl . '/',
+                'EMAIL'     => '',
+            ]
+        );
+        $response->getBody()->write($html);
+        return $response
+            ->withHeader('Content-Type', 'text/html; charset=utf-8')
+            ->withHeader('X-Robots-Tag', 'noindex, nofollow');
     }
 
     // ------------------------------------------------------------------

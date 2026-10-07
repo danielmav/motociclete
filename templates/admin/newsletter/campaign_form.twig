@@ -1,0 +1,140 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'newsletter' %}
+{% block title %}{{ id ? 'Campanie: ' ~ (form.subiect ?: 'fără subiect') : 'Campanie nouă' }}{% endblock %}
+{% block actions %}<a class="adm-btn" href="{{ admin_base }}/newsletter/campanii">← Toate campaniile</a>{% endblock %}
+
+{% block content %}
+{% if saved %}<div class="adm-flash adm-flash--ok">Campania a fost salvată și mesajul regenerat.</div>{% endif %}
+{% if msg %}<div class="adm-flash adm-flash--ok">{{ msg }}</div>{% endif %}
+{% if error %}<div class="adm-flash adm-flash--err">{{ error }}</div>{% endif %}
+{% for w in warnings %}<div class="adm-flash adm-flash--warn">⚠ {{ w }}</div>{% endfor %}
+{% if not editable %}<div class="adm-flash adm-flash--warn">Campania a fost pusă la trimis și nu mai poate fi modificată.</div>{% endif %}
+
+<form class="adm-form" method="post" action="{{ admin_base }}/newsletter/campanii/{{ id }}" style="max-width:980px" data-nl-form>
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <fieldset {{ editable ? '' : 'disabled' }} style="border:0;padding:0;margin:0;min-width:0">
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Email</span>
+        <div class="adm-grid2" style="margin-top:.6rem">
+            <label>Tipul mesajului
+                <select name="tip" data-nl-type>
+                    {% for key, name in types %}<option value="{{ key }}" {{ form.tip == key ? 'selected' }}>{{ name }}</option>{% endfor %}
+                </select></label>
+            <label>Lista de destinatari
+                <select name="lista">
+                    {% for key, name in lists %}<option value="{{ key }}" {{ form.lista == key ? 'selected' }}>{{ name }}</option>{% endfor %}
+                </select></label>
+        </div>
+        <label style="margin-top:.6rem">Subiect <input type="text" name="subiect" value="{{ form.subiect }}" maxlength="200" required></label>
+        <label style="margin-top:.6rem">Preheader (textul scurt de lângă subiect, în inbox; opțional) <input type="text" name="preheader" value="{{ form.preheader }}" maxlength="200"></label>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">1. <span data-nl-only="stiri">Știrea principală</span><span data-nl-only="oferte">Titlu și introducere</span></span>
+        <label style="margin-top:.6rem">Titlu <input type="text" name="titlu" value="{{ form.titlu }}" required></label>
+        <div class="adm-grid2" style="margin-top:.6rem">
+            <label>Link <span data-nl-only="stiri">(unde duc imaginea și butonul)</span><span data-nl-only="oferte">(butonul de la final; gol = bikershop.ro)</span>
+                <input type="url" name="link" value="{{ form.link }}" placeholder="https://…"></label>
+            <label>Text buton <input type="text" name="buton" value="{{ form.buton }}"></label>
+        </div>
+        <div style="margin-top:.8rem">
+            <span class="adm-help">Imagine <span data-nl-only="oferte">(opțională)</span> — se servește de pe {{ site }}/media/newsletter/</span>
+            <div class="adm-imgmgr" data-imgmgr data-single data-store="url" data-context="newsletter" data-name="imagine">
+                <div class="adm-drop" data-dropzone>Trage o imagine aici sau click</div>
+                <div class="adm-imgs" data-images>
+                    {% if form.imagine %}
+                        <div class="adm-img" data-filename="{{ form.imagine }}">
+                            <img src="{{ base }}{{ form.imagine }}" alt="">
+                            <div class="adm-img__bar"><button type="button" class="adm-img__btn" data-del>Șterge</button></div>
+                            <input type="hidden" name="imagine" value="{{ form.imagine }}">
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <label style="margin-top:.6rem">…sau URL extern al imaginii (folosit doar dacă nu ai încărcat una)
+                <input type="url" name="imagine_url" value="{{ form.imagine_url }}" placeholder="https://…/poza.jpg"></label>
+        </div>
+        <label style="margin-top:.8rem">Text (paragrafe separate prin linie goală; HTML inline permis: &lt;b&gt;, &lt;a href=""&gt;)
+            <textarea name="paragrafe" rows="8">{{ form.paragrafe }}</textarea></label>
+    </div>
+
+    <div class="adm-fieldset" data-nl-only="stiri">
+        <span class="adm-fieldset__t">2. Două modele de pe motociclete.com.ro</span>
+        <span class="adm-help">Lipește URL-ul paginii de model. Numele, prețul (și prețul vechi, dacă există reducere), imaginea și descrierea vin din catalog.</span>
+        <div class="adm-grid2" style="margin-top:.6rem">
+            {% for i in 0..1 %}
+                <label>Model {{ i + 1 }} <input type="text" name="modele[]" value="{{ form.modele[i]|default('') }}" placeholder="https://www.motociclete.com.ro/yamaha/…" required></label>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="adm-fieldset" data-nl-only="stiri">
+        <span class="adm-fieldset__t">3. Șase produse de pe bikershop.ro</span>
+        <span class="adm-help">Lipește URL-ul produsului, exact cum apare în browser (cu mărimea/culoarea aleasă, dacă reducerea e doar pe acea variantă). Numele, prețul redus, prețul vechi și imaginea vin live din magazin.</span>
+        <div class="adm-grid2" style="margin-top:.6rem">
+            {% for i in 0..5 %}
+                <label>Produs {{ i + 1 }} <input type="text" name="produse[]" value="{{ form.produse[i]|default('') }}" placeholder="https://bikershop.ro/…/27821-….html" required></label>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="adm-fieldset" data-nl-only="oferte">
+        <span class="adm-fieldset__t">2. Produsele din ofertă (2–12)</span>
+        <span class="adm-help">Câte un URL de produs bikershop.ro pe linie, exact cum apare în browser. Apar câte două pe rând, în ordinea de aici.</span>
+        <label style="margin-top:.6rem">Produse <textarea name="produse_oferte" rows="8" placeholder="https://bikershop.ro/…/27821-….html" required>{{ form.produse_oferte }}</textarea></label>
+    </div>
+
+    <div class="adm-actions">
+        <button class="adm-btn adm-btn--primary" type="submit">Salvează și generează mesajul</button>
+    </div>
+    </fieldset>
+</form>
+
+{% if has_html %}
+<div class="adm-fieldset" style="max-width:980px;margin-top:1.4rem">
+    <span class="adm-fieldset__t">Previzualizare</span>
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin:.6rem 0">
+        <a class="adm-btn" href="{{ admin_base }}/newsletter/campanii/{{ id }}/preview" target="_blank" rel="noopener">Deschide într-un tab nou</a>
+        <a class="adm-btn" href="{{ public_url }}" target="_blank" rel="noopener">Pagina publică „vezi în browser"</a>
+        <button type="button" class="adm-btn" data-nl-width="390">Telefon</button>
+        <button type="button" class="adm-btn" data-nl-width="700">Desktop</button>
+    </div>
+    <iframe src="{{ admin_base }}/newsletter/campanii/{{ id }}/preview" title="Previzualizare" data-nl-frame
+            style="display:block;width:700px;max-width:100%;height:900px;border:1px solid #e4e4e7;border-radius:8px;background:#f5f5f5"></iframe>
+</div>
+
+<form class="adm-fieldset" method="post" action="{{ admin_base }}/newsletter/campanii/{{ id }}/test" style="max-width:980px;margin-top:1.4rem">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <span class="adm-fieldset__t">Trimite un test</span>
+    <label style="margin-top:.6rem">Adresa de email <input type="email" name="email" required></label>
+    <p class="adm-help" style="margin:.6rem 0 0">Subiectul primește prefixul [TEST]. Dacă adresa e un abonat, linkurile de dezabonare sunt cele reale ale lui.</p>
+    <div style="margin:.8rem 0 0"><button class="adm-btn adm-btn--primary" type="submit">Trimite testul</button></div>
+</form>
+{% endif %}
+
+<script>
+(function () {
+    var form = document.querySelector('[data-nl-form]');
+    var type = form && form.querySelector('[data-nl-type]');
+    if (!type) return;
+    // Blocurile unui tip sunt ascunse pentru celălalt; câmpurile ascunse se dezactivează,
+    // ca să nu fie cerute de validare și nici trimise.
+    function apply() {
+        form.querySelectorAll('[data-nl-only]').forEach(function (el) {
+            var on = el.getAttribute('data-nl-only') === type.value;
+            el.hidden = !on;
+            el.querySelectorAll('input, textarea, select').forEach(function (f) { f.disabled = !on; });
+        });
+        var image = form.querySelector('[name="link"]');
+        if (image) image.required = type.value === 'stiri';
+    }
+    type.addEventListener('change', apply);
+    apply();
+    var frame = document.querySelector('[data-nl-frame]');
+    document.querySelectorAll('[data-nl-width]').forEach(function (btn) {
+        btn.addEventListener('click', function () { if (frame) frame.style.width = btn.getAttribute('data-nl-width') + 'px'; });
+    });
+})();
+</script>
+{% endblock %}

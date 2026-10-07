@@ -154,4 +154,29 @@ check('fără AJAX → redirect 303', $c === 303);
 [$c, $b] = $http('GET', $base . '/newsletter/abonare?ok=1', [], false);
 check('pagina de stare → 200', $c === 200 && str_contains($b, 'Verifică-ți emailul'));
 
+// --- pagina publică „vezi în browser" ----------------------------------------
+$campaigns = new App\Newsletter\Campaigns(nl_db());
+$cid = $campaigns->create('stiri', 'stiri', 'Campanie de test nl-test.invalid');
+$campaigns->update($cid, ['html' => '<html><body><h1>Salut din campanie</h1><a href="%%VIEW_URL%%">vezi</a>'
+    . '<!--nl:personal-->Trimis către %%EMAIL%% <a href="%%UNSUB_URL%%">Dezabonare</a><!--/nl:personal--></body></html>']);
+$key = (string) $campaigns->find($cid)['view_key'];
+register_shutdown_function(static function () use ($campaigns, $cid): void {
+    $campaigns->delete($cid);
+});
+
+[$c, $b] = $http('GET', $base . "/newsletter/c/{$cid}-{$key}", [], false);
+check('pagina publică → 200 cu conținutul campaniei', $c === 200 && str_contains($b, 'Salut din campanie'));
+check('pagina publică: fără blocul personal și fără marcaje',
+    !str_contains($b, 'Dezabonare') && !str_contains($b, '%%'));
+check('pagina publică: linkul „vezi în browser" duce la ea însăși', str_contains($b, "/newsletter/c/{$cid}-{$key}"));
+[$c] = $http('GET', $base . "/newsletter/c/{$cid}-" . str_repeat('0', 16), [], false);
+check('cheie greșită → 404', $c === 404);
+[$c] = $http('GET', $base . '/newsletter/c/999999-' . $key, [], false);
+check('campanie inexistentă → 404', $c === 404);
+$empty = $campaigns->create('stiri', 'stiri', 'Goală nl-test.invalid');
+$ekey = (string) $campaigns->find($empty)['view_key'];
+[$c] = $http('GET', $base . "/newsletter/c/{$empty}-{$ekey}", [], false);
+check('campanie fără HTML generat → 404', $c === 404);
+$campaigns->delete($empty);
+
 nl_done();

@@ -2,6 +2,7 @@
 {% set active = 'newsletter' %}
 {% block title %}Abonați newsletter{% endblock %}
 {% block actions %}
+    <a class="adm-btn" href="{{ admin_base }}/newsletter/campanii">Campanii</a>
     <a class="adm-btn" href="{{ admin_base }}/newsletter">Generator</a>
     <form method="post" action="{{ admin_base }}/newsletter/abonati/sync" style="display:inline">
         <input type="hidden" name="_csrf" value="{{ csrf }}">
