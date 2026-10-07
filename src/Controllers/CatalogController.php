@@ -115,22 +115,72 @@ final class CatalogController
      */
     public function legacyRedirect(Request $request, Response $response, array $args): Response
     {
-        $legacy = ltrim($args['legacy'], '/');
-        $canonical = $this->repo->canonicalForLegacyLoose($legacy);
-        if (!$canonical) {
-            $canonical = $this->legacyCategoryFallback($legacy);
-        }
+        $canonical = $this->legacyCanonical(ltrim($args['legacy'], '/'));
         if (!$canonical) {
             throw new HttpNotFoundException($request);
         }
         return $response->withHeader('Location', $this->base . $canonical)->withStatus(301);
     }
 
-    /** Map the first path segment of a legacy URL to a current category, or null. */
+    /**
+     * Cel mai bun canonical pentru un URL vechi `.html`: produsul după `legacy_url`,
+     * apoi după slug (ultimul segment — produs curent, redenumit sau reimportat fără
+     * an), apoi subcategoria / categoria lui.
+     */
+    private function legacyCanonical(string $legacy): ?string
+    {
+        return $this->repo->canonicalForLegacyLoose($legacy)
+            ?? $this->legacySlugCanonical($legacy)
+            ?? $this->legacyCategoryFallback($legacy);
+    }
+
+    /** Produsul curent pentru slug-ul din ultimul segment al unui URL vechi, sau null. */
+    private function legacySlugCanonical(string $legacy): ?string
+    {
+        $segs = explode('/', $legacy);
+        if (!isset(self::LEGACY_CATEGORY_MAP[$segs[0]])) {
+            return null;
+        }
+        $brand = $segs[0] === 'cfmoto' ? 'cfmoto' : 'yamaha';
+        $raw = mb_strtolower(preg_replace('/\.html$/', '', (string) end($segs)) ?? '');
+        // Slug-urile vechi pot avea diacritice (`ténéré-700-2025`) → încearcă și forma transliterată.
+        foreach (array_unique([$raw, slugify($raw)]) as $slug) {
+            if ($slug === '') {
+                continue;
+            }
+            $hit = $this->repo->canonicalForSlug($brand, $slug) ?? $this->repo->canonicalForRetiredSlug($brand, $slug);
+            if ($hit) {
+                return $hit;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Map a legacy URL to its current category: the subcategory when it still
+     * exists (`motociclete-yamaha/hyper-naked/x.html` → `/yamaha/motociclete/hyper-naked`,
+     * `cfmoto/motocicleta/touring/travel/x.html` → `/cfmoto/touring-travel`), else the top one.
+     */
     private function legacyCategoryFallback(string $legacy): ?string
     {
-        $first = explode('/', $legacy)[0] ?? '';
-        return self::LEGACY_CATEGORY_MAP[$first] ?? null;
+        $segs = explode('/', $legacy);
+        $top = self::LEGACY_CATEGORY_MAP[$segs[0]] ?? null;
+        if ($top === null) {
+            return null;
+        }
+        $dirs = array_slice($segs, 1, -1);
+        if ($segs[0] === 'cfmoto') {
+            if (($dirs[0] ?? '') === 'motocicleta') {
+                array_shift($dirs);
+            }
+            $cat = implode('-', $dirs);
+            return $cat !== '' && $this->repo->topCategory('cfmoto', $cat) ? '/cfmoto/' . $cat : $top;
+        }
+        $topRow = isset($dirs[0]) ? $this->repo->topCategory('yamaha', basename($top)) : null;
+        if ($topRow && $this->repo->subCategory((int) $topRow['id'], $dirs[0])) {
+            return $top . '/' . $dirs[0];
+        }
+        return $top;
     }
 
     /**
@@ -139,12 +189,11 @@ final class CatalogController
      */
     private function legacyRedirectFromPath(Request $request, Response $response): ?Response
     {
-        $path = $request->getUri()->getPath();
+        $path = rawurldecode($request->getUri()->getPath());
         if ($this->base !== '' && str_starts_with($path, $this->base)) {
             $path = substr($path, strlen($this->base));
         }
-        $legacy = ltrim($path, '/');
-        $canonical = $this->repo->canonicalForLegacyLoose($legacy) ?? $this->legacyCategoryFallback($legacy);
+        $canonical = $this->legacyCanonical(ltrim($path, '/'));
         if (!$canonical) {
             return null;
         }
@@ -232,8 +281,8 @@ final class CatalogController
                     return $redirect;
                 }
             }
-            // Slug schimbat din admin: 301 de la slug-ul vechi la canonical-ul curent.
-            $canonical = $this->repo->canonicalForSlugRedirect($brand, $slug);
+            // Slug schimbat (admin / reimport fără an): 301 de la slug-ul vechi la canonical-ul curent.
+            $canonical = $this->repo->canonicalForRetiredSlug($brand, $slug);
             if ($canonical) {
                 return $response->withHeader('Location', $this->base . $canonical)->withStatus(301);
             }

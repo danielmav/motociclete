@@ -1,0 +1,164 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Contact Dual Motors — showroom Yamaha & CFMOTO, Pipera București | motociclete.com.ro{% endblock %}
+{% block description %}Contactează Dual Motors: vânzări moto, service, piese, echipamente și accesorii. Showroom în Șoseaua Pipera 48, București — telefon, email, hartă și formular de contact.{% endblock %}
+
+{% block head_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Acasă", "item": "{{ app.url }}/" },
+    { "@type": "ListItem", "position": 2, "name": "Contact" }
+  ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+{% include 'partials/page_hero.twig' with {
+    hero_img: '/assets/img/showroom/showroom-1.webp',
+    kicker: 'Contact',
+    title: 'Hai să vorbim',
+    lead: 'Scrie-ne, sună-ne sau treci pe la showroom — ' ~ (site.address ?: 'Șoseaua Pipera 48, București') ~ '.',
+    pos: '50% 55%',
+    alt: 'Showroom-ul Dual Motors din Pipera, București'
+} only %}
+
+{# --- Departments + contact form --- #}
+<section class="section contact-page">
+    <div class="container">
+        <div class="service-grid contact-grid">
+            <div class="contact-info">
+                <span class="kicker">Departamente</span>
+                <h2 class="section__title contact-info__title">Vorbește direct cu omul potrivit</h2>
+
+                <div class="contact-depts">
+                    {% for dpt in departments %}
+                        <div class="contact-dept">
+                            <h3 class="contact-dept__label">{{ dpt.label }}</h3>
+                            {% if dpt.phone %}<a class="contact-dept__phone" href="tel:{{ dpt.phone|replace({' ': ''}) }}">{{ dpt.phone }}</a>{% endif %}
+                            {% if dpt.email %}<a class="contact-dept__mail" href="mailto:{{ dpt.email }}">{{ dpt.email }}</a>{% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="contact-facts">
+                    <div class="contact-fact">
+                        <h3 class="contact-fact__label">Adresă</h3>
+                        <p>{{ site.address ?: 'Șoseaua Pipera 48, București' }}</p>
+                        <a class="link-arrow link-arrow--sm" href="#cum-ajungi">Cum ajungi <span aria-hidden="true">→</span></a>
+                    </div>
+                    <div class="contact-fact">
+                        <h3 class="contact-fact__label">Program</h3>
+                        {% for line in schedule_lines %}
+                            <p>{{ line }}</p>
+                        {% else %}
+                            <p>Luni–Vineri 9–18 · Sâmbătă 10–14</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <aside class="service-booking" id="formular">
+                <div class="booking-card">
+                    <h2 class="booking-card__title">Trimite-ne un mesaj</h2>
+                    <p class="booking-card__lead">Alege departamentul și îți răspunde direct colegul care se ocupă.</p>
+
+                    <form data-ajax-form action="{{ base }}/contact" method="post" class="booking-form" novalidate {{ sent ? 'hidden' }}>
+                        {# honeypot #}
+                        <input type="text" name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
+                        {# Eroare la POST fără JS (redirect ?eroare=…) #}
+                        {% if form_error %}<p class="booking-form__err">{{ form_error }}</p>{% endif %}
+
+                        <label>Departament
+                            <select name="department" required>
+                                <option value="">Alege departamentul…</option>
+                                {% for dpt in departments %}
+                                    <option value="{{ dpt.id }}"{{ (dpt.id ~ '') == (selected_dept ~ '') ? ' selected' }}>{{ dpt.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label>Nume<input type="text" name="name" autocomplete="name" required></label>
+                        <div class="booking-form__row">
+                            <label>Email<input type="email" name="email" autocomplete="email" required></label>
+                            <label>Telefon<input type="tel" name="phone" autocomplete="tel"></label>
+                        </div>
+                        <label>Mesaj<textarea name="message" rows="5" required></textarea></label>
+
+                        {% include 'partials/_consent-field.twig' %}
+                        <p class="booking-form__err" data-form-err hidden></p>
+                        <button type="submit" class="btn btn--primary booking-form__submit">Trimite mesajul</button>
+                    </form>
+
+                    <div class="booking-thanks" data-form-thanks {{ sent ? '' : 'hidden' }}>
+                        <p class="booking-thanks__title">Mulțumim! 🏍️</p>
+                        <p>Mesajul tău a ajuns la noi. Îți răspundem cât de curând.</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</section>
+
+{# --- Map + directions --- #}
+<section class="section contact-route" id="cum-ajungi">
+    <div class="container">
+        <header class="section__head">
+            <div>
+                <span class="kicker">Showroom Pipera</span>
+                <h2 class="section__title">Cum ajungi la noi</h2>
+            </div>
+            <a class="link-arrow" href="{{ map_url }}" target="_blank" rel="noopener">Deschide în Google Maps <span aria-hidden="true">→</span></a>
+        </header>
+
+        <div class="contact-route__grid">
+            {# Harta se încarcă la click (fără cookie-uri Google până atunci). #}
+            <div class="contact-map" data-map data-map-url="{{ map_embed }}">
+                <div class="contact-map__cover">
+                    <p class="contact-map__addr">{{ site.address ?: 'Șoseaua Pipera 48, București' }}</p>
+                    <button class="btn btn--primary" type="button" data-map-play>Arată harta</button>
+                    <a class="contact-map__ext" href="{{ map_url }}" target="_blank" rel="noopener">sau deschide în Google Maps ↗</a>
+                </div>
+            </div>
+
+            <div class="contact-ways">
+                <div class="contact-way">
+                    <h3 class="contact-way__title">Cu mașina sau motocicleta</h3>
+                    <p>Caută „Dual Motors” sau adresa {{ site.address ?: 'Șoseaua Pipera 48, București' }} în aplicația de navigație.</p>
+                    <div class="contact-way__actions">
+                        <a class="btn btn--ghost" href="{{ waze_url }}" target="_blank" rel="noopener">Waze</a>
+                        <a class="btn btn--ghost" href="{{ directions_url }}" target="_blank" rel="noopener">Google Maps</a>
+                    </div>
+                </div>
+                <div class="contact-way">
+                    <h3 class="contact-way__title">Cu metroul</h3>
+                    <p>Magistrala M2, stațiile Aurel Vlaicu sau Pipera. Showroom-ul este pe Șoseaua Pipera, între cele două stații.</p>
+                </div>
+                <div class="contact-way">
+                    <h3 class="contact-way__title">Sună înainte</h3>
+                    <p>Vrei să vezi un anumit model sau să vorbești cu un coleg anume? Dă-ne un telefon și te așteptăm pregătiți.</p>
+                    <a class="contact-way__phone" href="tel:0722354437">☎ 0722 354 437</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{# --- Virtual tour + about --- #}
+<section class="section contact-more">
+    <div class="container">
+        <div class="parts-grid">
+            <a class="parts-card" href="{{ tour_url }}" target="_blank" rel="noopener">
+                <img src="{{ base }}/assets/img/showroom/showroom-2.webp" alt="Tur virtual 360° al showroom-ului Dual Motors" loading="lazy" width="1600" height="900">
+                <span class="parts-card__label">Tur virtual 360° al showroom-ului <span class="parts-card__arrow">↗</span></span>
+            </a>
+            <a class="parts-card" href="{{ base }}/despre_dual_motors">
+                <img src="{{ base }}/media/despre/hero.jpg" alt="Echipa Dual Motors" loading="lazy">
+                <span class="parts-card__label">Despre Dual Motors <span class="parts-card__arrow">→</span></span>
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

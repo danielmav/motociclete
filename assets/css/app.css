@@ -1261,6 +1261,9 @@ html:not(.js) .about-carousel__slide + .about-carousel__slide { margin-top: .5re
 .booking-form input, .booking-form textarea { font-family: var(--body); font-size: .95rem; padding: .6rem .7rem; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg); color: var(--ink); width: 100%; }
 .booking-form input:focus, .booking-form textarea:focus { outline: none; border-color: var(--red); }
 .booking-form .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.booking-form .consent-field { flex-direction: row; gap: .5rem; font-family: var(--body); font-weight: 400; font-size: .82rem; letter-spacing: 0; text-transform: none; }
+.booking-form .consent-field input { width: auto; flex: none; padding: 0; }
+.booking-form .consent-field a { text-decoration: underline; }
 .booking-form__submit { justify-content: center; margin-top: .4rem; }
 .booking-form__err { color: var(--red); font-size: .85rem; font-weight: 600; }
 .booking-thanks { text-align: center; padding: 1.5rem .5rem; }
@@ -1278,6 +1281,51 @@ html:not(.js) .about-carousel__slide + .about-carousel__slide { margin-top: .5re
 .parts-card:hover img { transform: scale(1.04); }
 .parts-card__label { position: absolute; left: 0; right: 0; bottom: 0; padding: 1rem 1.2rem; background: linear-gradient(to top, rgba(8,8,10,.85), rgba(8,8,10,0)); color: #fff; font-family: var(--display); font-weight: 800; font-size: 1.1rem; }
 .parts-card__arrow { color: var(--red); }
+
+/* ============================================================
+   CONTACT
+   ============================================================ */
+.contact-grid { grid-template-columns: 1.25fr 1fr; }
+.contact-info { min-width: 0; }
+.contact-info__title { margin: .5rem 0 1.6rem; }
+.contact-depts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+.contact-dept { min-width: 0; display: flex; flex-direction: column; gap: .2rem; padding: 1.1rem 1.2rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); transition: border-color .2s var(--ease), box-shadow .2s var(--ease); }
+.contact-dept:hover { border-color: var(--ink); box-shadow: var(--shadow-sm); }
+.contact-dept__label, .contact-fact__label { font-family: var(--head); font-weight: 700; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--red); margin-bottom: .35rem; }
+.contact-dept__phone { font-family: var(--display); font-weight: 800; font-size: 1.15rem; color: var(--ink); }
+.contact-dept__mail { font-size: .9rem; color: var(--muted); overflow-wrap: anywhere; }
+.contact-dept a:hover { color: var(--red); }
+.contact-facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem 2rem; margin-top: 1.8rem; padding-top: 1.6rem; border-top: 1px solid var(--line); }
+.contact-fact { min-width: 0; }
+.contact-fact p { font-size: .95rem; line-height: 1.6; }
+.contact-fact .link-arrow { margin-top: .6rem; }
+.booking-form select { font-family: var(--body); font-size: .95rem; padding: .6rem .7rem; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg); color: var(--ink); width: 100%; }
+.booking-form select:focus { outline: none; border-color: var(--red); }
+
+.contact-route { background: var(--surface); }
+.contact-route__grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: clamp(1.2rem, 3vw, 2.4rem); align-items: stretch; }
+.contact-map { position: relative; min-width: 0; min-height: 420px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: #0E0E10 url("../img/showroom/showroom-1.webp") center / cover no-repeat; }
+.contact-map::before { content: ""; position: absolute; inset: 0; background: rgba(8,8,10,.62); }
+.contact-map__cover { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .9rem; padding: 1.5rem; text-align: center; color: #fff; }
+.contact-map__addr { font-family: var(--display); font-weight: 800; font-size: clamp(1.1rem, 2.4vw, 1.5rem); max-width: 22ch; line-height: 1.2; }
+.contact-map__ext { font-size: .85rem; color: #c7c7cd; }
+.contact-map__ext:hover { color: #fff; }
+.contact-map iframe { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; border: 0; }
+.contact-ways { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.contact-way { flex: 1; padding: 1.2rem 1.3rem; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); }
+.contact-way__title { font-family: var(--head); font-weight: 800; font-size: 1rem; margin-bottom: .4rem; }
+.contact-way p { font-size: .92rem; line-height: 1.6; color: var(--muted); }
+.contact-way__actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .9rem; }
+.contact-way__actions .btn { padding: .6rem 1.1rem; font-size: .88rem; }
+.contact-way__phone { display: inline-block; margin-top: .7rem; font-family: var(--display); font-weight: 800; font-size: 1.1rem; color: var(--ink); }
+.contact-way__phone:hover { color: var(--red); }
+@media (max-width: 920px) {
+    .contact-grid, .contact-route__grid { grid-template-columns: 1fr; }
+    .contact-map { min-height: 320px; }
+}
+@media (max-width: 540px) {
+    .contact-depts, .contact-facts { grid-template-columns: 1fr; }
+}
 
 /* ============================================================
    FOOTER — contact line below menus

@@ -71,6 +71,8 @@ return function (App $app, Twig $twig, array $container): void {
     $app->get('/stiri.php', $seo('legacyStiri'));
     // Static .php pages + old index paths -> their new canonical routes.
     $legacyMap = [
+        '/index.php'             => '/',
+        '/contact.php'           => '/contact',
         '/noutati.php'           => '/blog',
         '/motociclete.php'       => '/yamaha/motociclete',
         '/scutere.php'           => '/yamaha/scutere',
@@ -94,6 +96,18 @@ return function (App $app, Twig $twig, array $container): void {
             return $response->withHeader('Location', $base . $new)->withStatus(301);
         });
     }
+
+    // Situl Joomla de dinainte: /index.php/noutati/item/…, /index.php/motociclete-yamaha/… etc.
+    $app->get('/index.php/{rest:.+}', function ($request, $response, $args) use ($container) {
+        $target = match (true) {
+            str_starts_with($args['rest'], 'noutati')            => '/blog',
+            str_starts_with($args['rest'], 'motociclete-yamaha') => '/yamaha/motociclete',
+            str_starts_with($args['rest'], 'scutere')            => '/yamaha/scutere',
+            default => throw new \Slim\Exception\HttpNotFoundException($request),
+        };
+        $base = (string) ($container['settings']['app']['base_path'] ?? '');
+        return $response->withHeader('Location', $base . $target)->withStatus(301);
+    });
 
     // --- Admin back-office (hidden path from settings, session auth) ---
     $adminBase = (string) ($container['settings']['admin']['path'] ?? '/dm-control');
@@ -251,6 +265,14 @@ return function (App $app, Twig $twig, array $container): void {
     });
     $app->post('/service/programare', function ($request, $response) use ($twig, $container) {
         return (new \App\Controllers\ServiceController($twig, $container))->book($request, $response);
+    });
+
+    // --- Contact (departamente + hartă + formular → site_messages, email la departament) ---
+    $app->get('/contact', function ($request, $response) use ($twig, $container) {
+        return (new \App\Controllers\ContactPageController($twig, $container))->page($request, $response);
+    });
+    $app->post('/contact', function ($request, $response) use ($twig, $container) {
+        return (new \App\Controllers\ContactPageController($twig, $container))->send($request, $response);
     });
 
     // --- Accesorii originale (portal-owned relation; live price/image from BikerShop) ---

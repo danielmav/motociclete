@@ -444,6 +444,42 @@ final class Repository
         return self::productUrl($this->breadcrumbSlugs($row));
     }
 
+    /** Canonical-ul unui produs (activ sau scos din ofertă) după slug-ul exact, sau null. */
+    public function canonicalForSlug(string $brand, string $slug): ?string
+    {
+        $row = $this->one(
+            "SELECT p.brand, p.slug, c.slug AS cat_slug, c.parent_id AS cat_parent, t.slug AS top_slug
+             " . self::PROD_JOIN . "
+             WHERE p.brand = :b AND p.slug = :s",
+            [':b' => $brand, ':s' => $slug]
+        );
+        if (!$row) {
+            return null;
+        }
+        return self::productUrl($this->breadcrumbSlugs($row));
+    }
+
+    /**
+     * Canonical pentru un slug de produs care nu mai există: redirectul înregistrat
+     * (redenumire din admin / backfill), apoi același slug fără sufixul de an
+     * (`mt-09-2026` → `mt-09`: modelele reimportate de la Yamaha au slug fără an,
+     * iar `-0` era sufixul legacy pentru „fără an").
+     */
+    public function canonicalForRetiredSlug(string $brand, string $slug): ?string
+    {
+        $hit = $this->canonicalForSlugRedirect($brand, $slug);
+        if ($hit) {
+            return $hit;
+        }
+        // Slug-urile vechi pot avea diacritice (`ténéré-700-rally-2025`) → forma transliterată.
+        $ascii = slugify($slug);
+        $base = preg_replace('/(?:-(?:20\d\d|0))+$/', '', $ascii) ?? $ascii;
+        if ($base === '' || $base === $slug) {
+            return null;
+        }
+        return $this->canonicalForSlug($brand, $base) ?? $this->canonicalForSlugRedirect($brand, $base);
+    }
+
     // -- Sitemap --------------------------------------------------------------
 
     /** Active products as sitemap rows: ['path'=>..., 'lastmod'=>?]. */

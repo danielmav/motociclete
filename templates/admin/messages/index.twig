@@ -12,15 +12,15 @@
 
 {% if source == 'leads' %}
     <table class="adm-table">
-        <thead><tr><th>Data</th><th>Tip</th><th>Nume</th><th>Contact</th><th>Model</th><th>Mesaj</th><th></th></tr></thead>
+        <thead><tr><th>Data</th><th>Tip</th><th>Nume</th><th>Contact</th><th>Model / departament</th><th>Mesaj</th><th></th></tr></thead>
         <tbody>
         {% for m in leads %}
             <tr style="{{ m.is_read ? '' : 'font-weight:600' }}">
                 <td class="adm-muted">{{ m.created_at|date('d.m.Y H:i') }}</td>
-                <td><span class="adm-badge adm-badge--off">{{ m.type == 'test_ride' ? 'drive test' : 'ofertă' }}</span></td>
+                <td><span class="adm-badge adm-badge--off">{{ m.type == 'test_ride' ? 'drive test' : (m.type == 'contact' ? 'contact' : 'ofertă') }}</span></td>
                 <td>{{ m.name }}</td>
                 <td class="adm-muted">{{ m.email }}<br>{{ m.phone }}</td>
-                <td>{{ m.product_name }}{% if m.brand %} <span class="adm-muted">({{ m.brand }})</span>{% endif %}</td>
+                <td>{{ m.type == 'contact' ? m.department : m.product_name }}{% if m.brand %} <span class="adm-muted">({{ m.brand }})</span>{% endif %}</td>
                 <td class="adm-muted">{{ m.message ?: (m.licence ? 'Permis ' ~ m.licence) }}</td>
                 <td>{% if not m.is_read %}<form method="post" action="{{ admin_base }}/mesaje/citit"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="table" value="leads"><input type="hidden" name="source" value="leads"><input type="hidden" name="id" value="{{ m.id }}"><button class="adm-btn adm-btn--sm" type="submit">Citit</button></form>{% endif %}</td>
             </tr>

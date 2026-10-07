@@ -4,7 +4,8 @@
 -- Leads submitted from the product page (Cere ofertă / Programează test ride).
 CREATE TABLE IF NOT EXISTS `site_messages` (
     `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `type`         ENUM('oferta','test_ride') NOT NULL,
+    `type`         ENUM('oferta','test_ride','contact') NOT NULL,
+    `department`   VARCHAR(120) NULL,
     `brand`        VARCHAR(32)  NULL,
     `product_slug` VARCHAR(191) NULL,
     `product_name` VARCHAR(191) NULL,

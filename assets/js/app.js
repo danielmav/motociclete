@@ -256,6 +256,19 @@
         cmpUpdate();
     }
 
+    /* ---- Contact: harta Google se încarcă la click ---- */
+    var map = document.querySelector('[data-map]');
+    var mapBtn = map ? map.querySelector('[data-map-play]') : null;
+    if (map && mapBtn) {
+        mapBtn.addEventListener('click', function () {
+            var iframe = document.createElement('iframe');
+            iframe.src = map.getAttribute('data-map-url');
+            iframe.title = 'Hartă — showroom Dual Motors';
+            iframe.referrerPolicy = 'no-referrer-when-downgrade';
+            map.appendChild(iframe);
+        });
+    }
+
     /* ---- Virtual tour: click-to-load iframe (keeps page light) ---- */
     var tour = document.querySelector('[data-tour]');
     var tourBtn = tour ? tour.querySelector('[data-tour-play]') : null;

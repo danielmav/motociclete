@@ -45,6 +45,16 @@ if ((int) $old > 0) {
     $pdo->exec('ALTER TABLE `products` DROP COLUMN `feed_id`');
     echo "  - products.feed_id (-> feed_ids)\n";
 }
+// Pagina /contact: mesajele merg tot în site_messages (tip `contact` + departamentul ales).
+ensure_column($pdo, 'site_messages', 'department', 'ALTER TABLE `site_messages` ADD COLUMN `department` VARCHAR(120) NULL AFTER `type`');
+$type = (string) $pdo->query(
+    "SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'site_messages' AND COLUMN_NAME = 'type'"
+)->fetchColumn();
+if ($type !== '' && !str_contains($type, "'contact'")) {
+    $pdo->exec("ALTER TABLE `site_messages` MODIFY `type` ENUM('oferta','test_ride','contact') NOT NULL");
+    echo "  ~ site_messages.type += contact\n";
+}
 ensure_column($pdo, 'product_images', 'caption', 'ALTER TABLE `product_images` ADD COLUMN `caption` VARCHAR(160) NULL AFTER `filename`');
 
 echo "migrate_admin: done.\n";
