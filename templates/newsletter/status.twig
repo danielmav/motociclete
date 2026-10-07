@@ -1,0 +1,21 @@
+{% extends 'layout.twig' %}
+
+{% block title %}{{ title }} | Newsletter Dual Motors{% endblock %}
+{% block description %}Newsletterul Dual Motors: noutăți despre motociclete Yamaha și CFMOTO și oferte BikerShop.{% endblock %}
+{% block meta_robots %}noindex,nofollow{% endblock %}
+
+{% block content %}
+<article class="section">
+    <div class="container container--narrow">
+        <header class="page-head">
+            <span class="kicker">Newsletter</span>
+            <h1 class="page-title">{{ title }}</h1>
+        </header>
+        <p class="nl-lead">{{ message }}</p>
+        {% if prefs_url %}
+            <p><a class="link-arrow" href="{{ prefs_url }}">Schimbă preferințele sau dezabonează-te</a></p>
+        {% endif %}
+        <p class="finance-back"><a class="link-arrow" href="{{ base }}/">← Înapoi la showroom</a></p>
+    </div>
+</article>
+{% endblock %}

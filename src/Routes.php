@@ -300,6 +300,19 @@ return function (App $app, Twig $twig, array $container): void {
         return $response->withHeader('Location', ($container['settings']['app']['base_path'] ?? '') . '/garage')->withStatus(301);
     });
 
+    // --- Newsletter propriu: abonare cu confirmare + preferințe/dezabonare ---
+    $nl = function (string $method) use ($twig, $container) {
+        return function ($request, $response, $args) use ($twig, $container, $method) {
+            return (new \App\Controllers\NewsletterController($twig, $container))->{$method}($request, $response, $args);
+        };
+    };
+    $app->post('/api/newsletter/abonare', $nl('subscribe'));
+    $app->get('/newsletter/abonare', $nl('signupStatus'));
+    $app->get('/newsletter/confirmare/{token:[a-f0-9]{32}}', $nl('confirm'));
+    $app->get('/newsletter/dezabonare/{token:[a-f0-9]{32}}', $nl('prefs'));
+    $app->post('/newsletter/dezabonare/{token:[a-f0-9]{32}}', $nl('prefsSave'));
+
+
     // --- Catalog (Yamaha + CFMOTO), backed by the local DB ---
     // Static routes above (/, /api/*, /health) take priority in FastRoute.
     $catalog = function (string $method) use ($twig, $container) {

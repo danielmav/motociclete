@@ -1,0 +1,52 @@
+{% extends 'layout.twig' %}
+
+{% block title %}Preferințe newsletter | Dual Motors{% endblock %}
+{% block description %}Alege ce newslettere Dual Motors primești sau dezabonează-te.{% endblock %}
+{% block meta_robots %}noindex,nofollow{% endblock %}
+
+{% block content %}
+<article class="section">
+    <div class="container container--narrow">
+        <header class="page-head">
+            <span class="kicker">Newsletter</span>
+            <h1 class="page-title">Preferințe newsletter</h1>
+        </header>
+
+        <p class="nl-lead">Setări pentru adresa <strong>{{ email }}</strong>.</p>
+
+        {% if saved %}
+            <p class="nl-note nl-note--ok">Preferințele au fost salvate.</p>
+        {% endif %}
+        {% if excluded %}
+            <p class="nl-note">Nu mai trimitem mesaje la această adresă. Dacă vrei să primești din nou newsletterul, abonează-te din nou din subsolul sitului.</p>
+        {% endif %}
+
+        {% if focus and subs[focus] is defined and subs[focus].status == 'active' and not saved %}
+            <p class="nl-note">Am debifat lista <strong>{{ lists[focus] }}</strong>. Apasă „Salvează preferințele” ca să confirmi dezabonarea.</p>
+        {% endif %}
+
+        <form class="nl-prefs" method="post" action="{{ base }}/newsletter/dezabonare/{{ token }}">
+            <fieldset class="nl-prefs__lists">
+                <legend>Vreau să primesc:</legend>
+                {% for key, name in lists %}
+                    {# La venirea din linkul unui mesaj (?l=…), lista acelui mesaj apare debifată. #}
+                    {% set is_on = subs[key] is defined and subs[key].status == 'active' %}
+                    <label class="nl-prefs__item">
+                        <input type="checkbox" name="keep[]" value="{{ key }}" {{ is_on and focus != key ? 'checked' }}>
+                        <span>
+                            <strong>{{ name }}</strong>
+                            {% if key == 'oferte' %}— oferte și reduceri la echipament, piese și accesorii{% else %}— noutăți, modele noi și evenimente Dual Motors{% endif %}
+                        </span>
+                    </label>
+                {% endfor %}
+            </fieldset>
+            <div class="nl-prefs__actions">
+                <button class="btn btn--primary" type="submit">Salvează preferințele</button>
+                <button class="btn btn--ghost" type="submit" name="unsub_all" value="1">Dezabonează-mă de la tot</button>
+            </div>
+        </form>
+
+        <p class="finance-back"><a class="link-arrow" href="{{ base }}/">← Înapoi la showroom</a></p>
+    </div>
+</article>
+{% endblock %}

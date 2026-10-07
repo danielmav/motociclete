@@ -112,6 +112,13 @@ final class EmailTemplate
         foreach ($lines as $line) {
             $line = rtrim($line);
             if ($line === '') { $flushRows(); continue; }
+            // O linie care e doar un URL devine buton (ex. linkul de confirmare a abonării).
+            if (preg_match('~^https?://\S+$~', $line)) {
+                $flushRows();
+                $html .= '<p style="margin:0 0 16px"><a href="' . $e($line) . '" style="display:inline-block;padding:12px 22px;background:' . self::RED . ';color:#ffffff;text-decoration:none;font-weight:700;border-radius:6px">Deschide linkul</a></p>'
+                    . '<p style="margin:0 0 12px;font-size:12px;color:#71717A;word-break:break-all">' . $e($line) . '</p>';
+                continue;
+            }
             if (preg_match('/^([^:]{1,28}):\s+(.+)$/u', $line, $m)) {
                 $rows[] = '<tr><td style="padding:6px 10px;border:1px solid #E4E4E7;background:#FAFAFA;color:#52525B;white-space:nowrap;width:34%">' . $e($m[1]) . '</td>'
                     . '<td style="padding:6px 10px;border:1px solid #E4E4E7;font-weight:600">' . $e($m[2]) . '</td></tr>';

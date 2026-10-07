@@ -1,0 +1,27 @@
+{# Abonare la newsletter (footer). Confirmare prin email; logica în NewsletterController. #}
+<div class="container nl-signup">
+    <div class="nl-signup__text">
+        <h4>Noutăți și oferte pe email</h4>
+        <p>Modele noi, evenimente și reduceri la echipament. Te poți dezabona oricând.</p>
+    </div>
+    <div class="nl-signup__box">
+        <form class="nl-signup__form" method="post" action="{{ base }}/api/newsletter/abonare" data-ajax-form>
+            <input type="text" name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
+            <div class="nl-signup__row">
+                <label class="sr-only" for="nl-email">Adresa ta de email</label>
+                <input id="nl-email" type="email" name="email" placeholder="Adresa ta de email" autocomplete="email" required>
+                <button class="btn btn--primary" type="submit">Abonează-mă</button>
+            </div>
+            <div class="nl-signup__lists">
+                <label><input type="checkbox" name="lists[]" value="stiri" checked> Dual Motors știri</label>
+                <label><input type="checkbox" name="lists[]" value="oferte" checked> BikerShop oferte</label>
+            </div>
+            <label class="nl-signup__consent">
+                <input type="checkbox" name="consent" value="1" required>
+                <span>Sunt de acord să primesc newsletterul, conform <a href="{{ base }}/confidentialitate" target="_blank" rel="noopener">Politicii de confidențialitate</a>.</span>
+            </label>
+            <p class="nl-signup__err" data-form-err hidden></p>
+        </form>
+        <p class="nl-signup__thanks" data-form-thanks hidden>Verifică-ți emailul: ți-am trimis un link de confirmare.</p>
+    </div>
+</div>
