@@ -85,8 +85,9 @@ Fișier nou `database/schema_newsletter.sql` (`CREATE TABLE IF NOT EXISTS`), rul
 
 - **`nl_subscribers`** — o adresă pe rând: `email` (normalizat, unic), `name`, `token`
   (unic, pentru linkurile publice), `status` (`pending`, `active`, `bounced`,
-  `complained`), `soft_bounces`, `created_at`, `confirmed_at`.
-- **`nl_subscriptions`** — apartenența la liste: `subscriber_id`, `list` (`oferte`,
+  `complained`), `soft_bounces`, `signup_ip`, `confirm_sent_at`, `created_at`,
+  `confirmed_at`.
+- **`nl_subscriptions`** — apartenența la liste: `subscriber_id`, `list_key` (`oferte`,
   `stiri`), `status` (`active`, `unsubscribed`), `source` (`bs_account`, `bs_footer`,
   `portal`, `garage`, `manual`, `brevo`), `subscribed_at`, `unsubscribed_at`. Cheie
   primară `(subscriber_id, list)`.
@@ -126,10 +127,10 @@ de butonul „Actualizează lista" din admin. Reguli:
 - Comenzile guest nu se importă deloc.
 - Adresele fictive nu se importă, indiferent de bifă: cele generate pentru comenzile
   din marketplace (`guest-emag-…@bikershop.ro`, 263 la data scrierii), orice adresă pe
-  domeniile proprii (`bikershop.ro`, `motociclete.com.ro`) sau pe `emag.ro`, și
-  domeniile de test (`tfbnw.net`). Lista de tipare stă într-o constantă în
-  `Newsletter\Sync`; aceeași verificare se aplică la abonarea de pe portal și la
-  adăugarea manuală.
+  `bikershop.ro` sau `emag.ro`, și domeniile de test (`tfbnw.net`). Adresele pe
+  `motociclete.com.ro` sunt ale echipei și rămân permise. Lista de tipare stă într-o
+  constantă în `Newsletter\Address`; aceeași verificare se aplică la abonarea de pe
+  portal și la adăugarea manuală.
 - Dacă BikerShop nu răspunde, sincronizarea se oprește fără modificări (nu
   interpretează lipsa datelor ca dezabonare în masă).
 
@@ -155,8 +156,9 @@ unor oameni care s-au dezabonat deja. Script `database/newsletter_import_brevo.p
 - `GET /newsletter/dezabonare/{token}`: pagină cu cele două liste și starea fiecăreia.
 - `POST` pe aceeași adresă cu `?l=<listă>`: dezabonare cu un clic, cerută de
   Gmail/Yahoo (headerele `List-Unsubscribe` și `List-Unsubscribe-Post`).
-- Linkul din mesaj dezabonează direct de la lista campaniei și oferă opțiunea de a
-  renunța și la cealaltă.
+- Linkul din mesaj deschide pagina cu lista campaniei preselectată; dezabonarea se
+  face la apăsarea butonului, nu la simpla deschidere a linkului (filtrele de email
+  deschid automat linkurile și ar dezabona oameni fără voia lor).
 
 ### Admin
 
