@@ -45,6 +45,7 @@ function nl_isolate(): PDO
     $pdo->beginTransaction();
     $pdo->exec('DELETE FROM nl_subscriptions');
     $pdo->exec('DELETE FROM nl_subscribers');
+    $pdo->exec('DELETE FROM nl_campaigns');
     register_shutdown_function(static function () use ($pdo): void {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();

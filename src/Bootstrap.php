@@ -101,6 +101,7 @@ final class Bootstrap
             'rabla'     => new Rabla\Repository($db),
             'client'    => new Client\Repository($db),
             'newsletter' => new Newsletter\Repository($db),
+            'newsletter_campaigns' => new Newsletter\Campaigns($db),
             'mailer'    => new Support\Mailer(
                 $settings['mail'],
                 $root . '/storage/logs',

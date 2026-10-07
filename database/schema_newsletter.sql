@@ -29,3 +29,23 @@ CREATE TABLE IF NOT EXISTS `nl_subscriptions` (
     KEY `idx_nl_list_status` (`list_key`, `status`),
     KEY `idx_nl_source` (`source`, `status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `nl_campaigns` (
+    `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `list_key`     ENUM('oferte','stiri') NOT NULL,
+    `type`         ENUM('stiri','oferte') NOT NULL,
+    `subject`      VARCHAR(200) NOT NULL,
+    `preheader`    VARCHAR(200) NULL,
+    `view_key`     CHAR(16) NOT NULL,
+    `input_json`   MEDIUMTEXT NULL,
+    `html`         MEDIUMTEXT NULL,
+    `body_text`    MEDIUMTEXT NULL,
+    `status`       ENUM('draft','queued','sending','paused','sent') NOT NULL DEFAULT 'draft',
+    `pause_reason` VARCHAR(255) NULL,
+    `created_at`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`   DATETIME NULL,
+    `queued_at`    DATETIME NULL,
+    `finished_at`  DATETIME NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_nl_campaign_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
