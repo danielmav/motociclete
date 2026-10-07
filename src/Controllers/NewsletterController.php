@@ -18,12 +18,17 @@ use Throwable;
  * preferințe/dezabonare și dezabonarea cu un clic cerută de Gmail/Yahoo.
  *
  * Linkurile publice poartă tokenul abonatului (secret, trimis doar pe email).
- * GET nu schimbă niciodată abonamentele: filtrele de email deschid automat linkurile.
+ * GET nu schimbă niciodată starea: filtrele de email deschid automat linkurile, așa
+ * că și confirmarea, și dezabonarea se fac prin POST (buton pe pagină).
+ * Confirmarea e valabilă CONFIRM_VALID_DAYS zile de la cerere și o singură dată.
  */
 final class NewsletterController
 {
     private const SIGNUPS_PER_IP_PER_HOUR = 5;
     private const CONFIRM_RESEND_MINUTES  = 15;
+    private const CONFIRM_VALID_DAYS      = 7;
+    /** Plafon pe tot situl: plasă de siguranță dacă limita pe IP e ocolită. */
+    private const MAX_CONFIRMS_PER_HOUR   = 60;
 
     private Repository $repo;
     private Mailer $mailer;
@@ -64,16 +69,18 @@ final class NewsletterController
         try {
             $sub = $this->repo->findByEmail($email);
             if ($sub === null) {
-                if ($ip !== '' && $this->repo->recentSignupsFromIp($ip, 60) >= self::SIGNUPS_PER_IP_PER_HOUR) {
+                if ($this->repo->recentSignupsFromIp($ip, 60) >= self::SIGNUPS_PER_IP_PER_HOUR) {
                     return $this->err($request, $response, 'Prea multe cereri. Încearcă din nou mai târziu.', 429);
                 }
-                $sub = $this->repo->ensureSubscriber($email, null, 'pending', $ip !== '' ? $ip : null);
+                $sub = $this->repo->ensureSubscriber($email, null, 'pending', $ip);
             }
             // Același răspuns indiferent dacă adresa exista: nu dezvăluim cine e abonat.
             // Abonamentele se schimbă abia la confirmare, din linkul primit pe email.
+            // Nu scriem adreselor cu reclamație de spam; rezervarea trimiterii e atomică.
             $id = (int) $sub['id'];
-            if (!$this->repo->confirmRecentlySent($id, self::CONFIRM_RESEND_MINUTES)) {
-                $this->repo->markConfirmSent($id);
+            if ($sub['status'] !== 'complained'
+                && $this->repo->confirmsSentSince(60) < self::MAX_CONFIRMS_PER_HOUR
+                && $this->repo->claimConfirmSend($id, self::CONFIRM_RESEND_MINUTES)) {
                 $this->mailer->send(
                     $email,
                     'Confirmă abonarea la newsletterul Dual Motors',
@@ -101,17 +108,37 @@ final class NewsletterController
         );
     }
 
-    /** GET /newsletter/confirmare/{token}?l=oferte,stiri */
+    /** GET /newsletter/confirmare/{token}?l=oferte,stiri — doar afișează butonul. */
+    public function confirmForm(Request $request, Response $response, array $args): Response
+    {
+        $sub   = $this->subscriberOr404($request, $args);
+        $lists = $this->validLists(explode(',', (string) ($request->getQueryParams()['l'] ?? '')));
+        if ($expired = $this->confirmRefusal($response, $sub)) {
+            return $expired;
+        }
+        return $this->twig->render($response, 'newsletter/confirm.twig', [
+            'email'          => (string) $sub['email'],
+            'action'         => $this->base . '/newsletter/confirmare/' . $sub['token'] . '?l=' . implode(',', $lists),
+            'names'          => array_map(static fn (string $l): string => Repository::LISTS[$l], $lists),
+            'canonical_path' => '/newsletter/confirmare',
+        ]);
+    }
+
+    /** POST /newsletter/confirmare/{token}?l=oferte,stiri */
     public function confirm(Request $request, Response $response, array $args): Response
     {
         $sub   = $this->subscriberOr404($request, $args);
         $id    = (int) $sub['id'];
         $lists = $this->validLists(explode(',', (string) ($request->getQueryParams()['l'] ?? '')));
+        if ($expired = $this->confirmRefusal($response, $sub)) {
+            return $expired;
+        }
 
         $this->repo->activate($id);
         foreach ($lists as $list) {
             $this->repo->setSubscription($id, $list, 'portal');
         }
+        $this->repo->clearConfirm($id);
 
         $names = array_map(static fn (string $l): string => Repository::LISTS[$l], $lists);
         return $this->status(
@@ -182,6 +209,24 @@ final class NewsletterController
 
     // ------------------------------------------------------------------
 
+    /**
+     * Pagina de refuz (410) când confirmarea nu mai e posibilă: cererea a expirat, linkul
+     * a fost deja folosit sau adresa are o reclamație de spam. Null = se poate confirma.
+     * @param array<string,mixed> $sub
+     */
+    private function confirmRefusal(Response $response, array $sub): ?Response
+    {
+        if ($sub['status'] !== 'complained' && $this->repo->confirmPending((int) $sub['id'], self::CONFIRM_VALID_DAYS)) {
+            return null;
+        }
+        return $this->status(
+            $response->withStatus(410),
+            'Link expirat',
+            'Acest link de confirmare a fost deja folosit sau nu mai este valabil. Dacă vrei să primești newsletterul, abonează-te din nou din subsolul paginii.',
+            '/newsletter/confirmare'
+        );
+    }
+
     /** @return array<string,mixed> */
     private function subscriberOr404(Request $request, array $args): array
     {
@@ -251,13 +296,19 @@ final class NewsletterController
             ->withStatus(303);
     }
 
+    /**
+     * IP-ul pentru limita de abonări. NU folosim X-Forwarded-For: primul element e
+     * scris de client și ar ocoli limita. Situl e în spatele Cloudflare, care pune
+     * IP-ul real în CF-Connecting-IP; altfel rămâne adresa conexiunii.
+     */
     private function clientIp(Request $request): string
     {
-        $xff = $request->getHeaderLine('X-Forwarded-For');
-        if ($xff !== '') {
-            return trim(explode(',', $xff)[0]);
+        $cf = trim($request->getHeaderLine('CF-Connecting-IP'));
+        if ($cf !== '' && filter_var($cf, FILTER_VALIDATE_IP)) {
+            return $cf;
         }
-        return (string) ($request->getServerParams()['REMOTE_ADDR'] ?? '');
+        $ip = (string) ($request->getServerParams()['REMOTE_ADDR'] ?? '');
+        return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '0.0.0.0';
     }
 
     /** @param array<string,mixed> $payload */

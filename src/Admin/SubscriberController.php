@@ -77,11 +77,22 @@ final class SubscriberController extends BaseController
             if ($sub['status'] === 'pending') {
                 $repo->activate($id);
             }
+            // Un om dezabonat nu se reabonează din admin: doar el, din formularul de pe sit.
+            $subs = $repo->subscriptions($id);
+            $refused = [];
             foreach ($lists as $list) {
-                $repo->setSubscription($id, $list, 'manual');
+                if (($subs[$list]['status'] ?? '') === 'unsubscribed') {
+                    $refused[] = Repository::LISTS[$list];
+                    continue;
+                }
+                $repo->addSubscription($id, $list, 'manual');
             }
         } catch (Throwable) {
             return $this->back($response, 'err', 'Eroare la salvare.');
+        }
+        if ($refused) {
+            return $this->back($response, 'err', "Adresa {$email} s-a dezabonat de la: " . implode(', ', $refused)
+                . '. Nu poate fi reabonată din admin; persoana se poate reabona singură din formularul de pe sit.', $email);
         }
         return $this->back($response, 'msg', "Adresa {$email} a fost abonată.", $email);
     }

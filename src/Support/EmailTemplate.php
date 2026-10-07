@@ -97,6 +97,9 @@ final class EmailTemplate
      * linii „Cheie: valoare" devin tabel, restul paragrafe; codurile de 6 cifre
      * (OTP) sunt evidențiate.
      */
+    /** Gazdele ale căror linkuri pot deveni buton în emailuri. */
+    private const BUTTON_HOSTS = ['www.motociclete.com.ro', 'motociclete.com.ro', 'motociclete.test'];
+
     public static function textToHtml(string $text): string
     {
         $e = static fn($v): string => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
@@ -112,8 +115,11 @@ final class EmailTemplate
         foreach ($lines as $line) {
             $line = rtrim($line);
             if ($line === '') { $flushRows(); continue; }
-            // O linie care e doar un URL devine buton (ex. linkul de confirmare a abonării).
-            if (preg_match('~^https?://\S+$~', $line)) {
+            // O linie care e doar un URL AL SITULUI devine buton (ex. linkul de confirmare a
+            // abonării). URL-urile străine rămân text: corpul poate conține mesajul unui
+            // vizitator (formularul de contact) și n-ar trebui să primească un buton de brand.
+            if (preg_match('~^https?://\S+$~', $line)
+                && in_array(strtolower((string) parse_url($line, PHP_URL_HOST)), self::BUTTON_HOSTS, true)) {
                 $flushRows();
                 $html .= '<p style="margin:0 0 16px"><a href="' . $e($line) . '" style="display:inline-block;padding:12px 22px;background:' . self::RED . ';color:#ffffff;text-decoration:none;font-weight:700;border-radius:6px">Deschide linkul</a></p>'
                     . '<p style="margin:0 0 12px;font-size:12px;color:#71717A;word-break:break-all">' . $e($line) . '</p>';

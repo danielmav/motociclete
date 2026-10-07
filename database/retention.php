@@ -102,19 +102,16 @@ $op(
     'DELETE FROM client_otp WHERE created_at < (NOW() - INTERVAL ' . OTP_DAYS . ' DAY)'
 );
 
-// 5. newsletter — abonați care n-au confirmat abonarea (30 zile). Nu au abonamente
-//    (se creează abia la confirmare), dar ștergem defensiv și eventualele rânduri orfane.
-$op(
-    'nl_subscriptions orfane pending (' . NL_PENDING_DAYS . 'z)',
-    "SELECT COUNT(*) FROM nl_subscriptions s JOIN nl_subscribers u ON u.id = s.subscriber_id
-     WHERE u.status = 'pending' AND u.created_at < (NOW() - INTERVAL " . NL_PENDING_DAYS . ' DAY)',
-    "DELETE s FROM nl_subscriptions s JOIN nl_subscribers u ON u.id = s.subscriber_id
-     WHERE u.status = 'pending' AND u.created_at < (NOW() - INTERVAL " . NL_PENDING_DAYS . ' DAY)'
-);
+// 5. newsletter — abonați care n-au confirmat abonarea (30 zile de la ultima cerere).
+//    Doar cei FĂRĂ niciun rând în nl_subscriptions: un neconfirmat poate avea rânduri de
+//    excludere (dezabonat în Brevo), iar acelea trebuie să rămână.
+$nlPending = "status = 'pending'
+     AND COALESCE(confirm_sent_at, created_at) < (NOW() - INTERVAL " . NL_PENDING_DAYS . " DAY)
+     AND NOT EXISTS (SELECT 1 FROM nl_subscriptions s WHERE s.subscriber_id = nl_subscribers.id)";
 $op(
     'nl_subscribers pending delete (' . NL_PENDING_DAYS . 'z)',
-    "SELECT COUNT(*) FROM nl_subscribers WHERE status = 'pending' AND created_at < (NOW() - INTERVAL " . NL_PENDING_DAYS . ' DAY)',
-    "DELETE FROM nl_subscribers WHERE status = 'pending' AND created_at < (NOW() - INTERVAL " . NL_PENDING_DAYS . ' DAY)'
+    "SELECT COUNT(*) FROM nl_subscribers WHERE {$nlPending}",
+    "DELETE FROM nl_subscribers WHERE {$nlPending}"
 );
 
 // newsletter — IP-ul de la abonare (30 zile)

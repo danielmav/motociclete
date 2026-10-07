@@ -116,14 +116,22 @@ final class Repository
         return $s->rowCount() === 1;
     }
 
-    /** Acțiune explicită a omului sau a adminului: creează sau reactivează. */
+    /**
+     * Acțiune explicită a omului: creează abonamentul sau îl reactivează pe unul
+     * dezabonat. Un abonament deja activ rămâne neatins: sursa și data lui sunt
+     * dovada consimțământului. (`status` se atribuie ULTIMUL: atribuirile se
+     * evaluează de la stânga la dreapta și celelalte citesc starea veche.)
+     */
     public function setSubscription(int $id, string $list, string $source): void
     {
         $this->pdo()->prepare(
             "INSERT INTO nl_subscriptions (subscriber_id, list_key, status, source)
              VALUES (:id, :l, 'active', :s)
-             ON DUPLICATE KEY UPDATE status = 'active', source = VALUES(source),
-                                     subscribed_at = NOW(), unsubscribed_at = NULL"
+             ON DUPLICATE KEY UPDATE
+                 source          = IF(status = 'unsubscribed', VALUES(source), source),
+                 subscribed_at   = IF(status = 'unsubscribed', NOW(), subscribed_at),
+                 unsubscribed_at = NULL,
+                 status          = 'active'"
         )->execute([':id' => $id, ':l' => $list, ':s' => $source]);
     }
 
@@ -242,20 +250,47 @@ final class Repository
         return (int) $s->fetchColumn();
     }
 
-    public function confirmRecentlySent(int $id, int $minutes): bool
+    /**
+     * Rezervă ATOMIC trimiterea unui email de confirmare: true doar pentru o singură
+     * cerere la $minutes minute per adresă, oricâte ar veni în paralel.
+     */
+    public function claimConfirmSend(int $id, int $minutes): bool
     {
         $minutes = max(1, $minutes);
         $s = $this->pdo()->prepare(
+            "UPDATE nl_subscribers SET confirm_sent_at = NOW()
+             WHERE id = :id
+               AND (confirm_sent_at IS NULL OR confirm_sent_at < (NOW() - INTERVAL {$minutes} MINUTE))"
+        );
+        $s->execute([':id' => $id]);
+        return $s->rowCount() === 1;
+    }
+
+    /** Există o cerere de confirmare neconsumată, mai nouă de $days zile? */
+    public function confirmPending(int $id, int $days): bool
+    {
+        $days = max(1, $days);
+        $s = $this->pdo()->prepare(
             "SELECT COUNT(*) FROM nl_subscribers
-             WHERE id = :id AND confirm_sent_at > (NOW() - INTERVAL {$minutes} MINUTE)"
+             WHERE id = :id AND confirm_sent_at > (NOW() - INTERVAL {$days} DAY)"
         );
         $s->execute([':id' => $id]);
         return (int) $s->fetchColumn() > 0;
     }
 
-    public function markConfirmSent(int $id): void
+    /** Consumă cererea de confirmare: linkul nu mai poate fi refolosit. */
+    public function clearConfirm(int $id): void
     {
-        $this->pdo()->prepare('UPDATE nl_subscribers SET confirm_sent_at = NOW() WHERE id = :id')
+        $this->pdo()->prepare('UPDATE nl_subscribers SET confirm_sent_at = NULL WHERE id = :id')
             ->execute([':id' => $id]);
+    }
+
+    /** Câte emailuri de confirmare au plecat, pe tot situl, în ultimele $minutes minute. */
+    public function confirmsSentSince(int $minutes): int
+    {
+        $minutes = max(1, $minutes);
+        return (int) $this->pdo()->query(
+            "SELECT COUNT(*) FROM nl_subscribers WHERE confirm_sent_at > (NOW() - INTERVAL {$minutes} MINUTE)"
+        )->fetchColumn();
     }
 }

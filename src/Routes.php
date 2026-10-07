@@ -313,7 +313,8 @@ return function (App $app, Twig $twig, array $container): void {
     };
     $app->post('/api/newsletter/abonare', $nl('subscribe'));
     $app->get('/newsletter/abonare', $nl('signupStatus'));
-    $app->get('/newsletter/confirmare/{token:[a-f0-9]{32}}', $nl('confirm'));
+    $app->get('/newsletter/confirmare/{token:[a-f0-9]{32}}', $nl('confirmForm'));
+    $app->post('/newsletter/confirmare/{token:[a-f0-9]{32}}', $nl('confirm'));
     $app->get('/newsletter/dezabonare/{token:[a-f0-9]{32}}', $nl('prefs'));
     $app->post('/newsletter/dezabonare/{token:[a-f0-9]{32}}', $nl('prefsSave'));
 

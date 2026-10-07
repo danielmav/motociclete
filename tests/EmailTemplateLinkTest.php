@@ -24,7 +24,14 @@ check('codul OTP rămâne evidențiat', str_contains($otp, 'letter-spacing:4px')
 $mixed = EmailTemplate::textToHtml('Vezi https://example.com/x pentru detalii');
 check('URL în mijlocul unei fraze rămâne text', !str_contains($mixed, '<a href="https://example.com/x"'));
 
-$xss = EmailTemplate::textToHtml('https://example.com/?a="><script>');
+$xss = EmailTemplate::textToHtml('https://www.motociclete.com.ro/?a="><script>');
+check('URL-ul sitului cu caractere speciale devine buton', str_contains($xss, 'Deschide linkul'));
 check('URL-ul e escapat', !str_contains($xss, '<script>'));
+
+$foreign = EmailTemplate::textToHtml("Mesaj de la vizitator:\nhttps://evil.example/login\nMulțumesc");
+check('URL străin (ex. dintr-un mesaj de contact) NU devine buton',
+    !str_contains($foreign, '<a href=') && str_contains($foreign, 'https://evil.example/login'));
+$local = EmailTemplate::textToHtml('http://motociclete.test/newsletter/confirmare/' . str_repeat('a', 32));
+check('URL-ul sitului local devine buton', str_contains($local, 'Deschide linkul'));
 
 nl_done();

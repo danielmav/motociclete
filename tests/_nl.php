@@ -7,6 +7,11 @@ declare(strict_types=1);
  * Testele cu DB rulează într-o tranzacție pe baza locală și fac rollback la final.
  */
 
+if (PHP_SAPI !== 'cli') {
+    http_response_code(403);
+    exit;
+}
+
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 Dotenv\Dotenv::createImmutable(dirname(__DIR__))->safeLoad();

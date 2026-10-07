@@ -84,8 +84,21 @@ check('search: % nu e wildcard', $repo->search('%') === []);
 // --- limite de abonare -------------------------------------------------------
 check('recentSignupsFromIp: numără pe IP', $repo->recentSignupsFromIp('10.0.0.1', 60) === 1);
 check('recentSignupsFromIp: alt IP = 0', $repo->recentSignupsFromIp('10.0.0.2', 60) === 0);
-check('confirmRecentlySent: fals înainte de trimitere', $repo->confirmRecentlySent($id, 15) === false);
-$repo->markConfirmSent($id);
-check('confirmRecentlySent: adevărat după trimitere', $repo->confirmRecentlySent($id, 15) === true);
+check('confirmPending: fals înainte de orice cerere', $repo->confirmPending($id, 7) === false);
+check('claimConfirmSend: prima cerere rezervă trimiterea', $repo->claimConfirmSend($id, 15) === true);
+check('claimConfirmSend: a doua cerere în 15 minute e refuzată', $repo->claimConfirmSend($id, 15) === false);
+check('confirmPending: adevărat după cerere', $repo->confirmPending($id, 7) === true);
+check('confirmsSentSince: numără cererile recente', $repo->confirmsSentSince(60) === 1);
+$repo->clearConfirm($id);
+check('clearConfirm: cererea e consumată', $repo->confirmPending($id, 7) === false);
+
+// --- dovada consimțământului nu se rescrie -----------------------------------
+$d = $repo->ensureSubscriber('dora@nl-test.invalid', null, 'active');
+$repo->addSubscription((int) $d['id'], 'stiri', 'garage');
+$pdo->exec("UPDATE nl_subscriptions SET subscribed_at = '2025-01-15 10:00:00' WHERE subscriber_id = " . (int) $d['id']);
+$repo->setSubscription((int) $d['id'], 'stiri', 'portal');
+$kept = $repo->subscriptions((int) $d['id'])['stiri'];
+check('setSubscription pe un abonament activ: sursa și data rămân',
+    $kept['source'] === 'garage' && $kept['subscribed_at'] === '2025-01-15 10:00:00' && $kept['status'] === 'active');
 
 nl_done();

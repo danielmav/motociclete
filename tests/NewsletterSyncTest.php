@@ -99,6 +99,11 @@ for ($i = 1; $i <= 30; $i++) {
 }
 $sync->run($sources($many, [], []), true);
 $active = count($repo->activeEmailsBySource('bs_account'));
+$r = $sync->run($sources(array_slice($many, 0, 25), [], []), true);
+check('gardă: abandon când sursa scade cu peste 10% (25 din 30)', is_string($r['aborted']));
+$r = $sync->run($sources(array_slice($many, 0, 28), [], []), true);
+check('gardă: o scădere mică (28 din 30) trece și dezabonează 2', $r['aborted'] === null && $r['unsubscribed'] === 2);
+$active = count($repo->activeEmailsBySource('bs_account'));
 $r = $sync->run($sources(array_slice($many, 0, 5), [], []), true);
 check('gardă: abandon când sursa scade sub jumătate', is_string($r['aborted']));
 check('gardă: nimeni dezabonat', count($repo->activeEmailsBySource('bs_account')) === $active);

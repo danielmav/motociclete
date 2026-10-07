@@ -26,13 +26,13 @@ $cleanup();
 register_shutdown_function($cleanup);
 
 /** @return array{0:int,1:string} [status, body] */
-$http = static function (string $method, string $url, array $fields = [], bool $ajax = true): array {
+$http = static function (string $method, string $url, array $fields = [], bool $ajax = true, array $headers = []): array {
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => false,
         CURLOPT_CUSTOMREQUEST  => $method,
-        CURLOPT_HTTPHEADER     => $ajax ? ['X-Requested-With: XMLHttpRequest'] : [],
+        CURLOPT_HTTPHEADER     => array_merge($ajax ? ['X-Requested-With: XMLHttpRequest'] : [], $headers),
     ]);
     if ($method === 'POST') {
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($fields));
@@ -82,7 +82,13 @@ check('token necunoscut → 404', $c === 404);
 [$c] = $http('GET', $base . '/newsletter/confirmare/nu-e-token', [], false);
 check('token cu format greșit → 404', $c === 404);
 
+// GET doar afișează butonul: filtrele de email deschid linkul automat.
 [$c, $b] = $http('GET', $base . '/newsletter/confirmare/' . $token . '?l=stiri,altceva', [], false);
+check('GET pe linkul de confirmare → 200 cu buton, fără activare',
+    $c === 200 && str_contains($b, 'Confirmă abonarea') && $repo->findByEmail($email)['status'] === 'pending'
+    && $repo->subscriptions((int) $sub['id']) === []);
+
+[$c, $b] = $http('POST', $base . '/newsletter/confirmare/' . $token . '?l=stiri,altceva', ['ok' => '1'], false);
 $sub  = $repo->findByEmail($email);
 $subs = $repo->subscriptions((int) $sub['id']);
 check('confirmare → 200 + abonat activ', $c === 200 && $sub['status'] === 'active');
@@ -121,10 +127,23 @@ check('„dezabonează-mă de la tot" → ambele dezabonate',
 [$c] = $http('POST', $base . '/newsletter/dezabonare/' . str_repeat('0', 32), ['unsub_all' => '1'], false);
 check('POST cu token necunoscut → 404', $c === 404);
 
+// Linkul de confirmare e de unică folosință: după dezabonare nu mai reabonează.
+[$c] = $http('POST', $base . '/newsletter/confirmare/' . $token . '?l=oferte,stiri', ['ok' => '1'], false);
+$subs = $repo->subscriptions((int) $sub['id']);
+check('link de confirmare refolosit → 410, rămâne dezabonat',
+    $c === 410 && $subs['oferte']['status'] === 'unsubscribed' && $subs['stiri']['status'] === 'unsubscribed');
+
+// O adresă cu reclamație de spam nu primește emailuri și nu poate fi reactivată.
+$compl = $repo->ensureSubscriber('reclamatie@nl-test.invalid', null, 'active');
+$repo->setStatus((int) $compl['id'], 'complained');
+[$c] = $http('POST', $api, ['email' => 'reclamatie@nl-test.invalid', 'lists' => ['stiri'], 'consent' => '1']);
+check('adresă cu reclamație: răspuns generic, fără email', $c === 200 && $mails('reclamatie@nl-test.invalid') === 0);
+
 // --- limita pe IP (Review Focus 5) -------------------------------------------
 $codes = [];
 for ($i = 1; $i <= 6; $i++) {
-    [$codes[]] = $http('POST', $api, ['email' => "ip{$i}@nl-test.invalid", 'lists' => ['stiri'], 'consent' => '1']);
+    // Un X-Forwarded-For diferit la fiecare cerere nu trebuie să ocolească limita.
+    [$codes[]] = $http('POST', $api, ['email' => "ip{$i}@nl-test.invalid", 'lists' => ['stiri'], 'consent' => '1'], true, ["X-Forwarded-For: 10.1.1.{$i}"]);
 }
 check('peste 5 abonați noi pe oră de pe același IP → 429', $codes[0] === 200 && end($codes) === 429);
 check('adresa peste limită nu e creată', $repo->findByEmail('ip6@nl-test.invalid') === null);

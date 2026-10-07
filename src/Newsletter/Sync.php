@@ -13,7 +13,8 @@ use App\Client\Repository as Garage;
  *   - adaugă doar abonamente care lipsesc; un dezabonat nu se reactivează;
  *   - un abonat bounced/complained nu primește nimic;
  *   - un cont BikerShop care nu mai are bifa pierde abonamentele cu sursa bs_account;
- *   - dacă BikerShop nu răspunde sau răspunde parțial, nu se modifică nimic.
+ *   - dacă BikerShop nu răspunde sau întoarce cu peste 10% mai puține conturi decât
+ *     avem active, nu se modifică nimic (dezabonările făcute de sync nu se refac singure).
  */
 final class Sync
 {
@@ -26,6 +27,9 @@ final class Sync
 
     /** Garda de răspuns parțial se aplică de la acest număr de conturi active în sus. */
     private const GUARD_MIN = 20;
+
+    /** Sub această fracțiune din conturile active, răspunsul e tratat ca parțial. */
+    private const GUARD_RATIO = 0.9;
 
     public function __construct(private Repository $repo) {}
 
@@ -82,9 +86,9 @@ final class Sync
 
         // 2. Gardă: un răspuns mult mai mic decât ce avem deja = date parțiale.
         $current = $this->repo->activeEmailsBySource('bs_account');
-        if (count($current) >= self::GUARD_MIN && count($clean['bs_account']) < count($current) / 2) {
+        if (count($current) >= self::GUARD_MIN && count($clean['bs_account']) < count($current) * self::GUARD_RATIO) {
             $report['aborted'] = sprintf(
-                'BikerShop a întors %d conturi față de %d active; pare un răspuns parțial. Nu s-a modificat nimic.',
+                'BikerShop a întors %d conturi față de %d active (scădere de peste 10%%); pare un răspuns parțial. Nu s-a modificat nimic.',
                 count($clean['bs_account']),
                 count($current)
             );

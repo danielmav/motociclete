@@ -28,6 +28,13 @@ $add('pending-vechi@nl-test.invalid', 'pending', 45);
 $add('pending-nou@nl-test.invalid', 'pending', 5);
 $add('activ-vechi@nl-test.invalid', 'active', 45);
 $add('activ-nou@nl-test.invalid', 'active', 5);
+// Neconfirmat vechi, dar dezabonat în Brevo: rândul de excludere trebuie să supraviețuiască.
+$add('pending-exclus@nl-test.invalid', 'pending', 45);
+$pdo->exec("INSERT INTO nl_subscriptions (subscriber_id, list_key, status, source, unsubscribed_at)
+            SELECT id, 'stiri', 'unsubscribed', 'brevo', NOW() FROM nl_subscribers WHERE email = 'pending-exclus@nl-test.invalid'");
+// Neconfirmat vechi care a cerut din nou linkul ieri: nu-l ștergem încă.
+$add('pending-recerut@nl-test.invalid', 'pending', 45);
+$pdo->exec("UPDATE nl_subscribers SET confirm_sent_at = NOW() - INTERVAL 1 DAY WHERE email = 'pending-recerut@nl-test.invalid'");
 
 $php = PHP_BINARY;
 $script = dirname(__DIR__) . '/database/retention.php';
@@ -49,6 +56,11 @@ exec(escapeshellarg($php) . ' ' . escapeshellarg($script) . ' --apply', $out2, $
 check('apply: cod de ieșire 0', $code2 === 0);
 check('pending de 45 de zile: șters', $row('pending-vechi@nl-test.invalid') === null);
 check('pending de 5 zile: păstrat', $row('pending-nou@nl-test.invalid') !== null);
+check('pending vechi cu rând de excludere: păstrat', $row('pending-exclus@nl-test.invalid') !== null);
+check('rândul de excludere rămâne', (int) $pdo->query(
+    "SELECT COUNT(*) FROM nl_subscriptions s JOIN nl_subscribers u ON u.id = s.subscriber_id WHERE u.email = 'pending-exclus@nl-test.invalid'"
+)->fetchColumn() === 1);
+check('pending vechi cu link cerut ieri: păstrat', $row('pending-recerut@nl-test.invalid') !== null);
 check('activ de 45 de zile: păstrat, IP golit',
     ($row('activ-vechi@nl-test.invalid')['status'] ?? '') === 'active' && $row('activ-vechi@nl-test.invalid')['signup_ip'] === null);
 check('activ de 5 zile: IP păstrat', ($row('activ-nou@nl-test.invalid')['signup_ip'] ?? null) === '10.9.9.9');
