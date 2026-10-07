@@ -177,8 +177,9 @@ lățime 600 px, lizibile la 390 px:
   redus, un buton către magazin, același footer.
 
 Formularul din admin rămâne cel existent, cu alegerea tipului și a listei, subiect și
-preheader. Funcții: previzualizare, trimitere de test la o adresă, pagină publică
-„vezi în browser" la `/newsletter/{id}-{slug}` (`noindex`).
+preheader. Funcții: previzualizare, trimitere de test la o adresă, pagină publică „vezi în browser"
+la `/newsletter/c/{id}-{cheie}` (`noindex`; cheia aleatoare face ca o ciornă să nu poată
+fi ghicită).
 
 ### Prețuri
 
@@ -186,11 +187,11 @@ Problemă existentă: generatorul afișează prețul de listă și ignoră reduc
 
 - **Modele (portal):** preț curent + preț vechi tăiat + procent, calculate din
   `products.price` și `products.discount_pct`, la fel ca pe pagina produsului.
-- **Produse BikerShop:** `BikerShop\Client::shapeProduct` primește în plus prețul vechi
-  și procentul, citite din reducerile magazinului. Corecția se vede și pe cardurile de
-  accesorii de pe portal. Cum sunt reprezentate reducerile în baza BikerShop (regulile
-  din `ps_specific_price` față de câmpurile `special|rrp` ale modulului supplierpricing)
-  se verifică pe date reale la începutul implementării; primul pas din plan.
+- **Produse BikerShop:** `BikerShop\Client` aplică reducerile active din
+  `ps_specific_price` (verificat pe date reale: toate sunt procentuale, cu TVA inclus,
+  pe produs sau pe variantă). Linkul lipit în formular poartă varianta
+  (`/722786-79528-….html`), deci prețul din mesaj e cel al variantei alese. Corecția
+  se vede și pe cardurile de accesorii de pe portal, care afișau prețul de listă.
 - Suprascrierea manuală a prețului din formular rămâne.
 
 ### Imagini
@@ -204,9 +205,8 @@ clienții de email.
 - UTM pe orice link către `motociclete.com.ro` și `bikershop.ro`:
   `utm_source=newsletter`, `utm_medium=email`, `utm_campaign=<slug campanie>`,
   `utm_content=<bloc>-<poziție>`.
-- Linkurile sunt înlocuite cu `/nl/c/{link}/{token}`, care înregistrează clicul și
-  redirecționează **doar** către URL-ul salvat în `nl_links` (fără parametru de
-  destinație în URL, deci fără redirect deschis).
+- Numărarea clicurilor (rescrierea linkurilor prin `/nl/c/{link}/{token}`) se adaugă în
+  etapa 4; până atunci linkurile sunt directe, cu UTM.
 - HTML-ul campaniei se salvează o singură dată, cu marcaje pentru partea
   personalizată (linkul de dezabonare, adresa destinatarului, linkurile de clic),
   completate la trimitere.
