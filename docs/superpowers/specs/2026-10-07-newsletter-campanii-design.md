@@ -11,9 +11,11 @@ pentru sincronizarea contactelor și cu generatorul YAML din adminul portalului
 reconectat și contactele reimportate: lista a crescut de la ~2.500 la ~6.000 de adrese,
 iar Brevo a suspendat trimiterea de campanii pentru „low metrics" pe contactele noi.
 
-Analiza bazei BikerShop arată că adresele noi sunt comenzile făcute ca vizitator
-(guest), unde bifa de newsletter apare la ~90% din comenzi, deci a fost cel mai
-probabil pusă implicit.
+Analiza bazei BikerShop arată două surse pentru adresele noi: comenzile făcute ca
+vizitator (guest), unde bifa de newsletter apare la ~90% din comenzi, deci a fost cel
+mai probabil pusă implicit, și clienții fără bifă, printre care 263 de adrese fictive
+`guest-emag-…@bikershop.ro` create pentru comenzile venite din eMAG (inexistente, deci
+respinse la orice trimitere).
 
 ## Scop
 
@@ -122,6 +124,12 @@ de butonul „Actualizează lista" din admin. Reguli:
 - Dacă un cont BikerShop nu mai are `newsletter=1`, abonamentele lui cu sursa
   `bs_account` devin `unsubscribed`.
 - Comenzile guest nu se importă deloc.
+- Adresele fictive nu se importă, indiferent de bifă: cele generate pentru comenzile
+  din marketplace (`guest-emag-…@bikershop.ro`, 263 la data scrierii), orice adresă pe
+  domeniile proprii (`bikershop.ro`, `motociclete.com.ro`) sau pe `emag.ro`, și
+  domeniile de test (`tfbnw.net`). Lista de tipare stă într-o constantă în
+  `Newsletter\Sync`; aceeași verificare se aplică la abonarea de pe portal și la
+  adăugarea manuală.
 - Dacă BikerShop nu răspunde, sincronizarea se oprește fără modificări (nu
   interpretează lipsa datelor ca dezabonare în masă).
 
