@@ -1,6 +1,7 @@
 {% extends 'admin/layout.twig' %}
 {% set active = 'newsletter' %}
 {% block title %}Newsletter Brevo{% endblock %}
+{% block actions %}<a class="adm-btn" href="{{ admin_base }}/newsletter/abonati">Abonați</a>{% endblock %}
 
 {% block content %}
 {% if not parts_available %}

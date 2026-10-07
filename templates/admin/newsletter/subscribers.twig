@@ -1,0 +1,106 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'newsletter' %}
+{% block title %}Abonați newsletter{% endblock %}
+{% block actions %}
+    <a class="adm-btn" href="{{ admin_base }}/newsletter">Generator</a>
+    <form method="post" action="{{ admin_base }}/newsletter/abonati/sync" style="display:inline">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <button class="adm-btn adm-btn--primary" type="submit">Actualizează lista</button>
+    </form>
+{% endblock %}
+
+{% block content %}
+    {% if msg %}<div class="adm-flash adm-flash--ok">{{ msg }}</div>{% endif %}
+    {% if err %}<div class="adm-flash adm-flash--err">{{ err }}</div>{% endif %}
+
+    {% set source_names = {bs_account: 'cont BikerShop', bs_footer: 'footer BikerShop', portal: 'abonare portal', garage: 'My Garage', manual: 'adăugat manual', brevo: 'import Brevo'} %}
+    {% set status_names = {pending: 'neconfirmat', active: 'activ', bounced: 'respins', complained: 'reclamație spam'} %}
+
+    {% if counts %}
+    <div class="adm-grid2" style="max-width:980px;margin-bottom:1.2rem">
+        {% for key, name in lists %}
+            <div class="adm-fieldset">
+                <span class="adm-fieldset__t">{{ name }}</span>
+                <p style="margin:.6rem 0 .3rem;font-size:1.6rem;font-weight:700">{{ counts.lists[key].active }}</p>
+                <p class="adm-muted" style="margin:0 0 .5rem">destinatari activi · {{ counts.lists[key].unsubscribed }} dezabonați</p>
+                <ul class="adm-help" style="margin:0 0 0 1rem">
+                    {% for src, n in counts.lists[key].by_source %}
+                        <li>{{ source_names[src] ?? src }}: {{ n }}</li>
+                    {% else %}
+                        <li>niciun abonat încă</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endfor %}
+    </div>
+    <p class="adm-muted" style="margin-bottom:1.4rem">
+        Adrese în total: {{ counts.subscribers.active }} active · {{ counts.subscribers.pending }} neconfirmate ·
+        {{ counts.subscribers.bounced }} respinse · {{ counts.subscribers.complained }} cu reclamație de spam.
+        „Actualizează lista" aduce conturile și abonații din footerul BikerShop și proprietarii din My Garage; nu reactivează pe nimeni dezabonat.
+    </p>
+    {% endif %}
+
+    <div class="adm-grid2" style="max-width:980px;margin-bottom:1.4rem">
+        <form class="adm-fieldset" method="get" action="{{ admin_base }}/newsletter/abonati">
+            <span class="adm-fieldset__t">Caută o adresă</span>
+            <label style="margin-top:.6rem">Email (sau o parte din el) <input type="text" name="q" value="{{ q }}" required></label>
+            <div class="adm-actions" style="margin:.8rem 0 0"><button class="adm-btn" type="submit">Caută</button></div>
+        </form>
+
+        <form class="adm-fieldset" method="post" action="{{ admin_base }}/newsletter/abonati/adauga">
+            <input type="hidden" name="_csrf" value="{{ csrf }}">
+            <span class="adm-fieldset__t">Adaugă manual</span>
+            <label style="margin-top:.6rem">Email <input type="email" name="email" required></label>
+            <label style="margin-top:.6rem">Nume (opțional) <input type="text" name="name"></label>
+            <div style="margin-top:.6rem">
+                {% for key, name in lists %}
+                    <label style="display:inline-flex;gap:.4rem;align-items:center;margin-right:1rem"><input type="checkbox" name="lists[]" value="{{ key }}" checked> {{ name }}</label>
+                {% endfor %}
+            </div>
+            <p class="adm-help" style="margin:.6rem 0 0">Adaugă doar persoane care au cerut explicit newsletterul.</p>
+            <div class="adm-actions" style="margin:.8rem 0 0"><button class="adm-btn adm-btn--primary" type="submit">Abonează</button></div>
+        </form>
+    </div>
+
+    {% if q %}
+    <table class="adm-table">
+        <thead><tr><th>Email</th><th>Nume</th><th>Stare</th>{% for key, name in lists %}<th>{{ name }}</th>{% endfor %}<th>Adăugat</th></tr></thead>
+        <tbody>
+        {% for s in results %}
+            <tr>
+                <td><strong>{{ s.email }}</strong></td>
+                <td class="adm-muted">{{ s.name ?: '—' }}</td>
+                <td>
+                    {% if s.status == 'active' %}<span class="adm-badge adm-badge--on">activ</span>
+                    {% else %}<span class="adm-badge adm-badge--off">{{ status_names[s.status] ?? s.status }}</span>{% endif %}
+                </td>
+                {% for key, name in lists %}
+                    <td style="white-space:nowrap">
+                        {% if s.subs[key] is defined %}
+                            {% set sub = s.subs[key] %}
+                            {% if sub.status == 'active' %}
+                                <span class="adm-badge adm-badge--on">abonat</span>
+                                <span class="adm-muted">{{ source_names[sub.source] ?? sub.source }}</span>
+                                <form method="post" action="{{ admin_base }}/newsletter/abonati/{{ s.id }}/dezabonare" style="display:inline" onsubmit="return confirm('Dezabonezi {{ s.email|e('js') }} de la {{ name|e('js') }}?')">
+                                    <input type="hidden" name="_csrf" value="{{ csrf }}">
+                                    <input type="hidden" name="list" value="{{ key }}">
+                                    <button class="adm-btn adm-btn--sm adm-btn--danger" type="submit">Dezabonează</button>
+                                </form>
+                            {% else %}
+                                <span class="adm-badge adm-badge--off">dezabonat</span>
+                                <span class="adm-muted">{{ sub.unsubscribed_at ? sub.unsubscribed_at|date('d.m.Y') : '' }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="adm-muted">—</span>
+                        {% endif %}
+                    </td>
+                {% endfor %}
+                <td class="adm-muted">{{ s.created_at|date('d.m.Y') }}</td>
+            </tr>
+        {% else %}
+            <tr><td colspan="{{ 4 + lists|length }}" class="adm-muted">Nicio adresă nu conține „{{ q }}".</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+{% endblock %}

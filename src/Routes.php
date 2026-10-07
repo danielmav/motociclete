@@ -176,6 +176,11 @@ return function (App $app, Twig $twig, array $container): void {
     // Newsletter Brevo — generator YAML (Developer mode)
     $app->get($adminBase . '/newsletter',  $adminCtl('NewsletterController', 'index'));
     $app->post($adminBase . '/newsletter', $adminCtl('NewsletterController', 'generate'));
+    // Newsletter — abonați (liste proprii, sincronizate din BikerShop + My Garage)
+    $app->get($adminBase . '/newsletter/abonati',                          $adminCtl('SubscriberController', 'index'));
+    $app->post($adminBase . '/newsletter/abonati/adauga',                  $adminCtl('SubscriberController', 'add'));
+    $app->post($adminBase . '/newsletter/abonati/sync',                    $adminCtl('SubscriberController', 'sync'));
+    $app->post($adminBase . '/newsletter/abonati/{id:[0-9]+}/dezabonare',  $adminCtl('SubscriberController', 'unsubscribe'));
     // Finanțare — config UniCredit + pagina /finantare
     $app->get($adminBase . '/finantare',                     $adminCtl('FinanceController', 'index'));
     $app->post($adminBase . '/finantare',                    $adminCtl('FinanceController', 'save'));
