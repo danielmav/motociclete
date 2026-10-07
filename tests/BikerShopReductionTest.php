@@ -11,6 +11,8 @@ require __DIR__ . '/_nl.php';
 
 use App\BikerShop\Reduction;
 
+// Serverul rulează PHP pe UTC, iar magazinul ține datele în ora României.
+date_default_timezone_set('UTC');
 $now = strtotime('2026-10-07 12:00:00');
 $row = static fn (array $over = []): array => $over + [
     'id_specific_price' => 1, 'id_shop' => 0, 'price' => '-1.000000', 'reduction' => '0.200000',
@@ -29,6 +31,18 @@ check('preț fix → ignorat', Reduction::pick([$row(['price' => '999.000000'])]
 check('alt magazin → ignorat', Reduction::pick([$row(['id_shop' => 2])], 1, $now) === null);
 check('reducere 0 sau 100% → ignorată',
     Reduction::pick([$row(['reduction' => '0']), $row(['reduction' => '1.000000'])], 1, $now) === null);
+
+// --- pick(): fereastra e în ora magazinului (Europe/Bucharest), nu în ora serverului ---
+// 22:30 UTC pe 31 octombrie = 00:30 pe 1 noiembrie la București.
+$afterMidnight = (new DateTimeImmutable('2026-10-31 22:30:00', new DateTimeZone('UTC')))->getTimestamp();
+check('promoție încheiată la miezul nopții (ora României) nu mai e aplicată la 00:30',
+    Reduction::pick([$row(['to' => '2026-10-31 23:59:59'])], 1, $afterMidnight) === null);
+check('promoție care începe la miezul nopții (ora României) e aplicată la 00:30',
+    Reduction::pick([$row(['from' => '2026-11-01 00:00:00'])], 1, $afterMidnight) === 0.2);
+// Vara diferența e de 3 ore: 21:30 UTC pe 30 iunie = 00:30 pe 1 iulie la București.
+$summer = (new DateTimeImmutable('2026-06-30 21:30:00', new DateTimeZone('UTC')))->getTimestamp();
+check('la fel și pe ora de vară',
+    Reduction::pick([$row(['to' => '2026-06-30 23:59:59'])], 1, $summer) === null);
 
 // --- pick(): care câștigă -----------------------------------------------------
 check('rândul magazinului bate rândul global',

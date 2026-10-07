@@ -146,6 +146,7 @@ final class Content
 
     /**
      * @param array<int,array<string,mixed>|string> $specs URL / slug / obiect {slug|url, brand, nume, pret, pret_vechi, descriere, imagine, link}
+     *        Rezultat: name, image, price, price_old (?string), pct (?int), desc, url.
      * @return array<int,array<string,mixed>>
      */
     public function models(array $specs): array
@@ -173,13 +174,14 @@ final class Content
             $price = (int) ($p['price'] ?? 0);
             $old   = (int) ($p['old_price'] ?? 0);
             $manualOld = isset($o['pret_vechi']) && $o['pret_vechi'] !== '';
+            // Reducerea din catalog se afișează doar când nici prețul, nici prețul vechi nu sunt puse manual.
+            $catalogOld = !$manualOld && !isset($o['pret']) && $price > 0 && $old > $price;
             return [
                 'name'      => (string) ($o['nume'] ?? $p['name']),
                 'image'     => (string) ($o['imagine'] ?? ($this->site . ($p['cover'] ?? ''))),
                 'price'     => (string) ($o['pret'] ?? ($price > 0 ? self::eur($price) : 'Preț la cerere')),
-                'price_old' => $manualOld
-                    ? (string) $o['pret_vechi']
-                    : (!isset($o['pret']) && $price > 0 && $old > $price ? self::eur($old) : null),
+                'price_old' => $manualOld ? (string) $o['pret_vechi'] : ($catalogOld ? self::eur($old) : null),
+                'pct'       => $catalogOld ? (int) round((1 - $price / $old) * 100) : null,
                 'desc'      => (string) ($o['descriere'] ?? self::excerpt((string) (($p['excerpt'] ?? '') ?: ($p['description'] ?? '')))),
                 'url'       => (string) ($o['link'] ?? ($this->site . $p['url'])),
             ];

@@ -25,9 +25,9 @@ $stiri = [
     'news' => ['title_html' => 'Noua <em>AGV K5</em>', 'image' => 'https://www.motociclete.com.ro/media/newsletter/k5.jpg',
         'link' => 'https://bikershop.ro/765-integrale', 'button' => 'Vezi căștile', 'body_html' => '<p>Text <b>știre</b>.</p>'],
     'models' => [
-        ['name' => 'R7', 'image' => 'https://www.motociclete.com.ro/media/yamaha/cover/r7.jpg', 'price' => '10.500 €', 'price_old' => '10.900 €',
+        ['name' => 'R7', 'image' => 'https://www.motociclete.com.ro/media/yamaha/cover/r7.jpg', 'price' => '10.500 €', 'price_old' => '10.900 €', 'pct' => 4,
             'desc' => 'Noul R7 este aici.', 'url' => 'https://www.motociclete.com.ro/yamaha/motociclete/supersport/r7-2026'],
-        ['name' => 'Ténéré 700 "Rally" <2026>', 'image' => 'https://www.motociclete.com.ro/media/yamaha/cover/t7.jpg', 'price' => 'Preț la cerere', 'price_old' => null,
+        ['name' => 'Ténéré 700 "Rally" <2026>', 'image' => 'https://www.motociclete.com.ro/media/yamaha/cover/t7.jpg', 'price' => 'Preț la cerere', 'price_old' => null, 'pct' => null,
             'desc' => 'Tom & Jerry aprobă.', 'url' => 'https://www.motociclete.com.ro/yamaha/motociclete/adventure/tenere-700'],
     ],
     'products' => [
@@ -57,6 +57,7 @@ check('model cu reducere: ambele prețuri, cel vechi tăiat',
 check('produs cu reducere: preț vechi tăiat și procent',
     (bool) preg_match('~line-through[^>]*>\s*1\.585 lei~', $html) && str_contains($html, '−20%'));
 check('doar produsele cu reducere au preț tăiat', substr_count($html, 'line-through') === 3);
+check('modelul cu reducere afișează și procentul', str_contains($html, '−4%'));
 check('modelul fără preț afișează „Preț la cerere"', str_contains($html, 'Preț la cerere'));
 
 // --- escapare (Review Focus 3) -----------------------------------------------

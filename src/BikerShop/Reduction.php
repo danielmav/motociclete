@@ -13,6 +13,9 @@ namespace App\BikerShop;
  */
 final class Reduction
 {
+    /** Fusul orar în care magazinul ține `from`/`to` (serverul portalului rulează pe UTC). */
+    private const SHOP_TIMEZONE = 'Europe/Bucharest';
+
     /**
      * @param array<int,array<string,mixed>> $rows rândurile UNEI ținte (un produs sau o variantă)
      * @return float|null fracția reducerii (0 < r < 1)
@@ -81,14 +84,21 @@ final class Reduction
         ];
     }
 
-    /** Data PrestaShop → timestamp; `0000-00-00…` și golul înseamnă „fără limită". */
+    /**
+     * Data PrestaShop (ora magazinului) → timestamp; `0000-00-00…` și golul înseamnă
+     * „fără limită". Nu folosim strtotime(): ar citi data în fusul serverului (UTC) și
+     * promoțiile ar începe și s-ar termina cu 2–3 ore mai târziu decât în magazin.
+     */
     private static function ts(mixed $value): ?int
     {
         $value = (string) $value;
         if ($value === '' || str_starts_with($value, '0000')) {
             return null;
         }
-        $t = strtotime($value);
-        return $t === false ? null : $t;
+        try {
+            return (new \DateTimeImmutable($value, new \DateTimeZone(self::SHOP_TIMEZONE)))->getTimestamp();
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

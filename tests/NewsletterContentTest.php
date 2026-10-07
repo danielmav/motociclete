@@ -63,6 +63,7 @@ check('URL fără id → excepție', $throws(fn () => Content::productSpec('http
 $m = $content->models(['https://www.motociclete.com.ro/yamaha/motociclete/supersport/r7-2026?utm=x', 'mt-07-2026']);
 check('model cu reducere: preț nou + preț vechi', $m[0]['price'] === '10.500 €' && $m[0]['price_old'] === '10.900 €');
 check('model fără reducere: fără preț vechi', $m[1]['price'] === '8.990 €' && $m[1]['price_old'] === null);
+check('model cu reducere: procentul calculat din prețuri; fără reducere: null', $m[0]['pct'] === 4 && $m[1]['pct'] === null);
 check('descriere din excerpt sau din descriere', $m[0]['desc'] === 'Noul R7 este aici.' && $m[1]['desc'] === 'Naked de referință.');
 check('imagine și link absolute',
     $m[0]['image'] === 'https://www.motociclete.com.ro/media/yamaha/cover/r7.jpg'
@@ -77,6 +78,7 @@ check('model necunoscut → excepție care îl numește',
     str_contains($throws(fn () => $content->models(['yamaha/nu-exista'])), 'yamaha/nu-exista'));
 $over = $content->models([['slug' => 'r7-2026', 'nume' => 'R7 2026', 'pret' => '9.999 €', 'pret_vechi' => '10.900 €']])[0];
 check('câmpurile completate manual au prioritate', $over['name'] === 'R7 2026' && $over['price'] === '9.999 €' && $over['price_old'] === '10.900 €');
+check('prețuri de model puse manual (text liber) → fără procent', $over['pct'] === null);
 
 // --- produse -----------------------------------------------------------------
 $p = $content->products(['https://bikershop.ro/jachete/722786-79528-jacheta.html', '20771']);

@@ -13,7 +13,7 @@
 <td class="col" width="50%" valign="middle" style="padding:16px"><a href="{{ url }}"><img src="{{ m.image }}" width="252" alt="{{ m.name }}" style="display:block;width:100%;height:auto;border-radius:8px"></a></td>
 <td class="col" width="50%" valign="middle" style="padding:16px">
 <h2 style="margin:0 0 6px;font-size:22px;line-height:1.25;color:#231f1e">{{ m.name }}</h2>
-<p style="margin:0 0 10px;line-height:1.4">{{ ui.price(m.price, m.price_old) }}</p>
+<p style="margin:0 0 10px;line-height:1.4">{{ ui.price(m.price, m.price_old, m.pct) }}</p>
 <p style="margin:0 0 14px;font-size:14px;line-height:1.5">{{ m.desc }}</p>
 {{ ui.button(url, 'Detalii') }}
 </td>
