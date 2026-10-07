@@ -16,7 +16,9 @@ use RuntimeException;
  *
  *   subiect, stire{titlu_html, imagine, link, buton, paragrafe[]|text_html},
  *   modele[2] (URL/slug/brand-slug sau obiect {slug|url, brand, nume, pret, descriere, imagine, link}),
- *   produse[6] (id/URL bikershop sau obiect {id|url, nume, pret, pret_vechi, pret_html, imagine, link}).
+ *   produse[6] (id/URL bikershop sau obiect {id|url, attr, nume, pret, pret_vechi, pret_html, imagine, link}).
+ *
+ * Rezolvarea modelelor și a produselor (inclusiv prețurile reduse) e în clasa Content (același namespace).
  *
  * Nu parsează YAML: lucrează pe text (escapare ' → '', UUID-uri noi pe blocurile duplicate).
  * Modelele vin din catalogul local, produsele LIVE de pe BikerShop; orice câmp e suprascriibil.
@@ -68,14 +70,35 @@ final class Generator
         $this->warnings = [];
         $this->summary  = [];
 
-        $models = array_map(fn ($m) => $this->resolveModel($m), array_values($in['modele'] ?? []));
-        if (count($models) !== 2) {
+        $modelSpecs   = array_values($in['modele'] ?? []);
+        $productSpecs = array_values($in['produse'] ?? []);
+        if (count($modelSpecs) !== 2) {
             throw new RuntimeException('Sunt necesare exact 2 modele.');
         }
-        $products = $this->resolveProducts($this->productSpecs(array_values($in['produse'] ?? [])));
-        if (count($products) !== 6) {
+        if (count($productSpecs) !== 6) {
             throw new RuntimeException('Sunt necesare exact 6 produse BikerShop.');
         }
+        if (!$this->bikershop->isAvailable()) {
+            $this->warnings[] = 'Baza BikerShop e indisponibilă — se folosesc doar câmpurile completate manual.';
+        }
+        $content = Content::fromServices($this->catalog, $this->bikershop, $this->db, $this->site);
+        $models = array_map(static fn (array $m): array => [
+            'IMAGE' => $m['image'],
+            'NAME'  => $m['name'],
+            'PRICE' => $m['price_old'] !== null ? '<s>' . $m['price_old'] . '</s> ' . $m['price'] : $m['price'],
+            'DESC'  => $m['desc'],
+            'URL'   => $m['url'],
+        ], $content->models($modelSpecs));
+        $products = array_map(static function (array $p): array {
+            $html = $p['price_html'];
+            if ($html === null) {
+                $html = $p['price_old'] !== null
+                    ? '<p><strong>' . $p['price'] . '</strong> <s>' . $p['price_old'] . '</s> -' . $p['pct'] . '%</p>'
+                    : '<p><strong>' . $p['price'] . '</strong></p>';
+            }
+            return ['IMAGE' => $p['image'], 'NAME' => $p['name'], 'PRICE_HTML' => $html, 'URL' => $p['url']];
+        }, $content->products($productSpecs));
+        $this->warnings = array_merge($this->warnings, $content->warnings());
         $news = $in['stire'] ?? [];
         foreach (['titlu_html' => 'titlul', 'imagine' => 'imaginea', 'link' => 'linkul'] as $k => $label) {
             if (empty($news[$k])) {
@@ -174,154 +197,33 @@ final class Generator
 
     public static function eur(int|float $v): string
     {
-        return number_format((float) $v, 0, ',', '.') . ' €';
+        return Content::eur($v);
     }
 
     public static function lei(int|float $v): string
     {
-        return number_format((float) $v, 0, ',', '.') . ' lei';
+        return Content::lei($v);
     }
 
     public static function excerpt(string $html, int $max = 260): string
     {
-        $t = trim((string) preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
-        if (mb_strlen($t) <= $max) {
-            return $t;
-        }
-        $t = mb_substr($t, 0, $max);
-        $dot = mb_strrpos($t, '. ');
-        if ($dot !== false && $dot > $max / 2) {
-            return mb_substr($t, 0, $dot + 1);
-        }
-        $sp = mb_strrpos($t, ' ');
-        return rtrim(mb_substr($t, 0, $sp ?: $max), ' ,;:') . '…';
+        return Content::excerpt($html, $max);
     }
 
     /** Listă de paragrafe (sau string) → HTML; elementele care încep cu '<' sunt lăsate ca atare. */
     public static function paragraphs(array|string $p): string
     {
-        $p = is_array($p) ? $p : [$p];
-        $p = array_filter(array_map(fn ($x) => trim((string) $x), $p), fn ($x) => $x !== '');
-        return implode('', array_map(fn ($x) => str_starts_with($x, '<') ? $x : '<p>' . $x . '</p>', $p));
+        return Content::paragraphs($p);
     }
 
     /** Text cu paragrafe separate prin linie goală → listă (pentru formularul admin). */
     public static function splitParagraphs(string $text): array
     {
-        return array_values(array_filter(array_map('trim', preg_split('/\R\s*\R/', $text) ?: []), fn ($x) => $x !== ''));
+        return Content::splitParagraphs($text);
     }
 
     private function absolute(string $url): string
     {
         return str_starts_with($url, '/') ? $this->site . $url : $url;
-    }
-
-    // ------------------------------------------------------------ modele
-
-    private function resolveModel(array|string $spec): array
-    {
-        $o = is_array($spec) ? $spec : ['slug' => $spec];
-        $ref = (string) ($o['url'] ?? $o['slug'] ?? '');
-        $ref = (string) preg_replace('#^https?://[^/]+#', '', trim($ref));
-        $segs = array_values(array_filter(explode('/', trim($ref, '/'))));
-        $brand = (string) ($o['brand'] ?? (count($segs) > 1 ? $segs[0] : 'yamaha'));
-        $slug  = (string) (end($segs) ?: '');
-        if ($slug === '') {
-            throw new RuntimeException('Model lipsă (completează URL-ul sau slug-ul).');
-        }
-
-        $p = $this->catalog->product($brand, $slug);
-        if (!$p && ($canon = $this->catalog->canonicalForSlugRedirect($brand, $slug))) {
-            $p = $this->catalog->product($brand, basename($canon));
-        }
-        if (!$p) { // slug fără an (ex. "mt-09" → "mt-09-2026")
-            $st = $this->db->local()->prepare(
-                "SELECT slug FROM products WHERE brand = :b AND is_active = 1 AND slug REGEXP :re ORDER BY year DESC LIMIT 1"
-            );
-            $st->execute([':b' => $brand, ':re' => '^' . preg_quote($slug) . '-[0-9]{4}$']);
-            if ($s = $st->fetchColumn()) {
-                $p = $this->catalog->product($brand, (string) $s);
-            }
-        }
-        if (!$p) {
-            throw new RuntimeException("Model negăsit în catalog: $brand/$slug");
-        }
-        if ((int) $p['is_active'] === 0) {
-            $this->warnings[] = "{$p['name']} e scos din ofertă (is_active=0).";
-        }
-        if (empty($o['imagine']) && empty($p['cover'])) {
-            $this->warnings[] = "{$p['name']} nu are imagine cover în catalog.";
-        }
-        return [
-            'IMAGE' => $o['imagine'] ?? ($this->site . ($p['cover'] ?? '')),
-            'NAME'  => $o['nume'] ?? $p['name'],
-            'PRICE' => $o['pret'] ?? ((int) $p['price'] > 0 ? self::eur((int) $p['price']) : 'Preț la cerere'),
-            'DESC'  => $o['descriere'] ?? self::excerpt((string) ($p['excerpt'] ?: $p['description'])),
-            'URL'   => $o['link'] ?? ($this->site . $p['url']),
-        ];
-    }
-
-    // ------------------------------------------------------------ produse BikerShop
-
-    private function productSpecs(array $list): array
-    {
-        return array_map(function ($spec) {
-            $spec = is_string($spec) ? trim($spec) : $spec;
-            $o = is_array($spec) ? $spec : (is_numeric($spec) ? ['id' => (int) $spec] : ['url' => (string) $spec]);
-            if (empty($o['id']) && !empty($o['url']) && preg_match('#/(\d+)-[^/]*\.html#', (string) $o['url'], $m)) {
-                $o['id'] = (int) $m[1];
-            }
-            if (empty($o['id'])) {
-                throw new RuntimeException('Produs BikerShop fără id: ' . json_encode($spec, JSON_UNESCAPED_UNICODE));
-            }
-            return $o;
-        }, $list);
-    }
-
-    private function resolveProducts(array $specs): array
-    {
-        $ids  = array_map(fn ($o) => (int) $o['id'], $specs);
-        $live = [];
-        foreach ($this->bikershop->productsByIds($ids, count($ids)) as $p) {
-            $live[$p['id']] = $p;
-        }
-        if (!$live && !$this->bikershop->isAvailable()) {
-            $this->warnings[] = 'Baza BikerShop e indisponibilă — se folosesc doar câmpurile completate manual.';
-        }
-        $out = [];
-        foreach ($specs as $o) {
-            $p = $live[$o['id']] ?? null;
-            if (!$p) {
-                $this->warnings[] = "Produsul {$o['id']} nu e activ / nu există pe BikerShop.";
-            }
-            $missing = [];
-            foreach (['nume' => 'name', 'imagine' => 'image', 'link' => 'url'] as $k => $lk) {
-                if (empty($o[$k]) && empty($p[$lk]) && !($k === 'link' && !empty($o['url']))) {
-                    $missing[] = $k;
-                }
-            }
-            if ($missing) {
-                throw new RuntimeException("Produsul {$o['id']}: lipsesc " . implode(', ', $missing) . '.');
-            }
-            $priceHtml = $o['pret_html'] ?? null;
-            if ($priceHtml === null) {
-                $cur = isset($o['pret']) && $o['pret'] !== '' ? (float) $o['pret'] : (float) ($p['price'] ?? 0);
-                $now = $cur > 0 ? self::lei($cur) : '';
-                if (!empty($o['pret_vechi'])) {
-                    $old = (float) $o['pret_vechi'];
-                    $pct = $cur > 0 && $old > $cur ? ' -' . round((1 - $cur / $old) * 100) . '%' : '';
-                    $priceHtml = '<p><strong>' . $now . '</strong> <s>' . self::lei($old) . '</s>' . $pct . '</p>';
-                } else {
-                    $priceHtml = '<p><strong>' . $now . '</strong></p>';
-                }
-            }
-            $out[] = [
-                'IMAGE'      => $o['imagine'] ?? $p['image'],
-                'NAME'       => $o['nume'] ?? $p['name'],
-                'PRICE_HTML' => $priceHtml,
-                'URL'        => $o['link'] ?? $o['url'] ?? $p['url'],
-            ];
-        }
-        return $out;
     }
 }
