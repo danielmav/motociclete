@@ -15,6 +15,7 @@ run_sql_file($pdo, __DIR__ . '/schema_admin.sql');
 run_sql_file($pdo, __DIR__ . '/schema_pages.sql');
 run_sql_file($pdo, __DIR__ . '/schema_yamaha_catalog.sql');
 run_sql_file($pdo, __DIR__ . '/schema_cfmoto_feed.sql');
+run_sql_file($pdo, __DIR__ . '/schema_newsletter.sql');
 
 // Widen settings.svalue to TEXT (older schemas had VARCHAR(255) → truncated long HTML).
 $col = $pdo->query(
