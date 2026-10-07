@@ -1081,7 +1081,7 @@ final class Sync
 
         // 4. Conturile care nu mai au bifa în BikerShop.
         foreach ($current as $email) {
-            if (isset($clean['bs_account'][$email])) {
+            if (array_key_exists($email, $clean['bs_account'])) {
                 continue;
             }
             $report['unsubscribed']++;

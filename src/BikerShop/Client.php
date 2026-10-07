@@ -670,6 +670,49 @@ final class Client
         }
     }
 
+    /**
+     * Conturile înregistrate care au bifa de newsletter (fără comenzi guest).
+     * Null = BikerShop indisponibil; apelantul NU trebuie să-l trateze ca listă goală.
+     * @return array<int,array{email:string,name:string}>|null
+     */
+    public function newsletterAccounts(): ?array
+    {
+        if (!$this->isAvailable()) {
+            return null;
+        }
+        $p = $this->prefix;
+        $shop = $this->shopId; // trusted config int, inlined
+        try {
+            return $this->pdo->query(
+                "SELECT email, TRIM(CONCAT(firstname, ' ', lastname)) AS name
+                 FROM {$p}customer
+                 WHERE newsletter = 1 AND is_guest = 0 AND active = 1 AND deleted = 0 AND id_shop = {$shop}"
+            )->fetchAll();
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Abonații din formularul de newsletter din footerul magazinului.
+     * @return array<int,array{email:string,name:string}>|null
+     */
+    public function newsletterFooter(): ?array
+    {
+        if (!$this->isAvailable()) {
+            return null;
+        }
+        $p = $this->prefix;
+        $shop = $this->shopId;
+        try {
+            return $this->pdo->query(
+                "SELECT email, '' AS name FROM {$p}emailsubscription WHERE active = 1 AND id_shop = {$shop}"
+            )->fetchAll();
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
     /** @param array<string,mixed> $r @return array<string,mixed> */
     private function shapeProduct(array $r): array
     {

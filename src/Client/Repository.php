@@ -411,6 +411,20 @@ final class Repository
         }
     }
 
+    /**
+     * Proprietarii cu email (o adresă o singură dată), pentru lista de newsletter.
+     * @return array<int,array{email:string,name:string}>
+     */
+    public function ownersWithEmail(): array
+    {
+        return $this->all(
+            "SELECT email_norm AS email, MAX(client) AS name
+             FROM clienti
+             WHERE email_norm IS NOT NULL AND email_norm <> ''
+             GROUP BY email_norm"
+        );
+    }
+
     // -- Shaping --------------------------------------------------------------
 
     /** @param array<string,mixed> $r @return array<string,mixed> */
