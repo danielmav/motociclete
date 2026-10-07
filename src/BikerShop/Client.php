@@ -136,7 +136,7 @@ final class Client
             return [];
         }
 
-        return array_map(fn (array $r) => $this->shapeProduct($r), $rows);
+        return $this->withReductions(array_map(fn (array $r) => $this->shapeProduct($r), $rows));
     }
 
     /**
@@ -227,7 +227,7 @@ final class Client
             }
             $stmt->bindValue(':lim', max(1, $limit), PDO::PARAM_INT);
             $stmt->execute();
-            return array_map(fn (array $r) => $this->shapeProduct($r), $stmt->fetchAll());
+            return $this->withReductions(array_map(fn (array $r) => $this->shapeProduct($r), $stmt->fetchAll()));
         } catch (Throwable) {
             return [];
         }
@@ -283,7 +283,7 @@ final class Client
                 $stmt->bindValue($i++, $v, is_int($v) ? PDO::PARAM_INT : PDO::PARAM_STR);
             }
             $stmt->execute();
-            return array_map(fn (array $r) => $this->shapeProduct($r), $stmt->fetchAll());
+            return $this->withReductions(array_map(fn (array $r) => $this->shapeProduct($r), $stmt->fetchAll()));
         } catch (Throwable) {
             return [];
         }
@@ -295,7 +295,7 @@ final class Client
      * (see database/migrate_oem_fitment.php), details are fetched live here on
      * the primary key (fast). @return array<int,array<string,mixed>>
      */
-    public function productsByIds(array $ids, int $limit = 12): array
+    public function productsByIds(array $ids, int $limit = 12, array $attrs = []): array
     {
         $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
         if (!$ids || !$this->isAvailable()) {
@@ -322,7 +322,7 @@ final class Client
         try {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($ids);
-            $shaped = array_map(fn (array $r) => $this->shapeProduct($r), $stmt->fetchAll());
+            $shaped = $this->withReductions(array_map(fn (array $r) => $this->shapeProduct($r), $stmt->fetchAll()), $attrs);
         } catch (Throwable) {
             return [];
         }
@@ -713,6 +713,68 @@ final class Client
         }
     }
 
+    /**
+     * Aplică reducerile active din magazin (`ps_specific_price`): `price` devine prețul
+     * de vânzare, `price_old` prețul de listă, `reduction_pct` procentul. Fără reducere
+     * sau la orice eroare produsele rămân cu prețul de listă.
+     * @param array<int,array<string,mixed>> $products rezultate shapeProduct()
+     * @param array<int,int> $attrs id_product => id_product_attribute cerut explicit
+     * @return array<int,array<string,mixed>>
+     */
+    private function withReductions(array $products, array $attrs = []): array
+    {
+        $ids = array_values(array_unique(array_map(static fn (array $x): int => (int) $x['id'], $products)));
+        if (!$ids || !$this->isAvailable()) {
+            return $products;
+        }
+        $p = $this->prefix;
+        $shop = $this->shopId; // trusted config int, inlined
+        $in = implode(',', array_fill(0, count($ids), '?'));
+        $rows = [];
+        $defaults = [];
+        try {
+            $st = $this->pdo->prepare(
+                "SELECT id_specific_price, id_product, id_product_attribute, id_shop, price,
+                        reduction, reduction_type, `from`, `to`
+                 FROM {$p}specific_price
+                 WHERE id_product IN ({$in}) AND id_shop IN (0, {$shop})
+                   AND id_customer = 0 AND id_group = 0 AND id_cart = 0
+                   AND id_country = 0 AND id_currency = 0 AND from_quantity <= 1"
+            );
+            $st->execute($ids);
+            foreach ($st->fetchAll() as $r) {
+                $rows[(int) $r['id_product']][(int) $r['id_product_attribute']][] = $r;
+            }
+            if (!$rows) {
+                return $products;
+            }
+            $with = array_keys($rows);
+            $st = $this->pdo->prepare(
+                "SELECT id_product, id_product_attribute
+                 FROM {$p}product_attribute_shop
+                 WHERE id_product IN (" . implode(',', array_fill(0, count($with), '?')) . ")
+                   AND id_shop = {$shop} AND default_on = 1"
+            );
+            $st->execute($with);
+            foreach ($st->fetchAll() as $r) {
+                $defaults[(int) $r['id_product']] = (int) $r['id_product_attribute'];
+            }
+        } catch (Throwable) {
+            return $products;
+        }
+        $now = time();
+        foreach ($products as $i => $prod) {
+            $id = (int) $prod['id'];
+            if (!isset($rows[$id])) {
+                continue;
+            }
+            $reduction = Reduction::forProduct($rows[$id], $attrs[$id] ?? null, $defaults[$id] ?? null, $shop, $now);
+            $products[$i] = array_merge($prod, Reduction::apply((float) $prod['price'], $reduction));
+        }
+        return $products;
+    }
+
+
     /** @param array<string,mixed> $r @return array<string,mixed> */
     private function shapeProduct(array $r): array
     {
@@ -725,6 +787,8 @@ final class Client
             'name'         => (string) $r['name'],
             'manufacturer' => $r['manufacturer'] ?? '',
             'price'        => round($excl * (1 + $rate / 100), 2), // brut RON, cu TVA
+            'price_old'    => null, // completate de withReductions()
+            'reduction_pct' => null,
             'image'        => $this->imageUrl(isset($r['id_image']) ? (int) $r['id_image'] : null, (string) $r['link_rewrite']),
             'url'          => $this->productUrl((int) $r['id_product'], (string) $r['link_rewrite']),
         ];
