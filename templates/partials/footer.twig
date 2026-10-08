@@ -38,7 +38,7 @@
         </div>
     </div>
 
-    {% include 'partials/newsletter-signup.twig' %}
+    <div class="site-footer__band">{% include 'partials/newsletter-signup.twig' %}</div>
 
     {# Contact data on its own line below the menus. #}
     <div class="container site-footer__contact">
@@ -55,7 +55,7 @@
         {% endif %}
     </div>
 
-    <div class="container site-footer__bottom">
+    <div class="site-footer__band"><div class="container site-footer__bottom">
         <span>© {{ "now"|date("Y") }} Dual Tours SRL · motociclete.com.ro</span>
         <span class="site-footer__legal">
             {% if site.legal_pages|length %}
@@ -67,5 +67,5 @@
                 <a href="{{ base }}/garantia-legala" data-modal-open="garantie-legala">Garanția legală</a>
                 <a href="{{ base }}/politica-cookies" onclick="if(window.openCookiePrefs){window.openCookiePrefs();return false;}">Setări cookie-uri</a>
         </span>
-    </div>
+    </div></div>
 </footer>

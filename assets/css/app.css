@@ -421,6 +421,9 @@ button.chip--rabla:hover { background: #178a3f; }
 .fcol--inline a { display: inline-block; padding: 0; }
 .fcol--inline a:not(:last-child)::after { content: "|"; margin-left: .9rem; color: #4a4a52; }
 .site-footer__bottom { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,.08); padding-block: 1.4rem; font-size: .82rem; color: #7c7c84; }
+/* Benzi gri-închis pe toată lățimea (newsletter + copyright), ca să nu fie tot footerul negru. */
+.site-footer__band { background: #1c1c20; }
+.site-footer__band > .nl-signup, .site-footer__band > .site-footer__bottom { border-top: 0; }
 .site-footer__legal { display: flex; gap: 1.4rem; }
 .site-footer__legal a:hover { color: #fff; }
 
@@ -1331,7 +1334,7 @@ html:not(.js) .about-carousel__slide + .about-carousel__slide { margin-top: .5re
    FOOTER — contact line below menus
    ============================================================ */
 .site-footer__address { color: #8b8b93; font-size: .92rem; line-height: 1.7; margin-bottom: 1.3rem; }
-.site-footer__contact { display: flex; flex-wrap: wrap; gap: 1.6rem 2.4rem; border-top: 1px solid rgba(255,255,255,.08); padding: 1.6rem 0; }
+.site-footer__contact { display: flex; flex-wrap: wrap; gap: 1.6rem 2.4rem; padding-block: 1.6rem; }
 .fcontact { font-size: .9rem; color: #9a9aa2; }
 .fcontact__label { display: block; font-family: var(--head); font-weight: 700; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: #fff; margin-bottom: .25rem; }
 .fcontact a { color: #c7c7cd; transition: color .2s var(--ease); }
