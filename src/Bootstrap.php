@@ -93,6 +93,7 @@ final class Bootstrap
             'announcements' => new Announcement\Repository($db),
             'news'      => new News\Repository($db),
             'events'    => new Event\Repository($db),
+            'used'      => new Used\Repository($db, $root . '/media/rulate'),
             'about'     => new About\Repository($db),
             'history'   => new History\Repository($db),
             'service'   => new Service\Repository($db),
