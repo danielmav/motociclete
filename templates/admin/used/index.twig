@@ -1,0 +1,99 @@
+{% extends 'admin/layout.twig' %}
+{% set active = 'used' %}
+{% block title %}Rulate{% endblock %}
+{% block actions %}<a class="adm-btn adm-btn--primary" href="{{ admin_base }}/rulate/0">+ Anunț nou</a>{% endblock %}
+
+{% macro taxa(title, placeholder, action, rows, admin_base, csrf) %}
+    <div class="adm-panel">
+        <h2 style="font-size:1.05rem">{{ title }}</h2>
+        <table class="adm-table" style="margin-bottom:1rem">
+            <tbody>
+            {% for t in rows %}
+                <tr>
+                    <td>{{ t.name }} <span class="adm-muted">({{ t.total }})</span></td>
+                    <td style="text-align:right">
+                        {% if t.total == 0 %}
+                            <form method="post" action="{{ admin_base }}/rulate/{{ action }}/{{ t.id }}/delete" style="display:inline" onsubmit="return confirm('Ștergi „{{ t.name }}”?')">
+                                <input type="hidden" name="_csrf" value="{{ csrf }}">
+                                <button class="adm-btn adm-btn--sm adm-btn--danger" type="submit">×</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td class="adm-muted">Nimic încă.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <form method="post" action="{{ admin_base }}/rulate/{{ action }}" class="adm-form">
+            <input type="hidden" name="_csrf" value="{{ csrf }}">
+            <label>Adaugă <input type="text" name="name" placeholder="{{ placeholder }}" required></label>
+            <div><button class="adm-btn adm-btn--primary adm-btn--sm" type="submit">Adaugă</button></div>
+        </form>
+    </div>
+{% endmacro %}
+
+{% block content %}
+{% if flash %}<div class="adm-flash adm-flash--{{ flash[0] }}">{{ flash[1] }}</div>{% endif %}
+
+<p style="margin-bottom:1rem">
+    {% for key, label in {'': 'Toate', 'active': 'Active', 'expired': 'Expirate', 'inactive': 'Dezactivate'} %}
+        <a class="adm-btn adm-btn--sm{{ state == key ? ' adm-btn--primary' }}" href="{{ admin_base }}/rulate{{ key ? '?stare=' ~ key }}">{{ label }}</a>
+    {% endfor %}
+</p>
+
+<div style="display:grid;grid-template-columns:minmax(0,3fr) minmax(220px,1fr);gap:1.4rem;align-items:start">
+    <table class="adm-table">
+        <thead><tr><th></th><th>Anunț</th><th>Preț</th><th>Stare</th><th></th></tr></thead>
+        <tbody>
+        {% for v in vehicles %}
+            <tr>
+                <td>{% if v.thumb %}<img class="adm-thumb" src="{{ base }}{{ v.thumb }}" alt="">{% endif %}</td>
+                <td>
+                    <strong>{{ v.title }}</strong><br>
+                    <span class="adm-muted">{{ v.brand_name }} · {{ v.category_name }}{{ v.facts ? ' · ' ~ v.facts }}</span>
+                </td>
+                <td class="adm-muted">{{ v.price_eur is not null ? v.price_eur|money : 'la cerere' }}</td>
+                <td>
+                    {% if v.state == 'active' %}
+                        <span class="adm-badge adm-badge--on">activ</span><br>
+                        <span class="adm-muted">expiră în {{ v.days_left }} {{ v.days_left == 1 ? 'zi' : 'zile' }}</span>
+                    {% elseif v.state == 'expired' %}
+                        <span class="adm-badge adm-badge--off" style="background:#fff4d6;color:#8a5a00">expirat</span><br>
+                        <span class="adm-muted">din {{ v.expires_at|date('d.m.Y') }}</span>
+                    {% else %}
+                        <span class="adm-badge adm-badge--off">dezactivat</span>
+                    {% endif %}
+                </td>
+                <td style="white-space:nowrap">
+                    <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/rulate/{{ v.id }}">Editează</a>
+                    {% if v.state == 'active' %}
+                        <a class="adm-btn adm-btn--sm" href="{{ base }}{{ v.url }}" target="_blank" rel="noopener">Vezi</a>
+                        <form method="post" action="{{ admin_base }}/rulate/{{ v.id }}/dezactiveaza" style="display:inline">
+                            <input type="hidden" name="_csrf" value="{{ csrf }}">
+                            <button class="adm-btn adm-btn--sm" type="submit">Dezactivează</button>
+                        </form>
+                    {% else %}
+                        <form method="post" action="{{ admin_base }}/rulate/{{ v.id }}/reactiveaza" style="display:inline">
+                            <input type="hidden" name="_csrf" value="{{ csrf }}">
+                            <button class="adm-btn adm-btn--sm adm-btn--primary" type="submit">Reactivează 30 de zile</button>
+                        </form>
+                    {% endif %}
+                    <form method="post" action="{{ admin_base }}/rulate/{{ v.id }}/delete" style="display:inline" onsubmit="return confirm('Ștergi definitiv anunțul și imaginile lui?')">
+                        <input type="hidden" name="_csrf" value="{{ csrf }}">
+                        <button class="adm-btn adm-btn--sm adm-btn--danger" type="submit">Șterge</button>
+                    </form>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="5" class="adm-muted">Niciun anunț{{ state ? ' în această stare' }}.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <div>
+        {{ _self.taxa('Mărci', 'ex. Kawasaki', 'marca', brands, admin_base, csrf) }}
+        {{ _self.taxa('Categorii', 'ex. Enduro', 'categorie', categories, admin_base, csrf) }}
+    </div>
+</div>
+{% endblock %}

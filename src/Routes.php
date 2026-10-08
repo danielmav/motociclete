@@ -153,6 +153,17 @@ return function (App $app, Twig $twig, array $container): void {
     $app->get($adminBase . '/evenimente/{id:[0-9]+}',         $adminCtl('EventController', 'form'));
     $app->post($adminBase . '/evenimente/{id:[0-9]+}',        $adminCtl('EventController', 'save'));
     $app->post($adminBase . '/evenimente/{id:[0-9]+}/delete', $adminCtl('EventController', 'delete'));
+    // Rulate (vehicule second hand) — anunțuri + mărci + categorii
+    $app->get($adminBase . '/rulate',                              $adminCtl('UsedController', 'index'));
+    $app->post($adminBase . '/rulate/marca',                       $adminCtl('UsedController', 'addBrand'));
+    $app->post($adminBase . '/rulate/marca/{id:[0-9]+}/delete',    $adminCtl('UsedController', 'deleteBrand'));
+    $app->post($adminBase . '/rulate/categorie',                   $adminCtl('UsedController', 'addCategory'));
+    $app->post($adminBase . '/rulate/categorie/{id:[0-9]+}/delete', $adminCtl('UsedController', 'deleteCategory'));
+    $app->get($adminBase . '/rulate/{id:[0-9]+}',                  $adminCtl('UsedController', 'form'));
+    $app->post($adminBase . '/rulate/{id:[0-9]+}',                 $adminCtl('UsedController', 'save'));
+    $app->post($adminBase . '/rulate/{id:[0-9]+}/dezactiveaza',    $adminCtl('UsedController', 'deactivate'));
+    $app->post($adminBase . '/rulate/{id:[0-9]+}/reactiveaza',     $adminCtl('UsedController', 'reactivate'));
+    $app->post($adminBase . '/rulate/{id:[0-9]+}/delete',          $adminCtl('UsedController', 'delete'));
     // Announcements (site-wide pop-up)
     $app->get($adminBase . '/anunturi',                     $adminCtl('AnnouncementController', 'index'));
     $app->get($adminBase . '/anunturi/{id:[0-9]+}',         $adminCtl('AnnouncementController', 'form'));

@@ -1,0 +1,75 @@
+{% extends 'admin/layout.twig' %}
+{% import 'admin/_widgets.twig' as w %}
+{% set active = 'used' %}
+{% block title %}{{ id > 0 ? 'Editează anunț' : 'Anunț nou' }}{% endblock %}
+
+{% block content %}
+{% if saved %}<div class="adm-flash adm-flash--ok">Anunțul a fost salvat.</div>{% endif %}
+{% for err in errors %}<div class="adm-flash adm-flash--err">{{ err }}</div>{% endfor %}
+
+{% if id > 0 and v.state is defined %}
+    <div class="adm-flash adm-flash--{{ v.state == 'active' ? 'ok' : 'warn' }}">
+        {% if v.state == 'active' %}Activ pe site. Expiră în {{ v.days_left }} {{ v.days_left == 1 ? 'zi' : 'zile' }} ({{ v.expires_at|date('d.m.Y H:i') }}).
+        {% elseif v.state == 'expired' %}Expirat din {{ v.expires_at|date('d.m.Y') }}. Nu mai apare pe site până îl reactivezi din lista de anunțuri.
+        {% else %}Dezactivat. Nu apare pe site până îl reactivezi din lista de anunțuri.{% endif %}
+    </div>
+{% endif %}
+
+<form class="adm-form" method="post" action="{{ admin_base }}/rulate/{{ id }}">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+    <label>Titlu
+        <input type="text" name="title" value="{{ v.title|default('') }}" placeholder="ex. Yamaha MT-07 ABS" required>
+    </label>
+
+    <div class="adm-grid3">
+        <label>Marcă
+            <select name="brand_id" required>
+                <option value="">Alege…</option>
+                {% for b in brands %}<option value="{{ b.id }}"{{ (b.id ~ '') == (v.brand_id|default('') ~ '') ? ' selected' }}>{{ b.name }}</option>{% endfor %}
+            </select>
+        </label>
+        <label>Categorie
+            <select name="category_id" required>
+                <option value="">Alege…</option>
+                {% for c in categories %}<option value="{{ c.id }}"{{ (c.id ~ '') == (v.category_id|default('') ~ '') ? ' selected' }}>{{ c.name }}</option>{% endfor %}
+            </select>
+        </label>
+        <label>Preț (EUR, cu TVA) <span class="adm-help">gol = „la cerere”; fără zecimale</span>
+            <input type="text" inputmode="numeric" name="price_eur" value="{{ v.price_eur is defined and v.price_eur is not null ? v.price_eur|round }}">
+        </label>
+    </div>
+
+    <div class="adm-grid3">
+        <label>An fabricație
+            <input type="text" inputmode="numeric" name="year" value="{{ v.year|default('') }}">
+        </label>
+        <label>Kilometri
+            <input type="text" inputmode="numeric" name="km" value="{{ v.km is defined and v.km is not null ? v.km }}">
+        </label>
+        <label>Cilindree (cc)
+            <input type="text" inputmode="numeric" name="cc" value="{{ v.cc|default('') }}">
+        </label>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Descriere</span>
+        <div style="margin-top:.6rem">{{ w.editor('description_html', v.description_html|default('')) }}</div>
+    </div>
+
+    <div class="adm-fieldset">
+        <span class="adm-fieldset__t">Imagini</span>
+        <span class="adm-help">Prima imagine e coperta. Trage-le ca să le reordonezi.</span>
+        <div style="margin-top:.6rem">{{ w.imgmgr('images', 'rulate', 'rulate', false, v.images|default([])) }}</div>
+    </div>
+
+    <label>Video YouTube <span class="adm-help">link sau ID; opțional</span>
+        <input type="text" name="video" value="{{ v.video|default('') }}" placeholder="https://youtu.be/…">
+    </label>
+
+    <div class="adm-actions">
+        <button class="adm-btn adm-btn--primary" type="submit">Salvează</button>
+        <a class="adm-btn" href="{{ admin_base }}/rulate">Înapoi</a>
+    </div>
+</form>
+{% endblock %}

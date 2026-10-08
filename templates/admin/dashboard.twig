@@ -16,6 +16,10 @@
             <span class="adm-card__n">{{ stats.events }}</span>
             <span class="adm-card__l">Evenimente</span>
         </a>
+        <a class="adm-card" href="{{ admin_base }}/rulate">
+            <span class="adm-card__n">{{ stats.used }}</span>
+            <span class="adm-card__l">Rulate active</span>
+        </a>
         <a class="adm-card" href="{{ admin_base }}/mesaje">
             <span class="adm-card__n">{{ stats.messages }}</span>
             <span class="adm-card__l">Mesaje primite</span>
@@ -25,6 +29,35 @@
             <span class="adm-card__l">Cereri service noi</span>
         </a>
     </div>
+
+    {% if used_expired|length %}
+        <div class="adm-panel" style="border-color:#e0b100">
+            <h2>Anunțuri rulate expirate ({{ used_expired|length }})</h2>
+            <p class="adm-muted">Au trecut 30 de zile și nu mai apar pe site. Reactivează-le pe cele încă de vânzare.</p>
+            <table class="adm-table">
+                <tbody>
+                {% for v in used_expired %}
+                    <tr>
+                        <td><a href="{{ admin_base }}/rulate/{{ v.id }}"><strong>{{ v.title }}</strong></a><br>
+                            <span class="adm-muted">{{ v.brand_name }} · expirat din {{ v.expires_at|date('d.m.Y') }}</span></td>
+                        <td style="text-align:right;white-space:nowrap">
+                            <form method="post" action="{{ admin_base }}/rulate/{{ v.id }}/reactiveaza" style="display:inline">
+                                <input type="hidden" name="_csrf" value="{{ csrf }}">
+                                <input type="hidden" name="back" value="dashboard">
+                                <button class="adm-btn adm-btn--sm adm-btn--primary" type="submit">Reactivează 30 de zile</button>
+                            </form>
+                            <form method="post" action="{{ admin_base }}/rulate/{{ v.id }}/dezactiveaza" style="display:inline">
+                                <input type="hidden" name="_csrf" value="{{ csrf }}">
+                                <input type="hidden" name="back" value="dashboard">
+                                <button class="adm-btn adm-btn--sm" type="submit">Nu mai e de vânzare</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
 
     <div class="adm-panel">
         <h2>Bun venit{{ current_user ? ', ' ~ (current_user.name ?: current_user.username) }}.</h2>

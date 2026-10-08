@@ -19,14 +19,18 @@ final class DashboardController extends BaseController
         if ($denied = $this->requireAuth($response)) {
             return $denied;
         }
+        $used = $this->container['used'];
         return $this->render($response, 'admin/dashboard.twig', [
             'stats' => [
                 'products' => $this->count('SELECT COUNT(*) FROM products WHERE is_active = 1'),
                 'news'     => $this->count('SELECT COUNT(*) FROM news WHERE is_active = 1'),
                 'events'   => $this->count('SELECT COUNT(*) FROM events'),
+                'used'     => $used->activeCount(),
                 'messages' => $this->count("SELECT COUNT(*) FROM site_messages"),
                 'requests' => $this->count("SELECT COUNT(*) FROM service_requests WHERE status = 'nou'"),
             ],
+            // Anunțuri rulate expirate automat (30 de zile) — de reactivat sau de închis.
+            'used_expired' => $used->expired(),
         ]);
     }
 
