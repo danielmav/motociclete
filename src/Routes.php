@@ -40,6 +40,7 @@ return function (App $app, Twig $twig, array $container): void {
     };
     $app->post('/api/lead/oferta',    $lead('oferta'));
     $app->post('/api/lead/test-ride', $lead('testRide'));
+    $app->post('/api/lead/rulate',    $lead('rulate'));
 
     // --- Export catalog moto (Yamaha + CFMOTO) pt. sincronizarea BikerShop (token EXPORT_TOKEN) ---
     $app->get('/api/export/bikershop', function ($request, $response) use ($container) {
