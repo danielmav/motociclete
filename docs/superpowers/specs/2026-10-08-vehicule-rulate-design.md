@@ -131,9 +131,9 @@ Comportament:
 
 Layout: două coloane, conținut în stânga și coloana fixă în dreapta; sub 992 px
 coloana coboară sub conținut. Coloana conține, în ordine:
-1. Formular de contact (titlu „Întreabă despre acest vehicul" pe anunț,
-   „Cauți un vehicul rulat?" pe liste), cu telefonul și emailul Vânzări moto
-   afișate deasupra.
+1. Formular de contact „Întreabă despre acest vehicul", cu telefonul și emailul
+   Vânzări moto afișate deasupra — **doar pe pagina anunțului** (modificat după
+   prima versiune: pe liste și pe pagina 410 coloana are doar categorii și mărci).
 2. Categorii, cu numărul de anunțuri; cea curentă e evidențiată.
 3. Mărci, la fel.
 

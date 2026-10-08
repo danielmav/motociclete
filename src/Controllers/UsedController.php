@@ -115,7 +115,7 @@ final class UsedController
         $heading = 'Vehicule rulate';
         $seo = [
             'title'       => 'Motociclete rulate și second hand — Dual Motors',
-            'description' => 'Motociclete, scutere și ATV-uri rulate, verificate de Dual Motors. Vezi anunțurile active și scrie-ne direct din pagină — showroom Pipera, București.',
+            'description' => 'Motociclete, scutere și ATV-uri rulate, verificate de Dual Motors. Vezi anunțurile active și scrie-ne direct din pagina anunțului — showroom Pipera, București.',
         ];
         $crumbs = [['Rulate', null]];
         if ($cat) {

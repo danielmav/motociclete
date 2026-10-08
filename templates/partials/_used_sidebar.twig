@@ -1,8 +1,10 @@
-{# Coloana din dreapta a secțiunii Rulate: formular Vânzări moto + categorii + mărci.
-   Variabile: sales{phone,email}, categories, brands, current_category, current_brand, v (opțional). #}
+{# Coloana din dreapta a secțiunii Rulate: categorii + mărci; pe pagina anunțului
+   (show_form) și formularul către Vânzări moto.
+   Variabile: sales{phone,email}, categories, brands, current_category, current_brand, show_form, v. #}
 <aside class="used-side">
+    {% if show_form|default(false) %}
     <div class="booking-card">
-        <h2 class="booking-card__title">{{ v is defined and v.state == 'active' ? 'Întreabă despre acest vehicul' : 'Cauți un vehicul rulat?' }}</h2>
+        <h2 class="booking-card__title">Întreabă despre acest vehicul</h2>
         <p class="booking-card__lead">
             Vânzări moto:
             <a href="tel:{{ sales.phone|replace({' ': ''}) }}">{{ sales.phone }}</a> ·
@@ -11,7 +13,7 @@
 
         <form data-ajax-form action="{{ base }}/api/lead/rulate" method="post" class="booking-form" novalidate>
             <input type="text" name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
-            {% if v is defined and v.state == 'active' %}<input type="hidden" name="vehicle_id" value="{{ v.id }}">{% endif %}
+            <input type="hidden" name="vehicle_id" value="{{ v.id }}">
             <label>Nume<input type="text" name="name" autocomplete="name" required></label>
             <label>Telefon<input type="tel" name="phone" autocomplete="tel"></label>
             <label>Email<input type="email" name="email" autocomplete="email"></label>
@@ -25,6 +27,7 @@
             <p>Mesajul a ajuns la colegii de la Vânzări moto. Te contactăm cât de curând.</p>
         </div>
     </div>
+    {% endif %}
 
     {% if categories|length %}
         <nav class="used-filter" aria-label="Categorii">

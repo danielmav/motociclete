@@ -61,12 +61,12 @@
                 {% endif %}
             </div>
 
-            {% include 'partials/_used_sidebar.twig' with { current_category: v.category_slug, current_brand: v.brand_slug } %}
+            {% include 'partials/_used_sidebar.twig' with { current_category: v.category_slug, current_brand: v.brand_slug, show_form: true } %}
         </div>
 
         {% if others|length %}
             <section class="used-others">
-                <h2 class="used-h2">Alte rulate</h2>
+                <h2 class="used-h2">Alte anunțuri</h2>
                 <div class="used-grid used-grid--wide">
                     {% for o in others %}{{ uc.card(o) }}{% endfor %}
                 </div>
