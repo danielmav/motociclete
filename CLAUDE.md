@@ -148,6 +148,19 @@ Specificație: `docs/superpowers/specs/2026-10-07-newsletter-campanii-design.md`
 - **Imaginile fixe ale emailului** (logo, desene tehnice, „23 ani"): `assets/img/newsletter/`. Textele blocurilor fixe: `templates/email/newsletter/_fixed.twig`.
 - **Generatorul YAML Brevo** (`Newsletter\Generator`) folosește același `Content`, deci primește și el prețurile reduse; se retrage după prima campanie trimisă din modulul nou.
 
+## Rulate (vehicule second hand)
+
+Specificație: `docs/superpowers/specs/2026-10-08-vehicule-rulate-design.md`.
+
+- Modul separat de catalog: tabele `used_brands`, `used_categories`, `used_vehicles`, `used_images` (`database/schema_used.sql`, rulat din `migrate_admin.php`; seed `database/seed_used.php`). `App\Used\Repository` (container `used`) = singurul loc care le atinge.
+- **Un anunț e public doar dacă `is_active = 1` ȘI `expires_at > acum`**; regula e constanta `IS_PUBLIC` din repo, evaluată la citire (fără cron). „Acum" vine din PHP pe `Europe/Bucharest`, nu din `NOW()`. Creare și „Reactivează" = +30 de zile (`Repository::DAYS`); editarea NU prelungește. Stări în admin: activ / expirat (`is_active=1`, termen depășit) / dezactivat (`is_active=0`). Dashboardul listează doar expiratele.
+- Public (`Controllers\UsedController`): `/rulate`, `/rulate/{categorie}`, `/rulate/marca/{marca}`, `/rulate/{id}-{slug}`. Anunț nepublic → **410** cu `used/gone.twig`; slug greșit → 301. ⚠️ Ruta de anunț e declarată înaintea celei de categorie, deci o categorie nu poate avea slug `marca` sau de forma `123-…` (`addCategory` le refuză).
+- Coloana din dreapta (`partials/_used_sidebar.twig`): formular → `POST /api/lead/rulate` (`ContactController::rulate`) → `site_messages` (`type='rulate'`) + email la departamentul cu eticheta „Vânzări moto" (`Content\Repository::departmentBySlug('vanzari-moto')`; redenumirea departamentului din Setări trimite mesajele la `MAIL_DEALER`). E de ajuns telefon SAU email.
+- Imagini în `/media/rulate/` (context de upload `rulate`), prima = coperta; la salvare `Used\Thumb::make()` scrie `/media/rulate/thumbs/<fișier>` (800 px) pentru carduri. Video = link sau ID YouTube (`Repository::youtubeId`).
+- Preț în EUR cu TVA, RON la cursul Yamaha (BNR) indiferent de marcă.
+- „Rulate" din meniu e în `NavigationV2::build()` → după modificări șterge `storage/cache/navv2.cache`.
+- Teste: `tests/UsedRepositoryTest.php` (tranzacție cu rollback pe baza locală, ceas injectat), `tests/UsedThumbTest.php`.
+
 ## Fit My Bike — fitment PartsEurope = modulul **LeoPartsFilter**
 
 - `ps_leopartsfilter_make` (235) → `ps_leopartsfilter_model` (18.797) → `ps_leopartsfilter_year` (83.036); nume în tabelele `*_lang`. PK-uri: `id_leopartsfilter_make/model/year`.
