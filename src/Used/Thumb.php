@@ -10,7 +10,7 @@ namespace App\Used;
  */
 final class Thumb
 {
-    public static function make(string $mediaDir, string $filename, int $maxWidth = 800): bool
+    public static function make(string $mediaDir, string $filename, int $maxWidth = 800, int $maxPixels = 25_000_000): bool
     {
         $filename = basename($filename);
         $src = $mediaDir . '/' . $filename;
@@ -26,6 +26,10 @@ final class Thumb
             return false;
         }
         [$w, $h, $type] = $info;
+        // GD decodează necomprimat (~5 octeți/pixel): o poză de 48 MP ar depăși memory_limit.
+        if ($w * $h > $maxPixels) {
+            return false;
+        }
         $img = match ($type) {
             IMAGETYPE_JPEG => @imagecreatefromjpeg($src),
             IMAGETYPE_PNG  => @imagecreatefrompng($src),
@@ -34,6 +38,18 @@ final class Thumb
         };
         if (!$img) {
             return false;
+        }
+        // Pozele de telefon țin rotația în EXIF; browserul o aplică pe original, GD nu.
+        if ($type === IMAGETYPE_JPEG && function_exists('exif_read_data')) {
+            $exif = @exif_read_data($src);
+            $angle = [3 => 180, 6 => -90, 8 => 90][is_array($exif) ? (int) ($exif['Orientation'] ?? 0) : 0] ?? 0;
+            $rotated = $angle !== 0 ? imagerotate($img, $angle, 0) : false;
+            if ($rotated) {
+                imagedestroy($img);
+                $img = $rotated;
+                $w = imagesx($img);
+                $h = imagesy($img);
+            }
         }
         if (!is_dir($mediaDir . '/thumbs')) {
             @mkdir($mediaDir . '/thumbs', 0775, true);

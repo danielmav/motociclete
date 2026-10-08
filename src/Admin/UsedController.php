@@ -82,10 +82,10 @@ final class UsedController extends BaseController
             'title'            => trim((string) ($body['title'] ?? '')),
             'brand_id'         => (int) ($body['brand_id'] ?? 0),
             'category_id'      => (int) ($body['category_id'] ?? 0),
-            'price_eur'        => $this->number($body['price_eur'] ?? ''),
-            'year'             => $this->number($body['year'] ?? ''),
-            'km'               => $this->number($body['km'] ?? ''),
-            'cc'               => $this->number($body['cc'] ?? ''),
+            'price_eur'        => self::number($body['price_eur'] ?? ''),
+            'year'             => self::number($body['year'] ?? ''),
+            'km'               => self::number($body['km'] ?? ''),
+            'cc'               => self::number($body['cc'] ?? ''),
             'description_html' => trim((string) ($body['description_html'] ?? '')),
             'video'            => trim((string) ($body['video'] ?? '')) ?: null,
         ];
@@ -104,8 +104,13 @@ final class UsedController extends BaseController
 
         $vid = $this->repo()->save($id > 0 ? $id : null, $data, $images);
         $media = dirname(__DIR__, 2) . '/media/rulate';
-        foreach ($images as $f) {
-            Thumb::make($media, $f);
+        // Miniaturile sunt un bonus: fără ele cardul folosește originalul, deci
+        // un eșec aici nu trebuie să strice salvarea anunțului.
+        try {
+            foreach ($images as $f) {
+                Thumb::make($media, $f);
+            }
+        } catch (\Throwable) {
         }
         return $this->to($response, '/rulate/' . $vid . '?ok=1');
     }
@@ -193,15 +198,28 @@ final class UsedController extends BaseController
         ]);
     }
 
-    /** Număr nenegativ din formular („12.400", „6500,50") sau null dacă e gol; -1 = invalid. */
-    private function number(mixed $raw): ?float
+    /**
+     * Număr nenegativ din formular sau null dacă e gol; -1 = invalid.
+     * Punctul e separator de mii doar în grupuri de trei cifre („12.400",
+     * „6.500,50"); altfel e zecimal („6500.50") — altminteri prețul ar ieși ×100.
+     */
+    public static function number(mixed $raw): ?float
     {
-        $s = str_replace([' ', '.'], '', trim((string) $raw));
-        $s = str_replace(',', '.', $s);
+        if (!is_scalar($raw)) {
+            return -1.0;
+        }
+        $s = str_replace(' ', '', trim((string) $raw));
         if ($s === '') {
             return null;
         }
-        return is_numeric($s) && (float) $s >= 0 ? (float) $s : -1.0;
+        if (preg_match('/^\d{1,3}(\.\d{3})+(,\d+)?$/', $s)) {
+            $s = str_replace('.', '', $s);
+        }
+        if (str_contains($s, ',') && str_contains($s, '.')) {
+            return -1.0;
+        }
+        $s = str_replace(',', '.', $s);
+        return preg_match('/^\d+(\.\d+)?$/', $s) ? (float) $s : -1.0;
     }
 
     /** @param array<string,mixed> $d @return list<string> */

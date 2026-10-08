@@ -60,6 +60,18 @@ $b = $repo->find($bare);
 check('fără imagini: image și thumb sunt null', $b['image'] === null && $b['thumb'] === null && $b['images'] === []);
 check('fără date: facts gol, preț null', $b['facts'] === '' && $b['price_eur'] === null && $b['video_id'] === null);
 
+echo "Slug-uri doar ASCII (ruta acceptă [a-z0-9-])\n";
+$cz = $repo->find($repo->save(null, ['title' => 'Jawa ČZ 350 nº 3', 'brand_id' => $honda, 'category_id' => $moto], []));
+check('titlu cu litere din afara alfabetului: slug ASCII', preg_match('/^[a-z0-9]+(-[a-z0-9]+)*$/', $cz['slug']) === 1);
+$jp = $repo->find($repo->save(null, ['title' => '本田', 'brand_id' => $honda, 'category_id' => $moto], []));
+check('titlu fără nicio literă ASCII: slug de rezervă', $jp['slug'] === 'anunt');
+$skoda = $repo->addBrand('Škoda Moto');
+check('marcă cu literă străină: slug ASCII', $skoda !== null && preg_match('/^[a-z0-9-]+$/', (string) $repo->brandBySlug('koda-moto')['slug']) === 1);
+check('marcă fără nicio literă ASCII e refuzată', $repo->addBrand('本田') === null);
+$repo->delete($cz['id']);
+$repo->delete($jp['id']);
+$repo->deleteBrand((int) $skoda);
+
 echo "Video\n";
 check('URL watch', Repository::youtubeId('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=5') === 'dQw4w9WgXcQ');
 check('URL shorts', Repository::youtubeId('https://youtube.com/shorts/dQw4w9WgXcQ') === 'dQw4w9WgXcQ');

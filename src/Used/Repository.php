@@ -198,7 +198,7 @@ final class Repository
         } else {
             $names = implode(', ', array_map(static fn ($c) => "`$c`", self::COLS));
             $ph = implode(', ', array_map(static fn ($c) => ":$c", self::COLS));
-            $params[':slug'] = slugify((string) ($d['title'] ?? '')) ?: 'anunt';
+            $params[':slug'] = self::slug((string) ($d['title'] ?? '')) ?: 'anunt';
             $params[':exp'] = $this->expiry();
             $this->pdo->prepare(
                 "INSERT INTO used_vehicles ($names, slug, is_active, expires_at) VALUES ($ph, :slug, 1, :exp)"
@@ -284,6 +284,15 @@ final class Repository
     }
 
     // -- Intern --------------------------------------------------------------
+
+    /**
+     * Slug strict [a-z0-9-]: `slugify()` păstrează literele pe care nu le știe
+     * translitera (Č, º…), iar rutele /rulate acceptă doar ASCII → URL-ul ar da 404.
+     */
+    private static function slug(string $text): string
+    {
+        return trim((string) preg_replace('/[^a-z0-9]+/', '-', slugify($text)), '-');
+    }
 
     private function now(): string
     {
@@ -404,7 +413,7 @@ final class Repository
     private function addTaxon(string $table, string $name, bool $routeSafe): ?int
     {
         $name = trim($name);
-        $slug = slugify($name);
+        $slug = self::slug($name);
         if ($name === '' || $slug === '') {
             return null;
         }

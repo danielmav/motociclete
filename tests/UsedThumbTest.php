@@ -24,6 +24,24 @@ check('fișier care nu e imagine → false', Thumb::make($dir, 'stricat.jpg') ==
 check('fișier lipsă → false', Thumb::make($dir, 'lipsa.jpg') === false);
 check('cale cu ../ e redusă la numele fișierului', Thumb::make($dir, '../mare.jpg') === true);
 
+// Fotografie de telefon ținut vertical: pixelii sunt culcați (1000×500), iar
+// eticheta EXIF Orientation = 6 spune „rotește 90°". Miniatura trebuie să iasă în picioare.
+ob_start();
+imagejpeg(imagecreatetruecolor(1000, 500), null, 90);
+$raw = (string) ob_get_clean();
+$tiff = "II*\x00" . pack('V', 8) . pack('v', 1) . pack('vvVvv', 0x0112, 3, 1, 6, 0) . pack('V', 0);
+$exif = "Exif\x00\x00" . $tiff;
+file_put_contents($dir . '/telefon.jpg', substr($raw, 0, 2) . "\xFF\xE1" . pack('n', strlen($exif) + 2) . $exif . substr($raw, 2));
+check('proba: PHP citește orientarea 6', (int) (exif_read_data($dir . '/telefon.jpg')['Orientation'] ?? 0) === 6);
+check('fotografie cu orientare EXIF: miniatură creată', Thumb::make($dir, 'telefon.jpg') === true);
+[$tw, $th] = getimagesize($dir . '/thumbs/telefon.jpg');
+check('miniatura e rotită în picioare (500×1000)', $tw === 500 && $th === 1000);
+
+check('imagine peste limita de pixeli: fără miniatură, fără eroare', Thumb::make($dir, 'mica.png', 800, 1000) === true);
+imagejpeg(imagecreatetruecolor(1200, 900), $dir . '/uriasa.jpg', 90);
+check('imagine peste limita de pixeli → false', Thumb::make($dir, 'uriasa.jpg', 800, 1_000_000) === false);
+check('și nu lasă fișier în thumbs/', !is_file($dir . '/thumbs/uriasa.jpg'));
+
 array_map('unlink', glob($dir . '/thumbs/*') ?: []);
 @rmdir($dir . '/thumbs');
 array_map('unlink', glob($dir . '/*') ?: []);

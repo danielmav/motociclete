@@ -159,7 +159,8 @@ Specificație: `docs/superpowers/specs/2026-10-08-vehicule-rulate-design.md`.
 - Imagini în `/media/rulate/` (context de upload `rulate`), prima = coperta; la salvare `Used\Thumb::make()` scrie `/media/rulate/thumbs/<fișier>` (800 px) pentru carduri. Video = link sau ID YouTube (`Repository::youtubeId`).
 - Preț în EUR cu TVA, RON la cursul Yamaha (BNR) indiferent de marcă.
 - „Rulate" din meniu e în `NavigationV2::build()` → după modificări șterge `storage/cache/navv2.cache`.
-- Teste: `tests/UsedRepositoryTest.php` (tranzacție cu rollback pe baza locală, ceas injectat), `tests/UsedThumbTest.php`.
+- Teste: `tests/UsedRepositoryTest.php` (tranzacție cu rollback pe baza locală, ceas injectat), `tests/UsedThumbTest.php`, `tests/UsedNumberTest.php` (numerele din formular: punctul e separator de mii doar în grupuri de trei cifre).
+- Slug-urile modulului sunt strict `[a-z0-9-]` (`Repository::slug()` peste `slugify()`, care păstrează literele pe care nu le știe translitera — rutele `/rulate` nu le-ar accepta).
 
 ## Fit My Bike — fitment PartsEurope = modulul **LeoPartsFilter**
 
