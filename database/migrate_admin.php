@@ -16,6 +16,7 @@ run_sql_file($pdo, __DIR__ . '/schema_pages.sql');
 run_sql_file($pdo, __DIR__ . '/schema_yamaha_catalog.sql');
 run_sql_file($pdo, __DIR__ . '/schema_cfmoto_feed.sql');
 run_sql_file($pdo, __DIR__ . '/schema_newsletter.sql');
+run_sql_file($pdo, __DIR__ . '/schema_used.sql');
 
 // Widen settings.svalue to TEXT (older schemas had VARCHAR(255) → truncated long HTML).
 $col = $pdo->query(
@@ -57,5 +58,14 @@ if ($type !== '' && !str_contains($type, "'contact'")) {
     echo "  ~ site_messages.type += contact\n";
 }
 ensure_column($pdo, 'product_images', 'caption', 'ALTER TABLE `product_images` ADD COLUMN `caption` VARCHAR(160) NULL AFTER `filename`');
+// Formularul din /rulate salvează în site_messages cu tipul `rulate`.
+$type = (string) $pdo->query(
+    "SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'site_messages' AND COLUMN_NAME = 'type'"
+)->fetchColumn();
+if ($type !== '' && !str_contains($type, "'rulate'")) {
+    $pdo->exec("ALTER TABLE `site_messages` MODIFY `type` ENUM('oferta','test_ride','contact','rulate') NOT NULL");
+    echo "  ~ site_messages.type += rulate\n";
+}
 
 echo "migrate_admin: done.\n";
