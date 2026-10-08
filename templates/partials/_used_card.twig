@@ -1,0 +1,23 @@
+{# Card de anunț rulat. Import: {% import 'partials/_used_card.twig' as uc %} → {{ uc.card(v) }} #}
+{% macro card(v) %}
+    <a class="used-card" href="{{ base }}{{ v.url }}">
+        <div class="used-card__media{{ v.thumb ? '' : ' media-ph' }}">
+            {% if v.thumb %}
+                <img src="{{ base }}{{ v.thumb }}" alt="{{ v.title }}" loading="lazy" width="800" height="600">
+            {% else %}
+                <span class="media-ph__label">{{ v.brand_name }}</span>
+            {% endif %}
+        </div>
+        <span class="used-card__cat">{{ v.brand_name }} · {{ v.category_name }}</span>
+        <h2 class="used-card__title">{{ v.title }}</h2>
+        {% if v.facts %}<p class="used-card__facts">{{ v.facts }}</p>{% endif %}
+        <p class="used-card__price">
+            {% if v.price_eur is not null %}
+                {% set pr = prices(v.price_eur, 'yamaha') %}
+                <strong>{{ pr.eur }}</strong> <span>{{ pr.ron }}</span>
+            {% else %}
+                <strong>Preț la cerere</strong>
+            {% endif %}
+        </p>
+    </a>
+{% endmacro %}

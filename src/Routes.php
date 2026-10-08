@@ -86,9 +86,9 @@ return function (App $app, Twig $twig, array $container): void {
         '/cfmoto/'               => '/cfmoto',
         '/cfmoto/index.php'      => '/cfmoto',
         '/cfmoto/motociclete.php' => '/cfmoto',
-        // No second-hand section on the new site -> keep equity on the homepage.
-        '/second-hand.php'       => '/',
-        '/second-hand-item.php'  => '/',
+        // Secțiunea de rulate a revenit pe situl nou.
+        '/second-hand.php'       => '/rulate',
+        '/second-hand-item.php'  => '/rulate',
     ];
     foreach ($legacyMap as $old => $new) {
         $app->get($old, function ($request, $response) use ($container, $new) {
@@ -242,6 +242,18 @@ return function (App $app, Twig $twig, array $container): void {
     };
     $app->get('/evenimente', $ev('index'));
     $app->get('/evenimente/{slug}', $ev('show'));
+
+    // --- Rulate (vehicule second hand). Ordinea contează: anunțul ({id}-{slug})
+    // înaintea categoriei, altfel „12-yamaha-mt-07" ar fi căutat ca o categorie.
+    $used = function (string $method) use ($twig, $container) {
+        return function ($request, $response, $args) use ($twig, $container, $method) {
+            return (new \App\Controllers\UsedController($twig, $container))->{$method}($request, $response, $args);
+        };
+    };
+    $app->get('/rulate', $used('index'));
+    $app->get('/rulate/marca/{marca:[a-z0-9-]+}', $used('brand'));
+    $app->get('/rulate/{id:[0-9]+}-{slug:[a-z0-9-]*}', $used('show'));
+    $app->get('/rulate/{cat:[a-z0-9-]+}', $used('category'));
 
     // --- Compare models (same brand + same main category) ---
     $app->get('/compara', function ($request, $response, $args) use ($twig, $container) {

@@ -1431,3 +1431,52 @@ html:not(.js) .about-carousel__slide + .about-carousel__slide { margin-top: .5re
 .nl-prefs__item { display: flex; align-items: flex-start; gap: .7rem; padding: .8rem 0; border-bottom: 1px solid #e4e4e7; cursor: pointer; }
 .nl-prefs__item input { flex: none; margin-top: .3rem; accent-color: var(--red); }
 .nl-prefs__actions { display: flex; flex-wrap: wrap; gap: .8rem; margin-bottom: 2rem; }
+/* ---- Rulate (vehicule second hand) ---- */
+.used-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: clamp(1.8rem, 4vw, 3rem); align-items: start; }
+.used-main, .used-side { min-width: 0; }
+.used-side { display: grid; gap: 1.4rem; }
+.used-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(1.2rem, 2.5vw, 2rem); }
+.used-grid--wide { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.used-card { display: block; min-width: 0; }
+.used-card__media { position: relative; overflow: hidden; aspect-ratio: 4 / 3; border-radius: var(--radius-sm); margin-bottom: .9rem; background: #f3f3f4; }
+.used-card__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .35s var(--ease); }
+.used-card:hover .used-card__media img { transform: scale(1.04); }
+.used-card__cat { font-family: var(--head); font-weight: 700; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--red); }
+.used-card__title { font-family: var(--head); font-weight: 700; font-size: 1.1rem; line-height: 1.25; margin-top: .3rem; }
+.used-card:hover .used-card__title { color: var(--red); }
+.used-card__facts { color: var(--muted); font-size: .88rem; margin-top: .3rem; }
+.used-card__price { margin-top: .5rem; }
+.used-card__price strong { font-family: var(--head); font-weight: 800; font-size: 1.1rem; }
+.used-card__price span { color: var(--muted); font-size: .85rem; margin-left: .3rem; }
+.used-filter__title { font-family: var(--head); font-weight: 800; font-size: .8rem; letter-spacing: .1em; text-transform: uppercase; margin-bottom: .6rem; }
+.used-filter ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.used-filter a { display: flex; justify-content: space-between; gap: 1rem; padding: .6rem 0; border-bottom: 1px solid var(--line); font-weight: 600; }
+.used-filter a span { color: var(--muted); font-weight: 400; }
+.used-filter a:hover, .used-filter a.is-current { color: var(--red); }
+.used-crumbs { color: var(--muted); font-size: .88rem; margin-bottom: 1.2rem; }
+.used-crumbs a:hover { color: var(--red); }
+.used-head { margin-bottom: 1.4rem; }
+.used-head__price { margin-top: .6rem; }
+.used-head__price strong { font-family: var(--display); font-weight: 800; font-size: clamp(1.5rem, 3vw, 2rem); color: var(--red); }
+.used-head__price span { color: var(--muted); margin-left: .5rem; }
+.used-gallery { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6rem; }
+.used-gallery__item { position: relative; overflow: hidden; aspect-ratio: 4 / 3; border-radius: var(--radius-sm); background: #f3f3f4; cursor: zoom-in; }
+.used-gallery__item--main { grid-column: 1 / -1; }
+.used-gallery__item img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.used-facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; margin: 1.8rem 0; padding: 1.2rem 0; border-block: 1px solid var(--line); }
+.used-facts dt { font-family: var(--head); font-weight: 600; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.used-facts dd { margin: .2rem 0 0; font-family: var(--head); font-weight: 700; font-size: 1.05rem; }
+.used-h2 { font-family: var(--head); font-weight: 800; font-size: 1.3rem; margin: 2rem 0 1rem; }
+.used-others { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.used-gone__lead { font-size: 1.1rem; color: var(--ink-2); margin: 1rem 0 2rem; }
+@media (max-width: 1199px) {
+    .used-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .used-grid--wide { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 991px) {
+    .used-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+    .used-grid, .used-grid--wide { grid-template-columns: minmax(0, 1fr); }
+    .used-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

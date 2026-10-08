@@ -1,0 +1,44 @@
+{% extends 'layout.twig' %}
+{% import 'partials/_used_card.twig' as uc %}
+{% block title %}{{ seo.title }}{% endblock %}
+{% block description %}{{ seo.description }}{% endblock %}
+{% block meta_robots %}{% if noindex %}noindex,follow{% else %}{{ parent() }}{% endif %}{% endblock %}
+{% block head_extra %}<script type="application/ld+json">{{ ld_json|raw }}</script>{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <header class="section__head">
+            <div>
+                <span class="kicker">Second hand</span>
+                <h1 class="section__title">{{ heading }}</h1>
+            </div>
+        </header>
+
+        <div class="used-layout">
+            <div class="used-main">
+                {% if vehicles|length %}
+                    <div class="used-grid">
+                        {% for v in vehicles %}{{ uc.card(v) }}{% endfor %}
+                    </div>
+
+                    {% if pages > 1 %}
+                        <nav class="pager" aria-label="Paginare">
+                            {% for n in 1..pages %}
+                                <a class="pager__link{{ n == page ? ' is-current' }}" href="{{ base }}{{ list_path }}{{ n > 1 ? '?p=' ~ n }}"{% if n == page %} aria-current="page"{% endif %}>{{ n }}</a>
+                            {% endfor %}
+                        </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="empty-state">
+                        <p>{{ current_category or current_brand ? 'Nu avem anunțuri aici în acest moment.' : 'Momentan nu avem vehicule rulate.' }}</p>
+                        <p class="empty-state__hint">Spune-ne ce cauți din formularul alăturat și te anunțăm când apare ceva potrivit.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% include 'partials/_used_sidebar.twig' %}
+        </div>
+    </div>
+</section>
+{% endblock %}

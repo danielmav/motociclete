@@ -1,0 +1,77 @@
+{% extends 'layout.twig' %}
+{% import 'partials/_used_card.twig' as uc %}
+{% block title %}{{ seo.title }}{% endblock %}
+{% block description %}{{ seo.description }}{% endblock %}
+{% block og_type %}product{% endblock %}
+{% block head_extra %}<script type="application/ld+json">{{ ld_json|raw }}</script>{% endblock %}
+
+{% block content %}
+<article class="section">
+    <div class="container">
+        <nav class="used-crumbs" aria-label="Ești aici">
+            <a href="{{ base }}/rulate">Rulate</a> ›
+            <a href="{{ base }}/rulate/{{ v.category_slug }}">{{ v.category_name }}</a> ›
+            <a href="{{ base }}/rulate/marca/{{ v.brand_slug }}">{{ v.brand_name }}</a>
+        </nav>
+
+        <div class="used-layout">
+            <div class="used-main">
+                <header class="used-head">
+                    <h1 class="section__title">{{ v.title }}</h1>
+                    <p class="used-head__price">
+                        {% if v.price_eur is not null %}
+                            {% set pr = prices(v.price_eur, 'yamaha') %}
+                            <strong>{{ pr.eur }}</strong> <span>{{ pr.ron }} · TVA inclus</span>
+                        {% else %}
+                            <strong>Preț la cerere</strong>
+                        {% endif %}
+                    </p>
+                </header>
+
+                {% if v.images|length %}
+                    <div class="used-gallery" data-zoom-group>
+                        {% for img in v.images %}
+                            <a class="used-gallery__item{{ loop.first ? ' used-gallery__item--main' }}" href="{{ base }}{{ img.url }}" data-zoom>
+                                <img src="{{ base }}{{ img.url }}" alt="{{ v.title }} — imaginea {{ loop.index }}"
+                                     {% if loop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %} width="1200" height="900">
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <dl class="used-facts">
+                    <div><dt>Marcă</dt><dd>{{ v.brand_name }}</dd></div>
+                    <div><dt>Categorie</dt><dd>{{ v.category_name }}</dd></div>
+                    {% if v.year %}<div><dt>An fabricație</dt><dd>{{ v.year }}</dd></div>{% endif %}
+                    {% if v.km is not null %}<div><dt>Kilometri</dt><dd>{{ v.km|number_format(0, ',', '.') }} km</dd></div>{% endif %}
+                    {% if v.cc %}<div><dt>Cilindree</dt><dd>{{ v.cc }} cc</dd></div>{% endif %}
+                </dl>
+
+                {% if v.description_html|striptags|trim is not empty %}
+                    <h2 class="used-h2">Descriere</h2>
+                    <div class="prose">{{ v.description_html|raw }}</div>
+                {% endif %}
+
+                {% if v.video_id %}
+                    <h2 class="used-h2">Video</h2>
+                    <div class="product-video" data-video data-video-id="{{ v.video_id }}">
+                        <img class="product-video__cover" src="https://i.ytimg.com/vi/{{ v.video_id }}/hqdefault.jpg" alt="{{ v.title }} — video" loading="lazy">
+                        <button class="product-video__play" type="button" data-video-play aria-label="Pornește videoclipul"><span aria-hidden="true">▶</span></button>
+                    </div>
+                {% endif %}
+            </div>
+
+            {% include 'partials/_used_sidebar.twig' with { current_category: v.category_slug, current_brand: v.brand_slug } %}
+        </div>
+
+        {% if others|length %}
+            <section class="used-others">
+                <h2 class="used-h2">Alte rulate</h2>
+                <div class="used-grid used-grid--wide">
+                    {% for o in others %}{{ uc.card(o) }}{% endfor %}
+                </div>
+            </section>
+        {% endif %}
+    </div>
+</article>
+{% endblock %}

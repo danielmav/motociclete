@@ -1,0 +1,54 @@
+{# Coloana din dreapta a secțiunii Rulate: formular Vânzări moto + categorii + mărci.
+   Variabile: sales{phone,email}, categories, brands, current_category, current_brand, v (opțional). #}
+<aside class="used-side">
+    <div class="booking-card">
+        <h2 class="booking-card__title">{{ v is defined and v.state == 'active' ? 'Întreabă despre acest vehicul' : 'Cauți un vehicul rulat?' }}</h2>
+        <p class="booking-card__lead">
+            Vânzări moto:
+            <a href="tel:{{ sales.phone|replace({' ': ''}) }}">{{ sales.phone }}</a> ·
+            <a href="mailto:{{ sales.email }}">{{ sales.email }}</a>
+        </p>
+
+        <form data-ajax-form action="{{ base }}/api/lead/rulate" method="post" class="booking-form" novalidate>
+            <input type="text" name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
+            {% if v is defined and v.state == 'active' %}<input type="hidden" name="vehicle_id" value="{{ v.id }}">{% endif %}
+            <label>Nume<input type="text" name="name" autocomplete="name" required></label>
+            <label>Telefon<input type="tel" name="phone" autocomplete="tel"></label>
+            <label>Email<input type="email" name="email" autocomplete="email"></label>
+            <label>Mesaj<textarea name="message" rows="4"></textarea></label>
+            {% include 'partials/_consent-field.twig' %}
+            <p class="booking-form__err" data-form-err hidden></p>
+            <button type="submit" class="btn btn--primary booking-form__submit">Trimite mesajul</button>
+        </form>
+        <div class="booking-thanks" data-form-thanks hidden>
+            <p class="booking-thanks__title">Mulțumim!</p>
+            <p>Mesajul a ajuns la colegii de la Vânzări moto. Te contactăm cât de curând.</p>
+        </div>
+    </div>
+
+    {% if categories|length %}
+        <nav class="used-filter" aria-label="Categorii">
+            <h2 class="used-filter__title">Categorii</h2>
+            <ul>
+                {% for c in categories %}
+                    <li><a class="{{ current_category|default('') == c.slug ? 'is-current' }}" href="{{ base }}/rulate/{{ c.slug }}">{{ c.name }} <span>{{ c.n }}</span></a></li>
+                {% endfor %}
+            </ul>
+        </nav>
+    {% endif %}
+
+    {% if brands|length %}
+        <nav class="used-filter" aria-label="Mărci">
+            <h2 class="used-filter__title">Mărci</h2>
+            <ul>
+                {% for b in brands %}
+                    <li><a class="{{ current_brand|default('') == b.slug ? 'is-current' }}" href="{{ base }}/rulate/marca/{{ b.slug }}">{{ b.name }} <span>{{ b.n }}</span></a></li>
+                {% endfor %}
+            </ul>
+        </nav>
+    {% endif %}
+
+    {% if current_category|default('') or current_brand|default('') %}
+        <a class="link-arrow link-arrow--sm" href="{{ base }}/rulate">← Toate rulatele</a>
+    {% endif %}
+</aside>

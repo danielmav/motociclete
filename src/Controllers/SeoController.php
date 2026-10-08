@@ -8,6 +8,7 @@ use App\Catalog\Repository as Catalog;
 use App\Event\Repository as Events;
 use App\Content\Repository as Content;
 use App\News\Repository as News;
+use App\Used\Repository as Used;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -21,6 +22,7 @@ final class SeoController
     private News $news;
     private Events $events;
     private Content $content;
+    private Used $used;
     private string $base;
     private string $appUrl;
     private bool $rablaEnabled;
@@ -32,6 +34,7 @@ final class SeoController
         $this->news      = $container['news'];
         $this->events    = $container['events'];
         $this->content   = $container['content'];
+        $this->used      = $container['used'];
         $this->base      = (string) ($container['settings']['app']['base_path'] ?? '');
         $this->appUrl    = rtrim((string) ($container['settings']['app']['url'] ?? ''), '/');
         $this->rablaEnabled = $container['app_settings']->bool('rabla_home_section', false);
@@ -61,7 +64,7 @@ final class SeoController
     {
         $entries = [];
         // Static, high-value pages.
-        foreach (['/', '/despre_dual_motors', '/service', '/accesorii', '/finantare', '/garantia-legala', '/contact', '/blog', '/evenimente'] as $p) {
+        foreach (['/', '/despre_dual_motors', '/service', '/accesorii', '/finantare', '/garantia-legala', '/contact', '/blog', '/evenimente', '/rulate'] as $p) {
             $entries[] = ['path' => $p, 'lastmod' => null];
         }
         // Pagina RABLA există doar cât programul e activat din Setări.
@@ -74,6 +77,7 @@ final class SeoController
             $this->catalog->sitemapCategories(),
             $this->catalog->sitemapProducts(),
             $this->news->sitemapArticles(),
+            $this->used->sitemapEntries(),
             array_map(static fn ($e) => ['path' => $e['url'], 'lastmod' => null], $this->events->published(200)),
             array_map(static fn ($p) => ['path' => '/' . $p['slug'], 'lastmod' => null], $this->content->activePages())
         );

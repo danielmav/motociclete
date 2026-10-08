@@ -1,0 +1,28 @@
+{% extends 'layout.twig' %}
+{% import 'partials/_used_card.twig' as uc %}
+{% block title %}Anunțul nu mai este disponibil — Rulate Dual Motors{% endblock %}
+{% block description %}Acest vehicul rulat nu mai este de vânzare. Vezi celelalte anunțuri active de la Dual Motors.{% endblock %}
+{% block meta_robots %}noindex,follow{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="used-layout">
+            <div class="used-main">
+                <span class="kicker">Rulate</span>
+                <h1 class="section__title">Anunțul nu mai este disponibil</h1>
+                <p class="used-gone__lead">„{{ v.title }}” nu mai este de vânzare. {{ others|length ? 'Uite ce avem acum:' : 'Momentan nu avem alte anunțuri; scrie-ne ce cauți.' }}</p>
+
+                {% if others|length %}
+                    <div class="used-grid">
+                        {% for o in others %}{{ uc.card(o) }}{% endfor %}
+                    </div>
+                {% endif %}
+                <p style="margin-top:2rem"><a class="link-arrow" href="{{ base }}/rulate">Toate rulatele <span aria-hidden="true">→</span></a></p>
+            </div>
+
+            {% include 'partials/_used_sidebar.twig' %}
+        </div>
+    </div>
+</section>
+{% endblock %}

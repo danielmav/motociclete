@@ -77,6 +77,17 @@ final class Repository
         return $this->all("SELECT * FROM contact_departments ORDER BY position, id");
     }
 
+    /** Departamentul a cărui etichetă dă slug-ul cerut (ex. „Vânzări moto" → vanzari-moto). */
+    public function departmentBySlug(string $slug): ?array
+    {
+        foreach ($this->departments() as $row) {
+            if (slugify((string) $row['label']) === $slug) {
+                return $row;
+            }
+        }
+        return null;
+    }
+
     public function saveDepartment(?int $id, string $label, string $email, string $phone, int $position): int
     {
         if ($id) {
