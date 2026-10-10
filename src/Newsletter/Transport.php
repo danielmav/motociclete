@@ -17,10 +17,24 @@ use Throwable;
 final class Transport
 {
     private string $lastError = '';
+    private ?string $lastMessageId = null;
 
     /** @param array<string,mixed> $cfg blocul `newsletter` din config/settings.php */
     public function __construct(private array $cfg, private string $logDir, private bool $dev = false)
     {
+    }
+
+    /**
+     * Ce se întâmplă cu o campanie pusă la trimis: `live` = pleacă prin releu, `log` =
+     * doar în jurnal (dezvoltare), `off` = trimiterea către liste nu e activată.
+     * @param array<string,mixed> $cfg blocul `newsletter` din config/settings.php
+     */
+    public static function mode(array $cfg, bool $dev): string
+    {
+        if ($dev) {
+            return 'log';
+        }
+        return !empty($cfg['send_enabled']) && !empty($cfg['smtp_host']) ? 'live' : 'off';
     }
 
     public function lastError(): string
@@ -28,10 +42,17 @@ final class Transport
         return $this->lastError;
     }
 
+    /** ID-ul ultimului mesaj acceptat de releu, dacă l-a comunicat. */
+    public function lastMessageId(): ?string
+    {
+        return $this->lastMessageId;
+    }
+
     /** @param array<string,string> $headers headere suplimentare (ex. List-Unsubscribe) */
     public function send(string $to, string $subject, string $html, string $text, array $headers = []): bool
     {
         $this->lastError = '';
+        $this->lastMessageId = null;
         if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
             $this->lastError = 'Adresă de email invalidă.';
             return false;
@@ -72,7 +93,12 @@ final class Transport
             $m->isHTML(true);
             $m->Body = $html;
             $m->AltBody = $text;
-            return $m->send();
+            $ok = $m->send();
+            // ID-ul dat de releu la acceptarea mesajului (la Amazon SES: „250 Ok <id>");
+            // notificările de respingere îl poartă și așa le legăm de destinatar.
+            $id = $m->getSMTPInstance()->getLastTransactionID();
+            $this->lastMessageId = is_string($id) && $id !== '' ? $id : null;
+            return $ok;
         } catch (Throwable $e) {
             $this->lastError = $e->getMessage();
             return false;

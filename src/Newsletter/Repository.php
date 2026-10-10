@@ -89,6 +89,13 @@ final class Repository
             ->execute([':s' => $status, ':id' => $id]);
     }
 
+    /** Încă o campanie respinsă temporar de serverul destinatarului. */
+    public function addSoftBounce(int $id): void
+    {
+        $this->pdo()->prepare('UPDATE nl_subscribers SET soft_bounces = LEAST(soft_bounces + 1, 255) WHERE id = :id')
+            ->execute([':id' => $id]);
+    }
+
     // -- Abonamente -----------------------------------------------------------
 
     /** @return array<string,array<string,mixed>> indexat pe list_key */

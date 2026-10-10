@@ -190,6 +190,14 @@ final class Sends
         return $s->rowCount() === 1;
     }
 
+    /** Campania mai e de trimis? (poate fi pusă în pauză în timpul unei rulări) */
+    public function isActive(int $campaignId): bool
+    {
+        $s = $this->pdo()->prepare("SELECT COUNT(*) FROM nl_campaigns WHERE id = :id AND status IN ('queued', 'sending')");
+        $s->execute([':id' => $campaignId]);
+        return (int) $s->fetchColumn() === 1;
+    }
+
     public function started(int $campaignId): void
     {
         $this->pdo()->prepare("UPDATE nl_campaigns SET status = 'sending' WHERE id = :id AND status = 'queued'")

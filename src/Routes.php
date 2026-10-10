@@ -349,6 +349,14 @@ return function (App $app, Twig $twig, array $container): void {
     $app->get('/newsletter/dezabonare/{token:[a-f0-9]{32}}', $nl('prefs'));
     $app->post('/newsletter/dezabonare/{token:[a-f0-9]{32}}', $nl('prefsSave'));
     $app->get('/newsletter/c/{id:[0-9]+}-{key:[a-f0-9]{16}}', $nl('view'));
+    // Numărarea clicurilor + notificările releului (respingeri, reclamații de spam).
+    $nlTrack = function (string $method) use ($container) {
+        return function ($request, $response, $args) use ($container, $method) {
+            return (new \App\Controllers\NewsletterTrackController($container))->{$method}($request, $response, $args);
+        };
+    };
+    $app->get('/nl/c/{link:[0-9]+}/{token:[a-f0-9]{32}}', $nlTrack('click'));
+    $app->post('/api/newsletter/webhook/{secret:[A-Za-z0-9_-]{16,128}}', $nlTrack('webhook'));
 
 
     // --- Catalog (Yamaha + CFMOTO), backed by the local DB ---

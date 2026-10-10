@@ -58,6 +58,13 @@ return [
         'from'        => $_ENV['NL_FROM'] ?? ($_ENV['MAIL_FROM'] ?? 'noreply@motociclete.com.ro'),
         'from_name'   => $_ENV['NL_FROM_NAME'] ?? 'Dual Motors',
         'reply_to'    => $_ENV['NL_REPLY_TO'] ?? ($_ENV['MAIL_DEALER'] ?? 'info@motociclete.com.ro'),
+        // Trimiterea către LISTE pornește doar cu NL_SEND_ENABLED=1 (după configurarea
+        // releului): altfel rezerva pe SMTP_* ar trimite campania prin serverul sitului.
+        'send_enabled'   => filter_var($_ENV['NL_SEND_ENABLED'] ?? false, FILTER_VALIDATE_BOOL),
+        // Pauza dintre două mesaje (ms), pentru limita de viteză a releului.
+        'send_delay_ms'  => (int) ($_ENV['NL_SEND_DELAY_MS'] ?? 100),
+        // Secretul din adresa webhook-ului de respingeri/reclamații. Gol = webhook oprit (404).
+        'webhook_secret' => $_ENV['NL_WEBHOOK_SECRET'] ?? '',
     ],
 
     'twig' => [

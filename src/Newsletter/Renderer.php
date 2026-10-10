@@ -16,7 +16,7 @@ use Twig\TwigFunction;
  */
 final class Renderer
 {
-    private const MARKERS = ['UNSUB_URL', 'PREFS_URL', 'VIEW_URL', 'EMAIL'];
+    private const MARKERS = ['UNSUB_URL', 'PREFS_URL', 'VIEW_URL', 'EMAIL', 'TOKEN'];
 
     private Environment $twig;
     private string $siteUrl;

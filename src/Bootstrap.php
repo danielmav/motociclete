@@ -103,6 +103,8 @@ final class Bootstrap
             'client'    => new Client\Repository($db),
             'newsletter' => new Newsletter\Repository($db),
             'newsletter_campaigns' => new Newsletter\Campaigns($db),
+            'newsletter_sends'    => new Newsletter\Sends($db),
+            'newsletter_tracking' => new Newsletter\Tracking($db),
             'mailer'    => new Support\Mailer(
                 $settings['mail'],
                 $root . '/storage/logs',

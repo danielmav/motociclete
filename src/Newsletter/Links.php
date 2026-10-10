@@ -41,4 +41,38 @@ final class Links
             . '&utm_content=' . rawurlencode($content);
         return $url . (str_contains($url, '?') ? '&' : '?') . $utm . $fragment;
     }
+
+    /**
+     * Linkurile http(s) distincte dintr-un HTML, decodate (`&amp;` → `&`), în ordinea
+     * apariției. Marcajele de personalizare (%%…%%), `mailto:` și `tel:` nu intră.
+     * @return array<int,string>
+     */
+    public static function hrefs(string $html): array
+    {
+        preg_match_all('/\bhref="([^"]+)"/i', $html, $m);
+        $out = [];
+        foreach ($m[1] as $raw) {
+            $url = html_entity_decode($raw, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            if (preg_match('~^https?://~i', $url) && !str_contains($url, '%%')) {
+                $out[$url] = true;
+            }
+        }
+        return array_map('strval', array_keys($out));
+    }
+
+    /**
+     * Înlocuiește linkurile din hartă cu adresa de numărare a clicurilor,
+     * `{prefix}/{id}/%%TOKEN%%`; tokenul destinatarului se completează la trimitere.
+     * @param array<string,int> $map URL final (decodat) → id din nl_links
+     */
+    public static function tracked(string $html, array $map, string $prefix): string
+    {
+        if (!$map) {
+            return $html;
+        }
+        return (string) preg_replace_callback('/\bhref="([^"]+)"/i', static function (array $m) use ($map, $prefix): string {
+            $url = html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            return isset($map[$url]) ? 'href="' . $prefix . '/' . $map[$url] . '/%%TOKEN%%"' : $m[0];
+        }, $html);
+    }
 }
