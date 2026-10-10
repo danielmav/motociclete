@@ -135,14 +135,17 @@ final class Repository
         )->execute([':id' => $id, ':l' => $list, ':s' => $source]);
     }
 
-    /** Dezabonează un abonament existent și activ. */
-    public function unsubscribe(int $id, string $list): bool
+    /**
+     * Dezabonează un abonament existent și activ. $campaignId = campania din al cărei
+     * link a venit dezabonarea (pentru statistici), dacă se știe.
+     */
+    public function unsubscribe(int $id, string $list, ?int $campaignId = null): bool
     {
         $s = $this->pdo()->prepare(
-            "UPDATE nl_subscriptions SET status = 'unsubscribed', unsubscribed_at = NOW()
+            "UPDATE nl_subscriptions SET status = 'unsubscribed', unsubscribed_at = NOW(), unsub_campaign_id = :c
              WHERE subscriber_id = :id AND list_key = :l AND status = 'active'"
         );
-        $s->execute([':id' => $id, ':l' => $list]);
+        $s->execute([':id' => $id, ':l' => $list, ':c' => $campaignId]);
         return $s->rowCount() > 0;
     }
 

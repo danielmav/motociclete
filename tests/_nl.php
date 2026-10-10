@@ -43,6 +43,9 @@ function nl_isolate(): PDO
 {
     $pdo = nl_db()->local();
     $pdo->beginTransaction();
+    foreach (['nl_clicks', 'nl_links', 'nl_sends', 'nl_events'] as $table) {
+        $pdo->exec('DELETE FROM ' . $table);
+    }
     $pdo->exec('DELETE FROM nl_subscriptions');
     $pdo->exec('DELETE FROM nl_subscribers');
     $pdo->exec('DELETE FROM nl_campaigns');
@@ -52,6 +55,29 @@ function nl_isolate(): PDO
         }
     });
     return $pdo;
+}
+
+/**
+ * Abonat de test, activ pe listele date (sau cu starea cerută).
+ * @param array<int,string> $lists
+ */
+function nl_subscriber(string $email, array $lists = ['stiri'], string $status = 'active'): int
+{
+    $repo = new App\Newsletter\Repository(nl_db());
+    $id = (int) $repo->ensureSubscriber($email, null, $status)['id'];
+    foreach ($lists as $list) {
+        $repo->addSubscription($id, $list, 'manual');
+    }
+    return $id;
+}
+
+/** Campanie de test cu mesaj generat, gata de pus la trimis. */
+function nl_campaign(string $list = 'stiri', string $html = '<p>Salut %%EMAIL%%</p>'): int
+{
+    $campaigns = new App\Newsletter\Campaigns(nl_db());
+    $id = $campaigns->create($list, 'stiri', 'Campanie de test');
+    $campaigns->update($id, ['html' => $html, 'body_text' => 'Salut %%EMAIL%% %%UNSUB_URL%%']);
+    return $id;
 }
 
 function nl_done(): void

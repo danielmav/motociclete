@@ -58,6 +58,9 @@ if ($type !== '' && !str_contains($type, "'contact'")) {
     echo "  ~ site_messages.type += contact\n";
 }
 ensure_column($pdo, 'product_images', 'caption', 'ALTER TABLE `product_images` ADD COLUMN `caption` VARCHAR(160) NULL AFTER `filename`');
+// Newsletter, trimitere: eșecuri consecutive pe campanie + campania din care a venit o dezabonare.
+ensure_column($pdo, 'nl_campaigns', 'fail_streak', 'ALTER TABLE `nl_campaigns` ADD COLUMN `fail_streak` SMALLINT UNSIGNED NOT NULL DEFAULT 0 AFTER `pause_reason`');
+ensure_column($pdo, 'nl_subscriptions', 'unsub_campaign_id', 'ALTER TABLE `nl_subscriptions` ADD COLUMN `unsub_campaign_id` INT UNSIGNED NULL AFTER `unsubscribed_at`, ADD KEY `idx_nl_unsub_campaign` (`unsub_campaign_id`)');
 // Formularul din /rulate salvează în site_messages cu tipul `rulate`.
 $type = (string) $pdo->query(
     "SELECT COLUMN_TYPE FROM information_schema.COLUMNS
