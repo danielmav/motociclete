@@ -166,4 +166,49 @@ $r = $sender->run(10, 100000);
 check('10% respingeri: campania intră în pauză fără să mai trimită',
     $status($c7) === 'paused' && $outbox === [] && str_contains((string) ($r['paused'][$c7] ?? ''), 'respingere'));
 
+// Reluare manuală după pauza pentru rată: trimite din nou, nu reintră imediat în pauză.
+$sends->resume($c7);
+$r = $sender->run(10, 100000);
+check('reluare după pauza pentru rată: mesajele pleacă', $r['sent'] === 1 && !isset($r['paused'][$c7]) && $to($outbox) === ['x@nl-test.invalid']);
+
+// --- eșec incert (conexiune căzută după trimiterea corpului): fără reîncercare ----
+$pdo->exec("UPDATE nl_campaigns SET status = 'sent' WHERE status IN ('queued', 'sending')");
+$uncertain = new Sender($sends, new Tracking(nl_db()), static fn (): array => [
+    'ok' => false, 'error' => 'SMTP Error: data not accepted.', 'message_id' => null, 'uncertain' => true,
+], $site);
+$c8 = nl_campaign('oferte');
+$sends->enqueue($c8);
+$x = (int) $repo->findByEmail('x@nl-test.invalid')['id'];
+$r = $uncertain->run(10, 100000);
+check('eșec incert: rândul rămâne eșuat de la prima încercare, fără reîncercare',
+    $r['failed'] === 1 && $r['retry'] === 0 && $sendStatus($c8, $x) === 'failed' && $status($c8) === 'sent');
+
+// --- pauză pusă în timpul unei tranșe -------------------------------------------
+$sent = [];
+$c9 = nl_campaign('stiri');
+$sends->enqueue($c9);
+$pausing = new Sender($sends, new Tracking(nl_db()), static function (string $to) use (&$sent, $sends, $c9): array {
+    $sent[] = $to;
+    $sends->pause($c9, 'pauză din admin, în timpul rulării');
+    return ['ok' => true, 'error' => '', 'message_id' => null];
+}, $site);
+$r = $pausing->run(100, 100000);
+check('pauză în timpul tranșei: după mesajul în curs nu mai pleacă nimic',
+    count($sent) === 1 && $r['sent'] === 1 && $status($c9) === 'paused');
+
+// --- dezabonare în timpul unei tranșe ---------------------------------------------
+$sent = [];
+$sends->resume($c9);
+$victim = (int) $repo->findByEmail('e@nl-test.invalid')['id'];
+$unsubbing = new Sender($sends, new Tracking(nl_db()), static function (string $to) use (&$sent, $repo, $victim): array {
+    $sent[] = $to;
+    $repo->unsubscribe($victim, 'stiri');
+    return ['ok' => true, 'error' => '', 'message_id' => null];
+}, $site);
+$r = $unsubbing->run(1000, 100000);
+check('dezabonare în timpul tranșei: abonatul nu mai primește mesajul',
+    !in_array('e@nl-test.invalid', $sent, true) && count($sent) === 28 && $sendStatus($c9, $victim) === 'queued');
+$r = $sender->run(1000, 100000);
+check('la rularea următoare rândul lui e sărit și campania se închide', $sendStatus($c9, $victim) === 'skipped' && $status($c9) === 'sent');
+
 nl_done();

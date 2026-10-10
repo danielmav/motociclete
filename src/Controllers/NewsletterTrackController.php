@@ -83,10 +83,10 @@ final class NewsletterTrackController
         if ($this->secret === '' || !hash_equals($this->secret, (string) ($args['secret'] ?? ''))) {
             throw new HttpNotFoundException($request);
         }
-        $body   = (string) $request->getBody();
-        $name   = $this->provider->name();
-        $parsed = $this->provider->parse($body);
+        $body = (string) $request->getBody();
+        $name = $this->provider->name();
         try {
+            $parsed = $this->provider->parse($body);
             if ($parsed['confirm_url'] !== null) {
                 $ok = ($this->fetch)($parsed['confirm_url']);
                 $this->feedback->log($name, $ok ? 'subscription' : 'subscription_failed', null, null, $body);

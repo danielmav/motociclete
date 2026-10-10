@@ -26,7 +26,8 @@ final class Sender
     private string $siteUrl;
 
     /**
-     * @param callable(string,string,string,string,array<string,string>): array{ok:bool,error:string,message_id:?string} $send
+     * @param callable(string,string,string,string,array<string,string>): array{ok:bool,error:string,message_id:?string,uncertain?:bool} $send
+     *        `uncertain` = eșec după ce mesajul a fost predat releului: nu se reîncearcă
      * @param callable(): void|null $pause pauza dintre două mesaje (limita de viteză a releului)
      */
     public function __construct(
@@ -113,6 +114,11 @@ final class Sender
                     continue;
                 }
                 if (!$this->sends->claim($sendId)) {
+                    // Campanie pusă în pauză sau oprită între timp: ne oprim aici. Altfel
+                    // (abonat dezabonat în ultimele secunde) rândul e sărit la rularea următoare.
+                    if (!$this->sends->isActive($id)) {
+                        return $budget;
+                    }
                     continue;
                 }
                 $this->sends->started($id);
@@ -141,7 +147,13 @@ final class Sender
                     $this->sends->failStreak($id, false);
                     $report['sent']++;
                 } else {
-                    $state = $this->sends->markRetry($sendId, (string) ($result['error'] ?? ''));
+                    if (!empty($result['uncertain'])) {
+                        // Mesajul poate să fi plecat: fără reîncercare.
+                        $this->sends->markFailed($sendId, 'Răspuns incert al releului, fără reîncercare: ' . ($result['error'] ?? ''));
+                        $state = 'failed';
+                    } else {
+                        $state = $this->sends->markRetry($sendId, (string) ($result['error'] ?? ''));
+                    }
                     $report[$state === 'failed' ? 'failed' : 'retry']++;
                     if ($this->sends->failStreak($id, true) >= Sends::FAIL_STREAK_PAUSE) {
                         $reason = Sends::FAIL_STREAK_PAUSE . ' de trimiteri eșuate la rând. Ultima eroare: ' . ($result['error'] ?? '');
@@ -156,10 +168,6 @@ final class Sender
                 if ($this->pause !== null) {
                     ($this->pause)();
                 }
-            }
-            // Pauză pusă între timp din admin sau de un răspuns al releului.
-            if (!$this->sends->isActive($id)) {
-                break;
             }
         }
         return $budget;

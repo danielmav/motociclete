@@ -18,6 +18,7 @@ final class Transport
 {
     private string $lastError = '';
     private ?string $lastMessageId = null;
+    private bool $lastUncertain = false;
 
     /** @param array<string,mixed> $cfg blocul `newsletter` din config/settings.php */
     public function __construct(private array $cfg, private string $logDir, private bool $dev = false)
@@ -42,6 +43,15 @@ final class Transport
         return $this->lastError;
     }
 
+    /**
+     * Ultimul eșec a apărut DUPĂ ce corpul mesajului a fost trimis și fără un răspuns
+     * de la releu (conexiune căzută): mesajul poate să fi plecat, deci nu se reîncearcă.
+     */
+    public function lastUncertain(): bool
+    {
+        return $this->lastUncertain;
+    }
+
     /** ID-ul ultimului mesaj acceptat de releu, dacă l-a comunicat. */
     public function lastMessageId(): ?string
     {
@@ -53,6 +63,8 @@ final class Transport
     {
         $this->lastError = '';
         $this->lastMessageId = null;
+        $this->lastUncertain = false;
+        $m = null;
         if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
             $this->lastError = 'Adresă de email invalidă.';
             return false;
@@ -101,6 +113,11 @@ final class Transport
             return $ok;
         } catch (Throwable $e) {
             $this->lastError = $e->getMessage();
+            // „Data not accepted" fără cod SMTP = releul n-a mai apucat să răspundă după corp.
+            if ($m !== null && str_contains($e->getMessage(), 'ata not accepted')) {
+                $error = $m->getSMTPInstance()->getError();
+                $this->lastUncertain = trim((string) ($error['smtp_code'] ?? '')) === '';
+            }
             return false;
         }
     }

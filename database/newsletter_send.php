@@ -41,8 +41,12 @@ $mode  = Transport::mode($cfg, $dev);
 $stamp = date('Y-m-d H:i:s');
 
 // O singură rulare o dată: cronul următor iese dacă cea dinainte încă lucrează.
-$lock = fopen($root . '/storage/cache/newsletter_send.lock', 'c');
-if ($lock === false || !flock($lock, LOCK_EX | LOCK_NB)) {
+$lock = @fopen($root . '/storage/cache/newsletter_send.lock', 'c');
+if ($lock === false) {
+    fwrite(STDERR, "{$stamp} Nu pot deschide storage/cache/newsletter_send.lock (drepturi de scriere?).\n");
+    exit(1);
+}
+if (!flock($lock, LOCK_EX | LOCK_NB)) {
     echo "{$stamp} altă rulare e în curs; ies.\n";
     exit(0);
 }
@@ -53,7 +57,12 @@ try {
     $app   = new Settings($db);
     $perRun = max(1, $app->int('nl_batch_size', 50));
     $perDay = max(1, $app->int('nl_daily_limit', 200));
-    $active = $sends->activeCampaigns();
+    // Și când nu e nimic în coadă: poate fi un rând rămas „în lucru" la o campanie oprită.
+    if ($apply) {
+        $sends->releaseStale(15);
+    }
+    $active  = $sends->activeCampaigns();
+    $siteUrl = rtrim((string) $settings['app']['url'], '/') . ($settings['app']['base_path'] ?? '');
 
     if (!$active) {
         // Tăcut când nu e nimic de făcut: cronul rulează la 5 minute.
@@ -61,6 +70,10 @@ try {
     }
     if ($mode === 'off') {
         fwrite(STDERR, "{$stamp} " . count($active) . " campanii în coadă, dar trimiterea nu e activată (NL_SEND_ENABLED=1 + NL_SMTP_HOST în .env).\n");
+        exit(1);
+    }
+    if ($mode === 'live' && !str_starts_with($siteUrl, 'https://')) {
+        fwrite(STDERR, "{$stamp} APP_URL ({$siteUrl}) nu e adresa https a sitului: linkurile de dezabonare ar fi greșite. Nu trimit.\n");
         exit(1);
     }
     if (!$apply) {
@@ -80,9 +93,10 @@ try {
         new Tracking($db),
         static function (string $to, string $subject, string $html, string $text, array $headers) use ($transport): array {
             $ok = $transport->send($to, $subject, $html, $text, $headers);
-            return ['ok' => $ok, 'error' => $transport->lastError(), 'message_id' => $transport->lastMessageId()];
+            return ['ok' => $ok, 'error' => $transport->lastError(), 'message_id' => $transport->lastMessageId(),
+                    'uncertain' => $transport->lastUncertain()];
         },
-        rtrim((string) $settings['app']['url'], '/') . ($settings['app']['base_path'] ?? ''),
+        $siteUrl,
         $mode === 'live' && $delay > 0 ? static fn () => usleep($delay) : null
     );
     $r = $sender->run($perRun, $perDay);

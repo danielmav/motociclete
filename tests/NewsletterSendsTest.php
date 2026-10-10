@@ -179,6 +179,43 @@ $repo->setSubscription($unsub, 'stiri', 'manual');
 $repo->unsubscribe($unsub, 'stiri', $big);
 check('stats: dezabonările venite din campanie', $sends->stats($big)['unsubscribed'] === 1 && $sends->stats($fill2)['unsubscribed'] === 0);
 
+// --- rezervarea verifică starea de ACUM ---------------------------------------
+$repo->setSubscription($unsub, 'stiri', 'manual');
+$g = nl_campaign('stiri');
+$sends->enqueue($g);
+$gate = [];
+foreach ($sends->batch($g, 10) as $r) {
+    $gate[(int) $r['subscriber_id']] = (int) $r['id'];
+}
+$sends->pause($g, 'test');
+check('claim: refuzat cât timp campania e în pauză', $sends->claim($gate[$a]) === false && $sendRow($g, $a)['status'] === 'queued');
+$sends->resume($g);
+$repo->unsubscribe($b, 'stiri');
+check('claim: refuzat pentru un abonat dezabonat între timp', $sends->claim($gate[$b]) === false);
+$repo->setStatus($unsub, 'complained');
+check('claim: refuzat pentru un abonat cu reclamație', $sends->claim($gate[$unsub]) === false);
+check('claim: reușește pentru abonatul rămas activ', $sends->claim($gate[$a]) === true && (int) $sendRow($g, $a)['attempts'] === 1);
+$sends->markFailed($gate[$a], 'incert');
+check('markFailed: eșuat definitiv, fără întoarcere în coadă', $sendRow($g, $a)['status'] === 'failed' && $sendRow($g, $a)['error'] === 'incert');
+$repo->setSubscription($b, 'stiri', 'manual');
+$repo->setStatus($unsub, 'active');
+$repo->unsubscribe($unsub, 'stiri');
+
+// După o reluare manuală, ratele se judecă din nou abia după încă 200 de mesaje.
+$pdo->exec("UPDATE nl_campaigns SET status = 'paused' WHERE id = {$fill2}");
+$sends->resume($fill2);
+check('health după reluare: nu oprește din nou imediat', $sends->health($fill2) === null);
+$fill($fill2, ['queued' => 0]);
+$more = $pdo->prepare("INSERT INTO nl_sends (campaign_id, subscriber_id, status, sent_at) VALUES ({$fill2}, :u, 'sent', NOW())");
+for ($i = 0; $i < 199; $i++) {
+    $more->execute([':u' => 200000 + $i]);
+}
+check('health după reluare: încă 199 de mesaje, tot nu judecă', $sends->health($fill2) === null);
+$pdo->exec("INSERT INTO nl_sends (campaign_id, subscriber_id, status, sent_at) VALUES ({$fill2}, 299999, 'bounced', NOW()), ({$fill2}, 299998, 'bounced', NOW()),
+    ({$fill2}, 299997, 'bounced', NOW()), ({$fill2}, 299996, 'bounced', NOW()), ({$fill2}, 299995, 'bounced', NOW()), ({$fill2}, 299994, 'bounced', NOW()),
+    ({$fill2}, 299993, 'bounced', NOW()), ({$fill2}, 299992, 'bounced', NOW()), ({$fill2}, 299991, 'bounced', NOW()), ({$fill2}, 299990, 'bounced', NOW())");
+check('health după reluare: după 200 de mesaje noi, rata mare oprește din nou', str_contains((string) $sends->health($fill2), 'respingere'));
+
 // --- răspunsurile releului ----------------------------------------------------
 $c4 = nl_campaign('stiri');
 $pdo->exec("INSERT INTO nl_sends (campaign_id, subscriber_id, status, sent_at, message_id) VALUES ({$c4}, {$a}, 'sent', NOW(), 'ses-abc')");
@@ -193,6 +230,6 @@ check('markFeedback: nu coboară o stare mai gravă', $sends->markFeedback($send
 check('markFeedback: stare necunoscută → false', $sends->markFeedback($sendA, 'sent') === false);
 check('lastOutcomes: cel mai nou primul', $sends->lastOutcomes($a, 2) === ['complained', 'sent']);
 $h = $sends->history($a);
-check('history: campaniile primite, cu subiect', count($h) === 4 && $h[0]['subject'] === 'Campanie de test' && (int) $h[0]['campaign_id'] === $c4);
+check('history: campaniile primite, cu subiect', count($h) === 5 && $h[0]['subject'] === 'Campanie de test' && (int) $h[0]['campaign_id'] === $c4);
 
 nl_done();

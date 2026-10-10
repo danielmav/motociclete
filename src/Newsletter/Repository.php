@@ -6,6 +6,7 @@ namespace App\Newsletter;
 
 use App\Database;
 use PDO;
+use PDOException;
 
 /**
  * Singurul loc care citește/scrie tabelele de newsletter (`nl_subscribers`,
@@ -148,11 +149,21 @@ final class Repository
      */
     public function unsubscribe(int $id, string $list, ?int $campaignId = null): bool
     {
-        $s = $this->pdo()->prepare(
-            "UPDATE nl_subscriptions SET status = 'unsubscribed', unsubscribed_at = NOW(), unsub_campaign_id = :c
-             WHERE subscriber_id = :id AND list_key = :l AND status = 'active'"
-        );
-        $s->execute([':id' => $id, ':l' => $list, ':c' => $campaignId]);
+        $where = "WHERE subscriber_id = :id AND list_key = :l AND status = 'active'";
+        try {
+            $s = $this->pdo()->prepare(
+                "UPDATE nl_subscriptions SET status = 'unsubscribed', unsubscribed_at = NOW(), unsub_campaign_id = :c {$where}"
+            );
+            $s->execute([':id' => $id, ':l' => $list, ':c' => $campaignId]);
+        } catch (PDOException $e) {
+            // Coloana lipsește până rulează migrate_admin.php, iar codul ajunge pe server
+            // înaintea migrării: dezabonarea nu are voie să depindă de ea.
+            if ($e->getCode() !== '42S22') {
+                throw $e;
+            }
+            $s = $this->pdo()->prepare("UPDATE nl_subscriptions SET status = 'unsubscribed', unsubscribed_at = NOW() {$where}");
+            $s->execute([':id' => $id, ':l' => $list]);
+        }
         return $s->rowCount() > 0;
     }
 

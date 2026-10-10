@@ -110,13 +110,19 @@ final class Sends
         return $s->rowCount() === 1;
     }
 
+    /**
+     * Reia o campanie din pauză. Ratele de respingere/reclamații se judecă din nou abia
+     * după încă HEALTH_MIN_SENT mesaje: altfel o campanie oprită pentru rată ar reintra
+     * în pauză la prima rulare, fără să mai trimită nimic.
+     */
     public function resume(int $campaignId): bool
     {
+        $sent = $this->stats($campaignId)['sent'];
         $s = $this->pdo()->prepare(
-            "UPDATE nl_campaigns SET status = 'sending', pause_reason = NULL, fail_streak = 0
+            "UPDATE nl_campaigns SET status = 'sending', pause_reason = NULL, fail_streak = 0, health_ack_sent = :n
              WHERE id = :id AND status = 'paused'"
         );
-        $s->execute([':id' => $campaignId]);
+        $s->execute([':id' => $campaignId, ':n' => $sent]);
         return $s->rowCount() === 1;
     }
 
@@ -179,12 +185,22 @@ final class Sends
         return $s->fetchAll();
     }
 
-    /** Rezervă rândul chiar înainte de trimitere. False = l-a luat altcineva. */
+    /**
+     * Rezervă rândul chiar înainte de trimitere și verifică, în aceeași instrucțiune, că
+     * mesajul mai are voie să plece ACUM: campania e încă activă (nu a fost pusă în pauză
+     * sau oprită între timp), iar abonatul și abonamentul lui sunt active.
+     * False = nu se trimite (l-a luat altcineva sau s-a schimbat ceva).
+     */
     public function claim(int $sendId): bool
     {
         $s = $this->pdo()->prepare(
-            "UPDATE nl_sends SET status = 'sending', attempts = attempts + 1, claimed_at = NOW()
-             WHERE id = :id AND status = 'queued'"
+            "UPDATE nl_sends s
+             JOIN nl_campaigns c ON c.id = s.campaign_id
+             JOIN nl_subscribers u ON u.id = s.subscriber_id
+             JOIN nl_subscriptions p ON p.subscriber_id = s.subscriber_id AND p.list_key = c.list_key
+             SET s.status = 'sending', s.attempts = s.attempts + 1, s.claimed_at = NOW()
+             WHERE s.id = :id AND s.status = 'queued'
+               AND c.status IN ('queued', 'sending') AND u.status = 'active' AND p.status = 'active'"
         );
         $s->execute([':id' => $sendId]);
         return $s->rowCount() === 1;
@@ -227,6 +243,16 @@ final class Sends
         $s = $this->pdo()->prepare('SELECT status FROM nl_sends WHERE id = :id');
         $s->execute([':id' => $sendId]);
         return (string) $s->fetchColumn();
+    }
+
+    /**
+     * Eșec fără reîncercare: nu se știe dacă releul a primit mesajul (conexiunea a căzut
+     * după ce corpul a fost trimis), iar un duplicat e mai rău decât o lipsă.
+     */
+    public function markFailed(int $sendId, string $error): void
+    {
+        $this->pdo()->prepare("UPDATE nl_sends SET status = 'failed', error = :e WHERE id = :id AND status = 'sending'")
+            ->execute([':e' => mb_substr($error, 0, 255), ':id' => $sendId]);
     }
 
     public function markSkipped(int $sendId, string $reason): void
@@ -292,7 +318,10 @@ final class Sends
     public function health(int $campaignId): ?string
     {
         $st = $this->stats($campaignId);
-        if ($st['sent'] < self::HEALTH_MIN_SENT) {
+        $a  = $this->pdo()->prepare('SELECT health_ack_sent FROM nl_campaigns WHERE id = :id');
+        $a->execute([':id' => $campaignId]);
+        // După o reluare manuală, ratele se judecă din nou abia după încă HEALTH_MIN_SENT mesaje.
+        if ($st['sent'] < (int) $a->fetchColumn() + self::HEALTH_MIN_SENT) {
             return null;
         }
         $bounces = ($st['bounced'] + $st['soft_bounced']) / $st['sent'];
