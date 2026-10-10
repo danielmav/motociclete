@@ -31,6 +31,10 @@ final class SubscriberController extends BaseController
         try {
             $counts  = $repo->counts();
             $results = $term !== '' ? $repo->search($term) : [];
+            foreach ($results as &$row) {
+                $row['history'] = $this->container['newsletter_sends']->history((int) $row['id'], 10);
+            }
+            unset($row);
             $dbError = null;
         } catch (Throwable) {
             $counts  = null;

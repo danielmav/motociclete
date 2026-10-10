@@ -15,6 +15,7 @@
     {% if err %}<div class="adm-flash adm-flash--err">{{ err }}</div>{% endif %}
 
     {% set source_names = {bs_account: 'cont BikerShop', bs_footer: 'footer BikerShop', portal: 'abonare portal', garage: 'My Garage', manual: 'adăugat manual', brevo: 'import Brevo'} %}
+    {% set send_names = {queued: 'în coadă', sending: 'în lucru', sent: 'trimis', failed: 'eșuat', skipped: 'sărit', soft_bounced: 'respins temporar', bounced: 'respins', complained: 'reclamație spam'} %}
     {% set status_names = {pending: 'neconfirmat', active: 'activ', bounced: 'respins', complained: 'reclamație spam'} %}
 
     {% if counts %}
@@ -98,6 +99,17 @@
                 {% endfor %}
                 <td class="adm-muted">{{ s.created_at|date('d.m.Y') }}</td>
             </tr>
+            {% if s.history %}
+            <tr>
+                <td colspan="{{ 4 + lists|length }}" class="adm-muted" style="padding-top:0;border-top:0">
+                    Campanii primite:
+                    {% for h in s.history %}
+                        <a href="{{ admin_base }}/newsletter/campanii/{{ h.campaign_id }}">{{ h.subject }}</a>
+                        ({{ send_names[h.status] ?? h.status }}{{ h.sent_at ? ', ' ~ h.sent_at|date('d.m.Y') }}){{ not loop.last ? ' · ' }}
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endif %}
         {% else %}
             <tr><td colspan="{{ 4 + lists|length }}" class="adm-muted">Nicio adresă nu conține „{{ q }}".</td></tr>
         {% endfor %}

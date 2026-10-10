@@ -10,6 +10,7 @@ use App\Newsletter\Content;
 use App\Newsletter\Images;
 use App\Newsletter\Renderer;
 use App\Newsletter\Repository;
+use App\Newsletter\Sends;
 use App\Newsletter\Transport;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -17,8 +18,8 @@ use Throwable;
 
 /**
  * Admin Newsletter → Campanii: compunerea unui mesaj (știri sau oferte), salvat ca
- * ciornă cu HTML-ul generat, previzualizare și trimitere de test. Trimiterea către
- * listă vine în etapa următoare.
+ * ciornă cu HTML-ul generat, previzualizare și trimitere de test, plus mersul și
+ * rezultatele unei campanii puse la trimis (acțiunile sunt în CampaignSendController).
  */
 final class CampaignController extends BaseController
 {
@@ -33,17 +34,30 @@ final class CampaignController extends BaseController
             return $d;
         }
         $q = $request->getQueryParams();
+        $sent24 = 0;
         try {
             $rows = $this->campaigns()->all();
+            foreach ($rows as &$row) {
+                $row['stats'] = $row['status'] !== 'draft' ? $this->sends()->stats((int) $row['id']) : null;
+            }
+            unset($row);
+            $sent24 = $this->sends()->sentLast24h();
             $err  = (string) ($q['err'] ?? '');
         } catch (Throwable) {
             $rows = [];
-            $err  = 'Tabelul de campanii lipsește sau baza de date nu răspunde. Rulează database/migrate_admin.php.';
+            $err  = 'Tabelele de campanii lipsesc sau baza de date nu răspunde. Rulează database/migrate_admin.php.';
         }
+        $s = $this->container['app_settings'];
         return $this->render($response, 'admin/newsletter/campaigns.twig', [
             'active'    => 'newsletter',
             'campaigns' => $rows,
             'lists'     => Repository::LISTS,
+            'send_mode' => $this->sendMode(),
+            'sent_24h'  => $sent24,
+            'limits'    => [
+                'batch' => $s->int('nl_batch_size', CampaignSendController::DEFAULT_BATCH),
+                'daily' => $s->int('nl_daily_limit', CampaignSendController::DEFAULT_DAILY),
+            ],
             'site_url'  => $this->siteUrl(),
             'msg'       => (string) ($q['msg'] ?? ''),
             'err'       => $err,
@@ -201,7 +215,23 @@ final class CampaignController extends BaseController
     /** @param array<string,mixed>|null $row @param array<string,mixed> $form @param array<string,mixed> $extra */
     private function view(Response $response, int $id, ?array $row, array $form, array $extra): Response
     {
-        return $this->render($response, 'admin/newsletter/campaign_form.twig', $extra + [
+        // Trimitere: destinatarii listei (ciornă) sau mersul și rezultatele campaniei.
+        $sending = ['recipients' => null, 'stats' => null, 'clicks' => 0, 'top_links' => []];
+        if ($row !== null) {
+            try {
+                if ($row['status'] === 'draft') {
+                    $sending['recipients'] = $this->sends()->recipientCount((string) $row['list_key']);
+                } else {
+                    $sending['stats']     = $this->sends()->stats($id);
+                    $sending['clicks']    = $this->container['newsletter_tracking']->uniqueClicks($id);
+                    $sending['top_links'] = $this->container['newsletter_tracking']->topLinks($id);
+                }
+            } catch (Throwable) {
+                // Pagina de compunere rămâne utilizabilă și fără tabelele de trimitere.
+            }
+        }
+        return $this->render($response, 'admin/newsletter/campaign_form.twig', $extra + $sending + [
+            'send_mode'  => $this->sendMode(),
             'active'     => 'newsletter',
             'id'         => $id,
             'campaign'   => $row,
@@ -218,6 +248,17 @@ final class CampaignController extends BaseController
     private function campaigns(): Campaigns
     {
         return $this->container['newsletter_campaigns'];
+    }
+
+    private function sends(): Sends
+    {
+        return $this->container['newsletter_sends'];
+    }
+
+    /** `live` = pleacă prin releu, `log` = doar în jurnal (dezvoltare), `off` = neactivată. */
+    private function sendMode(): string
+    {
+        return Transport::mode($this->settings['newsletter'], ($this->settings['app']['env'] ?? 'prod') === 'dev');
     }
 
     private function composer(): Composer

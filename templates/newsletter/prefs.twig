@@ -25,7 +25,7 @@
             <p class="nl-note">Am debifat lista <strong>{{ lists[focus] }}</strong>. Apasă „Salvează preferințele” ca să confirmi dezabonarea.</p>
         {% endif %}
 
-        <form class="nl-prefs" method="post" action="{{ base }}/newsletter/dezabonare/{{ token }}">
+        <form class="nl-prefs" method="post" action="{{ base }}/newsletter/dezabonare/{{ token }}{{ campaign ? '?c=' ~ campaign }}">
             <fieldset class="nl-prefs__lists">
                 <legend>Vreau să primesc:</legend>
                 {% for key, name in lists %}

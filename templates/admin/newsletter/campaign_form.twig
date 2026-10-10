@@ -10,6 +10,76 @@
 {% for w in warnings %}<div class="adm-flash adm-flash--warn">⚠ {{ w }}</div>{% endfor %}
 {% if not editable %}<div class="adm-flash adm-flash--warn">Campania a fost pusă la trimis și nu mai poate fi modificată.</div>{% endif %}
 
+{% if stats %}
+{% set status_names = {queued: 'în coadă', sending: 'se trimite', paused: 'în pauză', sent: 'încheiată'} %}
+{% set pct = stats.recipients ? ((stats.recipients - stats.queued - stats.sending) * 100 / stats.recipients)|round : 0 %}
+<div class="adm-fieldset" style="max-width:980px;margin-bottom:1.4rem">
+    <span class="adm-fieldset__t">Trimitere — {{ status_names[campaign.status] ?? campaign.status }}</span>
+    {% if campaign.pause_reason %}
+        <div class="adm-flash adm-flash--{{ campaign.status == 'paused' ? 'err' : 'warn' }}" style="margin:.8rem 0 0">{{ campaign.pause_reason }}</div>
+    {% endif %}
+    <div class="adm-cards" style="margin:.9rem 0 .4rem">
+        {% for label, value in {
+            'destinatari': stats.recipients,
+            'trimise': stats.sent,
+            'în coadă': stats.queued + stats.sending,
+            'eșuate': stats.failed,
+            'sărite': stats.skipped,
+            'respinse': stats.bounced + stats.soft_bounced,
+            'reclamații spam': stats.complained,
+            'dezabonări': stats.unsubscribed,
+            'au dat clic': clicks
+        } %}
+            <div style="border:1px solid #e4e4e7;border-radius:8px;padding:.7rem .9rem">
+                <div style="font-size:1.5rem;font-weight:700;line-height:1.2">{{ value }}</div>
+                <div class="adm-muted">{{ label }}</div>
+            </div>
+        {% endfor %}
+    </div>
+    <p class="adm-help" style="margin:0 0 .8rem">
+        Procesate {{ pct }}%.
+        {% if stats.sent %}Clicuri: {{ (clicks * 100 / stats.sent)|round(1) }}% din mesajele trimise.{% endif %}
+        „Sărite” = abonați dezabonați sau excluși după punerea la trimis. „Respinse” include {{ stats.soft_bounced }} respingeri temporare.
+        Clicurile includ și verificările automate ale filtrelor de email, deci cifra reală e ceva mai mică.
+    </p>
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem">
+        {% if campaign.status in ['queued', 'sending'] %}
+            <form method="post" action="{{ admin_base }}/newsletter/campanii/{{ id }}/pauza">
+                <input type="hidden" name="_csrf" value="{{ csrf }}">
+                <button class="adm-btn" type="submit">Pune în pauză</button>
+            </form>
+        {% elseif campaign.status == 'paused' %}
+            <form method="post" action="{{ admin_base }}/newsletter/campanii/{{ id }}/reia">
+                <input type="hidden" name="_csrf" value="{{ csrf }}">
+                <button class="adm-btn adm-btn--primary" type="submit">Reia trimiterea</button>
+            </form>
+        {% endif %}
+        {% if campaign.status in ['queued', 'sending', 'paused'] %}
+            <form method="post" action="{{ admin_base }}/newsletter/campanii/{{ id }}/opreste" onsubmit="return confirm('Oprești definitiv campania? Mesajele rămase în coadă nu vor mai pleca.')">
+                <input type="hidden" name="_csrf" value="{{ csrf }}">
+                <button class="adm-btn adm-btn--danger" type="submit">Oprește definitiv</button>
+            </form>
+        {% endif %}
+    </div>
+
+    {% if top_links %}
+    <table class="adm-table" style="margin-top:1rem">
+        <thead><tr><th>Cele mai accesate linkuri</th><th>Bloc</th><th>Abonați</th><th>Clicuri</th></tr></thead>
+        <tbody>
+        {% for l in top_links %}
+            <tr>
+                <td style="word-break:break-all"><a href="{{ l.url }}" target="_blank" rel="noopener">{{ l.url|split('?')[0] }}</a></td>
+                <td class="adm-muted">{{ l.block ?: '—' }}</td>
+                <td>{{ l.clicks }}</td>
+                <td class="adm-muted">{{ l.total }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+{% endif %}
+
 <form class="adm-form" method="post" action="{{ admin_base }}/newsletter/campanii/{{ id }}" style="max-width:980px" data-nl-form>
     <input type="hidden" name="_csrf" value="{{ csrf }}">
     <fieldset {{ editable ? '' : 'disabled' }} style="border:0;padding:0;margin:0;min-width:0">
@@ -111,6 +181,28 @@
     <p class="adm-help" style="margin:.6rem 0 0">Subiectul primește prefixul [TEST]. Dacă adresa e un abonat, linkurile de dezabonare sunt cele reale ale lui.</p>
     <div style="margin:.8rem 0 0"><button class="adm-btn adm-btn--primary" type="submit">Trimite testul</button></div>
 </form>
+
+{% if editable and campaign %}
+<form class="adm-fieldset" method="post" action="{{ admin_base }}/newsletter/campanii/{{ id }}/trimite" style="max-width:980px;margin-top:1.4rem"
+      onsubmit="return confirm('Pui campania la trimis către {{ recipients }} destinatari? După acest pas nu mai poate fi modificată.')">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <span class="adm-fieldset__t">Trimite către listă</span>
+    <p style="margin:.6rem 0 0">Lista <strong>{{ lists[campaign.list_key] ?? campaign.list_key }}</strong> are acum
+        <strong>{{ recipients is null ? '?' : recipients }}</strong> destinatari activi.</p>
+    {% if send_mode == 'off' %}
+        <div class="adm-flash adm-flash--warn" style="margin:.8rem 0 0">Trimiterea către liste nu este încă activată pe acest server (lipsește releul de email). Până atunci poți compune, previzualiza și trimite teste.</div>
+    {% else %}
+        {% if send_mode == 'log' %}
+            <div class="adm-flash adm-flash--warn" style="margin:.8rem 0 0">Mediu de dezvoltare: mesajele nu pleacă, se scriu în storage/logs/newsletter.log.</div>
+        {% endif %}
+        <p class="adm-help" style="margin:.6rem 0 0">Mesajele pleacă în tranșe, în limitele setate pe pagina „Campanii”. Salvează formularul înainte, dacă ai modificat ceva: se trimite ultima versiune salvată. Trimite-ți întâi un test.</p>
+        <label style="display:flex;gap:.5rem;align-items:center;margin-top:.8rem">
+            <input type="checkbox" name="confirm" value="1" required style="width:auto"> Am verificat mesajul și vreau să-l trimit către toată lista
+        </label>
+        <div style="margin:.8rem 0 0"><button class="adm-btn adm-btn--primary" type="submit" {{ recipients ? '' : 'disabled' }}>Pune la trimis</button></div>
+    {% endif %}
+</form>
+{% endif %}
 {% endif %}
 
 <script>

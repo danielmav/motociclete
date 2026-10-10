@@ -200,6 +200,12 @@ return function (App $app, Twig $twig, array $container): void {
     $app->get($adminBase . '/newsletter/campanii/{id:[0-9]+}/preview',     $adminCtl('CampaignController', 'preview'));
     $app->post($adminBase . '/newsletter/campanii/{id:[0-9]+}/test',       $adminCtl('CampaignController', 'test'));
     $app->post($adminBase . '/newsletter/campanii/{id:[0-9]+}/delete',     $adminCtl('CampaignController', 'delete'));
+    // Newsletter — trimiterea către listă (coada o procesează cronul newsletter_send.php)
+    $app->post($adminBase . '/newsletter/campanii/limite',                 $adminCtl('CampaignSendController', 'limits'));
+    $app->post($adminBase . '/newsletter/campanii/{id:[0-9]+}/trimite',    $adminCtl('CampaignSendController', 'send'));
+    $app->post($adminBase . '/newsletter/campanii/{id:[0-9]+}/pauza',      $adminCtl('CampaignSendController', 'pause'));
+    $app->post($adminBase . '/newsletter/campanii/{id:[0-9]+}/reia',       $adminCtl('CampaignSendController', 'resume'));
+    $app->post($adminBase . '/newsletter/campanii/{id:[0-9]+}/opreste',    $adminCtl('CampaignSendController', 'cancel'));
     // Finanțare — config UniCredit + pagina /finantare
     $app->get($adminBase . '/finantare',                     $adminCtl('FinanceController', 'index'));
     $app->post($adminBase . '/finantare',                    $adminCtl('FinanceController', 'save'));

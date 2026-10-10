@@ -167,6 +167,7 @@ final class NewsletterController
             'lists'          => Repository::LISTS,
             'subs'           => $this->repo->subscriptions((int) $sub['id']),
             'focus'          => $focus,
+            'campaign'       => $this->campaignId($request),
             'saved'          => isset($q['salvat']),
             'excluded'       => in_array($sub['status'], ['bounced', 'complained'], true),
             'canonical_path' => '/newsletter/dezabonare',
@@ -181,11 +182,12 @@ final class NewsletterController
         $d     = (array) $request->getParsedBody();
         $all   = array_keys(Repository::LISTS);
         $focus = $this->validLists([(string) ($request->getQueryParams()['l'] ?? '')]);
+        $from  = $this->campaignId($request);
 
         // Dezabonare cu un clic (RFC 8058): clientul de email trimite acest POST singur.
         if ((string) ($d['List-Unsubscribe'] ?? '') === 'One-Click') {
             foreach ($focus ?: $all as $list) {
-                $this->repo->unsubscribe($id, $list);
+                $this->repo->unsubscribe($id, $list, $from);
             }
             $response->getBody()->write('OK');
             return $response->withHeader('Content-Type', 'text/plain; charset=utf-8');
@@ -196,7 +198,7 @@ final class NewsletterController
             if (in_array($list, $keep, true)) {
                 $this->repo->setSubscription($id, $list, 'portal');
             } else {
-                $this->repo->unsubscribe($id, $list);
+                $this->repo->unsubscribe($id, $list, $from);
             }
         }
         // Cine ține tokenul a primit emailul, deci adresa e a lui: o putem activa.
@@ -249,6 +251,13 @@ final class NewsletterController
             'Acest link de confirmare a fost deja folosit sau nu mai este valabil. Dacă vrei să primești newsletterul, abonează-te din nou din subsolul paginii.',
             '/newsletter/confirmare'
         );
+    }
+
+    /** Campania din al cărei link vine cititorul (`?c=`), pentru statistica dezabonărilor. */
+    private function campaignId(Request $request): ?int
+    {
+        $c = (string) ($request->getQueryParams()['c'] ?? '');
+        return ctype_digit($c) && (int) $c > 0 && strlen($c) < 10 ? (int) $c : null;
     }
 
     /** @return array<string,mixed> */

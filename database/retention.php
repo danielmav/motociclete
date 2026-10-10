@@ -16,7 +16,8 @@ declare(strict_types=1);
  *
  * NU atinge `clienti` / `service_requests` (bază legală: contract).
  * Newsletter: șterge abonații neconfirmați după 30 de zile și golește IP-ul de la
- * abonare; adresele dezabonate/respinse se PĂSTREAZĂ (lista de excluderi).
+ * abonare; adresele dezabonate/respinse se PĂSTREAZĂ (lista de excluderi). Clicurile
+ * se șterg după 12 luni, jurnalul notificărilor de la releu după 90 de zile.
  */
 
 use App\Database;
@@ -32,6 +33,8 @@ const PII_DAYS      = 365;  // anonimizare restul PII (Stage B)
 const EMAILLOG_DAYS = 365;  // ștergere email_log
 const OTP_DAYS      = 7;    // ștergere coduri OTP
 const NL_PENDING_DAYS = 30; // ștergere abonați newsletter neconfirmați
+const NL_CLICK_DAYS   = 365; // ștergere clicuri din newsletter
+const NL_EVENT_DAYS   = 90;  // ștergere jurnal notificări releu (respingeri, reclamații)
 
 $apply = in_array('--apply', $argv, true);
 $pdo   = (new Database($settings['db']))->local();
@@ -119,6 +122,19 @@ $op(
     'nl_subscribers IP (' . IP_DAYS . 'z)',
     'SELECT COUNT(*) FROM nl_subscribers WHERE created_at < (NOW() - INTERVAL ' . IP_DAYS . ' DAY) AND signup_ip IS NOT NULL',
     'UPDATE nl_subscribers SET signup_ip = NULL WHERE created_at < (NOW() - INTERVAL ' . IP_DAYS . ' DAY) AND signup_ip IS NOT NULL'
+);
+
+// newsletter — clicurile (12 luni) și jurnalul brut al notificărilor de la releu (90 de zile).
+// Starea rezultată din notificări (abonat respins / cu reclamație) rămâne pe abonat.
+$op(
+    'nl_clicks delete (' . NL_CLICK_DAYS . 'z)',
+    'SELECT COUNT(*) FROM nl_clicks WHERE clicked_at < (NOW() - INTERVAL ' . NL_CLICK_DAYS . ' DAY)',
+    'DELETE FROM nl_clicks WHERE clicked_at < (NOW() - INTERVAL ' . NL_CLICK_DAYS . ' DAY)'
+);
+$op(
+    'nl_events delete (' . NL_EVENT_DAYS . 'z)',
+    'SELECT COUNT(*) FROM nl_events WHERE created_at < (NOW() - INTERVAL ' . NL_EVENT_DAYS . ' DAY)',
+    'DELETE FROM nl_events WHERE created_at < (NOW() - INTERVAL ' . NL_EVENT_DAYS . ' DAY)'
 );
 
 if ($errors) {

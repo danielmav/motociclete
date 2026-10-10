@@ -11,17 +11,35 @@
     {% if msg %}<div class="adm-flash adm-flash--ok">{{ msg }}</div>{% endif %}
     {% if err %}<div class="adm-flash adm-flash--err">{{ err }}</div>{% endif %}
 
-    {% set status_names = {draft: 'ciornă', queued: 'în coadă', sending: 'se trimite', paused: 'în pauză', sent: 'trimisă'} %}
-    <p class="adm-muted" style="margin-bottom:1rem">O campanie se compune și se salvează ca ciornă; o poți previzualiza și trimite ca test. Trimiterea către listă se adaugă într-o etapă următoare.</p>
+    {% set status_names = {draft: 'ciornă', queued: 'în coadă', sending: 'se trimite', paused: 'în pauză', sent: 'încheiată'} %}
+    <p class="adm-muted" style="margin-bottom:1rem">O campanie se compune și se salvează ca ciornă; o poți previzualiza și trimite ca test, apoi o pui la trimis către lista ei din pagina campaniei.</p>
+
+    <form class="adm-fieldset" method="post" action="{{ admin_base }}/newsletter/campanii/limite" style="max-width:980px;margin-bottom:1.4rem">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <span class="adm-fieldset__t">Ritmul de trimitere</span>
+        {% if send_mode == 'off' %}
+            <div class="adm-flash adm-flash--warn" style="margin:.8rem 0 0">Trimiterea către liste nu este încă activată pe acest server (lipsește releul de email).</div>
+        {% elseif send_mode == 'log' %}
+            <div class="adm-flash adm-flash--warn" style="margin:.8rem 0 0">Mediu de dezvoltare: mesajele nu pleacă, se scriu în storage/logs/newsletter.log.</div>
+        {% endif %}
+        <div class="adm-grid2" style="margin-top:.6rem">
+            <label>Mesaje pe rulare (o rulare la 5 minute) <input type="number" name="nl_batch_size" value="{{ limits.batch }}" min="1" max="500" required></label>
+            <label>Mesaje în 24 de ore <input type="number" name="nl_daily_limit" value="{{ limits.daily }}" min="1" max="100000" required></label>
+        </div>
+        <p class="adm-help" style="margin:.6rem 0 0">În ultimele 24 de ore au plecat <strong>{{ sent_24h }}</strong> mesaje. Cu un domeniu de trimitere nou, crește limita pe 24 de ore treptat, de la o campanie la alta; o campanie mai mare decât limita se întinde pe mai multe zile.</p>
+        <div style="margin:.8rem 0 0"><button class="adm-btn" type="submit">Salvează limitele</button></div>
+    </form>
+
     <table class="adm-table">
-        <thead><tr><th>Subiect</th><th>Listă</th><th>Tip</th><th>Stare</th><th>Modificată</th><th></th></tr></thead>
+        <thead><tr><th>Subiect</th><th>Listă</th><th>Tip</th><th>Stare</th><th>Trimise</th><th>Modificată</th><th></th></tr></thead>
         <tbody>
         {% for c in campaigns %}
             <tr>
                 <td><strong>{{ c.subject ?: '(fără subiect)' }}</strong></td>
                 <td class="adm-muted">{{ lists[c.list_key] ?? c.list_key }}</td>
                 <td class="adm-muted">{{ c.type == 'oferte' ? 'oferte' : 'știri' }}</td>
-                <td>{% if c.status == 'draft' %}<span class="adm-badge adm-badge--off">ciornă</span>{% else %}<span class="adm-badge adm-badge--on">{{ status_names[c.status] ?? c.status }}</span>{% endif %}</td>
+                <td>{% if c.status in ['draft', 'paused'] %}<span class="adm-badge adm-badge--off">{{ status_names[c.status] }}</span>{% else %}<span class="adm-badge adm-badge--on">{{ status_names[c.status] ?? c.status }}</span>{% endif %}</td>
+                <td class="adm-muted">{{ c.stats ? c.stats.sent ~ ' / ' ~ c.stats.recipients : '—' }}</td>
                 <td class="adm-muted">{{ (c.updated_at ?: c.created_at)|date('d.m.Y H:i') }}</td>
                 <td style="white-space:nowrap">
                     <a class="adm-btn adm-btn--sm" href="{{ admin_base }}/newsletter/campanii/{{ c.id }}">{{ c.status == 'draft' ? 'Editează' : 'Vezi' }}</a>
@@ -35,7 +53,7 @@
                 </td>
             </tr>
         {% else %}
-            <tr><td colspan="6" class="adm-muted">Nicio campanie încă. Începe cu „+ Campanie nouă".</td></tr>
+            <tr><td colspan="7" class="adm-muted">Nicio campanie încă. Începe cu „+ Campanie nouă".</td></tr>
         {% endfor %}
         </tbody>
     </table>

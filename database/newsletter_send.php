@@ -31,6 +31,9 @@ require $root . '/vendor/autoload.php';
 Dotenv::createImmutable($root)->safeLoad();
 $settings = require $root . '/config/settings.php';
 
+// PHP pe server rulează pe UTC: jurnalul se citește în ora României.
+date_default_timezone_set('Europe/Bucharest');
+
 $apply = in_array('--apply', $argv, true);
 $dev   = ($settings['app']['env'] ?? 'prod') === 'dev';
 $cfg   = $settings['newsletter'];
