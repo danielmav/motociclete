@@ -1437,7 +1437,7 @@ html:not(.js) .about-carousel__slide + .about-carousel__slide { margin-top: .5re
 /* ---- Rulate (vehicule second hand) ---- */
 .used-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: clamp(1.8rem, 4vw, 3rem); align-items: start; }
 .used-main, .used-side { min-width: 0; }
-.used-side { display: grid; gap: 1.4rem; }
+.used-side { display: grid; gap: 1.4rem; position: sticky; top: 90px; }
 .used-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(1.2rem, 2.5vw, 2rem); }
 .used-grid--wide { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .used-card { display: block; min-width: 0; }
@@ -1478,6 +1478,7 @@ html:not(.js) .about-carousel__slide + .about-carousel__slide { margin-top: .5re
 }
 @media (max-width: 991px) {
     .used-layout { grid-template-columns: minmax(0, 1fr); }
+    .used-side { position: static; }
 }
 @media (max-width: 640px) {
     .used-grid, .used-grid--wide { grid-template-columns: minmax(0, 1fr); }
