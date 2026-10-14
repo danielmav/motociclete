@@ -29,7 +29,10 @@ declare(strict_types=1);
  *   30 7 * * 1 /usr/local/bin/ea-php84 ~/public_html/tool/stoc-nelistat.php --group=echipament --mail=…
  */
 
-if (PHP_SAPI !== 'cli') {
+// Din browser (tool/ e sub Basic Auth): rezumat + tabel + descărcare CSV, fără email și fără a
+// atinge starea săptămânală. ?grupa=echipament (implicit) | alte | toate · ?csv=1 = descarcă.
+$web = PHP_SAPI !== 'cli';
+if ($web && !isset($_SERVER['PHP_AUTH_USER']) && !isset($_SERVER['REMOTE_USER']) && !isset($_SERVER['REDIRECT_REMOTE_USER'])) {
     http_response_code(403);
     exit;
 }
@@ -68,7 +71,13 @@ const TYPES = [
 const SIZES = ['XXXS', '3XS', '4XL', '3XL', '2XL', 'XXXL', 'XXL', 'XXS', 'XS', 'XL', 'XX', '3X', 'X2', 'S', 'M', 'L'];
 
 $opt = ['out' => null, 'all' => false, 'mail' => [], 'ps_root' => null, 'group' => null];
-foreach (array_slice($argv, 1) as $a) {
+if ($web) {
+    $opt['group'] = ['alte' => 'alte produse', 'toate' => null][$_GET['grupa'] ?? ''] ?? 'echipament';
+    $opt['out'] = sys_get_temp_dir() . '/stoc-nelistat-' . bin2hex(random_bytes(6)) . '.csv';
+    $opt['ps_root'] = dirname(__DIR__);
+    ob_start();   // rezumatul text se pune în pagină
+}
+foreach ($web ? [] : array_slice($argv, 1) as $a) {
     if ($a === '--all') {
         $opt['all'] = true;
     } elseif (str_starts_with($a, '--group=')) {
@@ -415,7 +424,39 @@ foreach ($rows as $s) {
 }
 fclose($h);
 $lines[] = '';
-$lines[] = 'CSV: ' . $out . ' (' . count($rows) . ' rânduri) · ' . round(microtime(true) - $t0, 1) . ' s';
+$lines[] = ($web ? 'CSV: ' : 'CSV: ' . $out . ' ') . '(' . count($rows) . ' rânduri) · ' . round(microtime(true) - $t0, 1) . ' s';
+
+if ($web) {
+    ob_end_clean();
+    $label = $opt['group'] ?? 'toate';
+    if (!empty($_GET['csv'])) {
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="stoc-nelistat-' . str_replace(' ', '-', $label) . '-' . date('Y-m-d') . '.csv"');
+        readfile($out);
+        unlink($out);
+        exit;
+    }
+    unlink($out);
+    $e = fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
+    $q = isset($_GET['grupa']) ? '&grupa=' . rawurlencode((string) $_GET['grupa']) : '';
+    header('Content-Type: text/html; charset=UTF-8');
+    echo "<!doctype html><html lang='ro'><head><meta charset='utf-8'><meta name='robots' content='noindex'><title>În stoc, dar nu pe site</title>
+<style>body{font:14px/1.45 -apple-system,Segoe UI,Arial,sans-serif;margin:24px;color:#222}pre{background:#f7f7f7;border:1px solid #ddd;padding:12px;overflow:auto}
+.btn{display:inline-block;padding:10px 18px;background:#E10600;color:#fff;font-weight:bold;text-decoration:none;border-radius:6px}
+nav a{margin-right:14px}table{border-collapse:collapse;font-size:12px;margin-top:16px}td,th{border:1px solid #ddd;padding:4px 6px;text-align:left}
+th{background:#f2f2f2;position:sticky;top:0}td.n{text-align:right}</style></head><body>";
+    echo "<h1>În stoc, dar nu pe site</h1><nav>Grupa: <a href='?'>echipament</a><a href='?grupa=alte'>alte produse</a><a href='?grupa=toate'>toate</a></nav>";
+    echo '<pre>' . $e(implode("\n", $lines)) . '</pre>';
+    echo "<p><a class='btn' href='?csv=1{$q}'>Descarcă CSV (" . $e($label) . ')</a></p>';
+    echo '<table><tr><th>Marca</th><th>Cod</th><th>Denumire</th><th>Stoc</th><th>Preț</th><th>Ultima operațiune</th><th>Stare pe site</th><th>Produs BikerShop</th></tr>';
+    foreach ($rows as $s) {
+        echo '<tr><td>' . $e($s['brand']) . '</td><td>' . $e($s['code']) . '</td><td>' . $e($s['name']) . "</td><td class='n'>" . $s['stoc']
+            . "</td><td class='n'>" . number_format($s['pret'], 0, ',', '.') . '</td><td>' . $e($s['last']) . '</td><td>' . $e($s['state']) . '</td><td>'
+            . ($s['id'] ? '#' . $s['id'] . ' ' . $e($prodName[$s['id']] ?? '') : '') . '</td></tr>';
+    }
+    echo '</table></body></html>';
+    exit;
+}
 echo implode("\n", $lines), "\n";
 
 // --- email (pe server) ---
