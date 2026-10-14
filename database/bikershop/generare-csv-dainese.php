@@ -43,6 +43,25 @@ const CAT_MAP = [
     'T-shirts' => 743, 'Sweatshirts' => 741, 'Caps' => 739, 'Neck' => 760,
 ];
 const CAT_FALLBACK = 808;   // „Inactive" — de pus manual
+// producătorii de pe BikerShop (coloana ID_Manufacturer din CSV)
+const MANUFACTURERS = ['DAINESE' => 24, 'AGV' => 120, 'TCX' => 140, 'MOMODESIGN' => 141, 'MOMO' => 141];
+
+/** ID-ul producătorului: marca din feedul B2B, altfel din nume (Momodesign / TCX) și site (agv.com → AGV). */
+function manufacturer_id(string $b2bBrand, string $name, string $url): int
+{
+    $b = strtoupper(trim($b2bBrand));
+    if (isset(MANUFACTURERS[$b])) {
+        return MANUFACTURERS[$b];
+    }
+    $n = strtoupper($name);
+    if (str_contains($n, 'MOMODESIGN') || str_contains($n, 'MOMO DESIGN')) {
+        return MANUFACTURERS['MOMODESIGN'];
+    }
+    if (preg_match('/\bTCX\b/', $n)) {
+        return MANUFACTURERS['TCX'];
+    }
+    return str_contains($url, 'agv.com') ? MANUFACTURERS['AGV'] : MANUFACTURERS['DAINESE'];
+}
 // sufixul de mărime din codul de gestiune (litere, codurile Dainese XX/3X/X2/N, numere 2 cifre)
 const SIZE_RE = '/^(.+?)(XXS|XS|XXXL|XXL|XL|XX|3XL|3X|X2|S|M|L|N|\d{2})$/';
 const SIZE_MAP = ['XX' => '2XL', '3X' => '3XL', 'X2' => 'X/2X', 'N' => 'One Size', 'XXL' => '2XL', 'XXXL' => '3XL'];
@@ -262,7 +281,8 @@ if ($opt['extract']) {
             }
         }
         $out[$model] = [
-            'ref' => $model, 'brand' => $first['brand'], 'b2b_name' => $first['nume'], 'color' => $first['color_name'], 'gender' => $first['gender'],
+            'ref' => $model, 'brand' => $first['brand'], 'id_manufacturer' => manufacturer_id((string) $first['brand'], $page['name_en'] . ' ' . $first['nume'], $page['url']),
+            'b2b_name' => $first['nume'], 'color' => $first['color_name'], 'gender' => $first['gender'],
             'b2b_category' => $first['category'], 'category' => $cat, 'price_eur' => (float) $first['pret_euro'],
             'url' => $page['url'], 'name_en' => $page['name_en'], 'desc_en' => $page['desc_en'], 'images' => $page['images'], 'sizes' => $sizes,
         ];
@@ -289,7 +309,7 @@ if ($opt['csv']) {
         'Attribute Group 1', 'Attribute Value 1', 'Attribute Group 2', 'Attribute Value 2',
         'Description', 'Retail Price With Tax', 'Final Price With Tax', 'Category Default ID',
         'Product Image Urls', 'Active', 'EAN13', 'Supplier Reference',
-        'Stoc gestiune', 'Pret B2B EUR', 'Sursa pret',
+        'Stoc gestiune', 'Pret B2B EUR', 'Sursa pret', 'ID_Manufacturer',
     ], ';', '"', '');
     $rows = 0;
     $missingRo = [];
@@ -306,6 +326,7 @@ if ($opt['csv']) {
                 $ro[$ref]['description'], number_format($price, 2, '.', ''), number_format($price, 2, '.', ''), $ro[$ref]['category'] ?? $p['category'],
                 implode(',', $p['images']), 0, $s['ean'], $s['code'],
                 $s['stoc'], number_format($p['price_eur'], 2, '.', ''), $s['pret'] > 0 ? 'gestiune' : 'B2B',
+                $p['id_manufacturer'] ?? manufacturer_id((string) ($p['brand'] ?? ''), (string) ($p['name_en'] ?? ''), (string) ($p['url'] ?? '')),
             ], ';', '"', '');
             $rows++;
         }
