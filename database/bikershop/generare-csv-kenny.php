@@ -215,6 +215,27 @@ if ($opt['extract']) {
             continue;
         }
         $p = $catalog[$model];
+        // produs „mărime unică" (ochelari): sufixele de 2 cifre sunt alte articole, nu mărimi
+        if (isset($sizes[$model])) {
+            $sizes = [$model => $sizes[$model]];
+        }
+        // Kenny refolosește coduri între sezoane: numele de pe site trebuie să aibă măcar un cuvânt
+        // comun cu denumirea din gestiune (în afară de KENNY și tipul produsului), altfel e de verificat manual
+        $stop = ['KENNY', 'CASCA', 'TRICOU', 'PANTALONI', 'MANUSI', 'OCHELARI', 'JERSEY', 'GLOVES', 'PANTS', 'HELMET', 'GOGGLES', 'KID', 'COPII'];
+        $gw = array_diff(preg_split('/[^A-Z0-9]+/', strtoupper($gname)), $stop, ['']);
+        $sw = array_diff(preg_split('/[^A-Z0-9]+/', strtoupper(str_replace(['+', '-'], ' ', $p['name_en']))), $stop, ['']);
+        $common = array_intersect($gw, $sw);
+        $colorsRo = ['ALB' => 'WHITE', 'NEGRU' => 'BLACK', 'ROSU' => 'RED', 'GALBEN' => 'YELLOW', 'ALBASTRU' => 'BLUE', 'NAVY' => 'NAVY', 'ORANGE' => 'ORANGE', 'GRI' => 'GREY'];
+        $colorClash = false;
+        foreach ($colorsRo as $ro => $en) {
+            if (in_array($ro, $gw, true) && !in_array($en, $sw, true) && array_intersect(array_values($colorsRo), $sw)) {
+                $colorClash = true;   // „TRACK ALB" în gestiune, „TRACK BLACK" pe site
+            }
+        }
+        if (!$common || $colorClash) {
+            $missing[] = "{$dashed} {$gname} (" . implode(', ', $mcodes) . ") — pe site „{$p['name_en']}”, de verificat manual";
+            continue;
+        }
         $out[$model] = $p + ['gestiune_name' => $gname, 'category' => CAT_MAP[strtoupper(strtok($gname, ' '))] ?? CAT_FALLBACK, 'sizes' => array_values($sizes)];
         echo "  {$model}: {$p['name_en']} · " . count($sizes) . ' mărimi · ' . count($p['images']) . " imagini\n";
     }
