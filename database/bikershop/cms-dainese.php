@@ -8,7 +8,7 @@ declare(strict_types=1);
  *
  * Șablonul: database/bikershop/cms/<pagină>.html, cu marcajele
  *   {{IMG}}         → https://bikershop.ro/img/cms/<pagină> (preview: storage/<pagină>/img)
- *   {{URL:<ref>}}   → pagina produsului cu referința <ref> dacă e ACTIV pe BikerShop, altfel căutarea după cod
+ *   {{URL:<ref>}}   → pagina produsului cu referința <ref> dacă e ACTIV pe BikerShop, altfel categoria Dainese de protecții (FALLBACK_URL)
  *   {{PRICE:<ref>}} → prețul cu TVA de pe BikerShop (dacă produsul există, chiar inactiv) sau prețul de rezervă
  *   {{CARD:<ref>}}  → cardul produsului (imagine, nume, preț, link)
  * Imaginile/clipurile (de pe dainese.com, NU sunt în git — repo public) stau în storage/<pagină>/img/
@@ -21,7 +21,7 @@ declare(strict_types=1);
  *   php database/bikershop/cms-dainese.php --page=smart-go --apply     → creează / actualizează pagina CMS
  *   … --apply --activate                                               → și o activează
  * Pagina se caută după link_rewrite; una nouă se creează INACTIVĂ (fără --activate). Re-rulează cu --apply
- * după importul/activarea produselor: linkurile trec de pe căutare pe paginile produselor.
+ * după importul/activarea produselor: linkurile trec de pe categorie pe paginile produselor.
  * Se scrie identic pe shop 1/2 × limba 1/2 (ps_cms_lang are 4 rânduri per pagină); conținutul vechi se
  * salvează în storage/<pagină>/backup-cms-<id>-<ts>.json. ⚠️ Editarea din BO (TinyMCE + HTMLPurifier)
  * poate scoate <style>/<video> — modificările se fac în șablon și se re-aplică din script.
@@ -34,6 +34,8 @@ if (PHP_SAPI !== 'cli') {
 
 const SHOP_URL = 'https://bikershop.ro';
 const VAT = 1.21;
+// produs inactiv / lipsă → categoria Dainese de protecții piept/spate (căutarea după cod nu găsește produse inactive)
+const FALLBACK_URL = SHOP_URL . '/777-protectii-pentru-piept-si-spate?producatorii=dainese';
 // produse: referință → card; `price` = preț de rezervă (lei cu TVA) când produsul nu există pe BikerShop
 const PAGES = [
     'smart-go' => [
@@ -119,7 +121,7 @@ foreach ($products as $ref => $c) {
     $p = $found[strtoupper($ref)] ?? null;
     $live = $p && (int) $p['active'] === 1;
     $items[$ref] = $c + [
-        'url' => $live ? SHOP_URL . '/' . (int) $p['id_product'] . '-' . $p['link_rewrite'] . '.html' : SHOP_URL . '/cautare?s=' . rawurlencode($ref),
+        'url' => $live ? SHOP_URL . '/' . (int) $p['id_product'] . '-' . $p['link_rewrite'] . '.html' : FALLBACK_URL,
         'lei' => $p && (float) $p['price'] > 0 ? (float) $p['price'] * VAT : $c['price'],
         'state' => $p ? ($live ? "activ #{$p['id_product']}" : "INACTIV #{$p['id_product']}") : 'lipsește',
     ];
