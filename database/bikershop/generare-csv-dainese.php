@@ -18,6 +18,12 @@ declare(strict_types=1);
  *        → storage/dainese/extract.json (texte EN + date)
  *   2. traducerea: storage/dainese/ro.json = { "<model>": {"name": "...", "description": "<p>…</p>", "category"?: id} }
  *   3. --csv → storage/dainese/dainese-<data>.csv (Active = 0)
+ * Produse NOI, încă necomandate (nu sunt nici în gestiune, nici în B2B, ex. Smart GO):
+ *   --extract --models=1D400022001,19800023001 --tag=smartgo
+ *        → o singură variantă „One Size" cu referința `<model>N` (convenția gestiunii), stoc 0,
+ *          preț = prețul dainese.com (EUR cu TVA) × EUR_RON; fișierele primesc sufixul `-<tag>`
+ *          (extract-smartgo.json, ro-smartgo.json, dainese-smartgo-<data>.csv) ca să nu le
+ *          suprascrie pe cele ale rulărilor din raportul de stoc.
  * Un produs BikerShop = un model (cod B2B, ex. `18381001018`), variante = codurile lui din gestiune
  * (cu sau fără stoc); referința variantei = codul din gestiune, deci sincronizarea orară
  * (globe/stoc-globe.php) le leagă singură de stoc și preț după import.
@@ -70,7 +76,7 @@ $root = dirname(__DIR__, 2);
 $dir = $root . '/storage/dainese';
 @mkdir($dir, 0775, true);
 
-$opt = ['extract' => false, 'csv' => false, 'stoc' => null, 'codes' => []];
+$opt = ['extract' => false, 'csv' => false, 'stoc' => null, 'codes' => [], 'models' => [], 'tag' => ''];
 foreach (array_slice($argv, 1) as $a) {
     if ($a === '--extract') {
         $opt['extract'] = true;
@@ -80,6 +86,10 @@ foreach (array_slice($argv, 1) as $a) {
         $opt['stoc'] = substr($a, 11);
     } elseif (str_starts_with($a, '--codes=')) {
         $opt['codes'] = array_filter(array_map(fn ($c) => strtoupper(trim($c)), explode(',', substr($a, 8))));
+    } elseif (str_starts_with($a, '--models=')) {
+        $opt['models'] = array_values(array_filter(array_map(fn ($c) => strtoupper(trim($c)), explode(',', substr($a, 9)))));
+    } elseif (str_starts_with($a, '--tag=')) {
+        $opt['tag'] = preg_replace('/[^a-z0-9-]/', '', strtolower(substr($a, 6)));
     } else {
         fwrite(STDERR, "Opțiune necunoscută: {$a}\n");
         exit(2);
@@ -159,9 +169,42 @@ function official_page(string $model): ?array
                 $images[] = preg_replace(['#/\d+x\d+/#', '/\?.*/'], ['/1920xundefined/', ''], $src);
             }
         }
-        return ['url' => $final, 'name_en' => $h1 ? clean($h1->textContent) : '', 'desc_en' => $desc, 'images' => array_values(array_unique($images))];
+        $price = preg_match('/"price":"(\d+(?:\.\d+)?)"/', $html, $pm) ? (float) $pm[1] : 0.0;
+        return ['url' => $final, 'name_en' => $h1 ? clean($h1->textContent) : '', 'desc_en' => $desc, 'images' => array_values(array_unique($images)),
+            'price_eur' => $price];
     }
     return null;
+}
+
+$sfx = $opt['tag'] !== '' ? '-' . $opt['tag'] : '';
+
+/* ===================== 1b. extragere — produse noi, fără gestiune/B2B ===================== */
+if ($opt['extract'] && $opt['models']) {
+    $pdo = bs_pdo($root);
+    $exists = $pdo->prepare("SELECT id_product FROM ps_product WHERE reference = ?");
+    $out = [];
+    foreach ($opt['models'] as $model) {
+        $exists->execute([$model]);
+        if ($id = $exists->fetchColumn()) {
+            echo "  {$model}: există deja produsul #{$id} (sărit)\n";
+            continue;
+        }
+        $page = official_page($model);
+        if (!$page || !$page['images']) {
+            echo "  {$model}: fără pagină oficială" . ($page ? ' (fără imagini)' : '') . " — sărit\n";
+            continue;
+        }
+        $out[$model] = [
+            'ref' => $model, 'brand' => 'DAINESE', 'id_manufacturer' => manufacturer_id('', $page['name_en'], $page['url']),
+            'b2b_name' => '', 'color' => '', 'gender' => '', 'b2b_category' => '', 'category' => CAT_FALLBACK, 'price_eur' => $page['price_eur'],
+            'url' => $page['url'], 'name_en' => $page['name_en'], 'desc_en' => $page['desc_en'], 'images' => $page['images'],
+            'sizes' => [['code' => $model . 'N', 'size' => 'One Size', 'stoc' => 0, 'pret' => 0, 'ean' => '']],
+        ];
+        echo "  {$model}: {$page['name_en']} · {$page['price_eur']} EUR · " . count($page['images']) . " imagini\n";
+    }
+    file_put_contents("{$dir}/extract{$sfx}.json", json_encode($out, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    echo "\nProduse de creat: ", count($out), " → {$dir}/extract{$sfx}.json\n";
+    $opt['extract'] = false;
 }
 
 /* ===================== 1. extragere ===================== */
@@ -288,8 +331,8 @@ if ($opt['extract']) {
         ];
         echo "  {$model}: {$page['name_en']} · {$first['color_name']} · " . count($sizes) . ' mărimi · ' . count($page['images']) . " imagini · {$first['category']} → {$cat}\n";
     }
-    file_put_contents("{$dir}/extract.json", json_encode($out, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-    echo "\nProduse de creat: ", count($out), " → {$dir}/extract.json\n";
+    file_put_contents("{$dir}/extract{$sfx}.json", json_encode($out, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    echo "\nProduse de creat: ", count($out), " → {$dir}/extract{$sfx}.json\n";
     if ($noPage) {
         echo "\nFără pagină oficială (modele ieșite din ofertă — nu intră în CSV):\n  ", implode("\n  ", $noPage), "\n";
     }
@@ -300,9 +343,9 @@ if ($opt['extract']) {
 
 /* ===================== 3. CSV ===================== */
 if ($opt['csv']) {
-    $ex = json_decode((string) @file_get_contents("{$dir}/extract.json"), true) ?: [];
-    $ro = json_decode((string) @file_get_contents("{$dir}/ro.json"), true) ?: [];
-    $file = "{$dir}/dainese-" . date('Y-m-d') . '.csv';
+    $ex = json_decode((string) @file_get_contents("{$dir}/extract{$sfx}.json"), true) ?: [];
+    $ro = json_decode((string) @file_get_contents("{$dir}/ro{$sfx}.json"), true) ?: [];
+    $file = "{$dir}/dainese{$sfx}-" . date('Y-m-d') . '.csv';
     $h = fopen($file, 'w');
     fputcsv($h, [
         'Product Name', 'Product Reference Code', 'Combinations Reference Code',
@@ -325,7 +368,7 @@ if ($opt['csv']) {
                 $ro[$ref]['name'], $ref, $s['code'], 'Color', 'DEFAULT', 'Size', $s['size'],
                 $ro[$ref]['description'], number_format($price, 2, '.', ''), number_format($price, 2, '.', ''), $ro[$ref]['category'] ?? $p['category'],
                 implode(',', $p['images']), 0, $s['ean'], $s['code'],
-                $s['stoc'], number_format($p['price_eur'], 2, '.', ''), $s['pret'] > 0 ? 'gestiune' : 'B2B',
+                $s['stoc'], number_format($p['price_eur'], 2, '.', ''), $s['pret'] > 0 ? 'gestiune' : ($opt['tag'] !== '' && ($p['b2b_name'] ?? '') === '' ? 'site dainese.com' : 'B2B'),
                 $p['id_manufacturer'] ?? manufacturer_id((string) ($p['brand'] ?? ''), (string) ($p['name_en'] ?? ''), (string) ($p['url'] ?? '')),
             ], ';', '"', '');
             $rows++;

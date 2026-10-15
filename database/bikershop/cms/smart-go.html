@@ -1,0 +1,242 @@
+<style>
+.sg{--sg-ink:#111;--sg-muted:#5b5f66;--sg-line:#e6e7ea;--sg-dark:#0e0e10;--sg-lime:#d9f20b;--sg-green:#79c843;--sg-red:#e10600;color:var(--sg-ink);line-height:1.6;font-size:16px;max-width:1280px;margin:0 auto}
+.sg *{box-sizing:border-box}
+.sg img,.sg video{display:block;width:100%;height:auto;border:0}
+.sg h2{font-size:clamp(26px,3.4vw,42px);line-height:1.1;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;margin:0 0 16px}
+.sg h3{font-size:20px;font-weight:800;margin:0 0 8px}
+.sg p{margin:0 0 14px;color:var(--sg-muted)}
+.sg-eyebrow{display:inline-block;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--sg-ink);margin-bottom:12px}
+.sg-eyebrow:before{content:"";display:inline-block;vertical-align:middle;width:6px;height:6px;margin:-2px 8px 0 0;border-radius:50%;background:linear-gradient(135deg,var(--sg-lime),var(--sg-green))}
+.sg-sec{padding:56px 0}
+.sg-txt{max-width:760px;margin:0 auto;padding:0 16px;text-align:center}
+.sg-txt.sg-sec{padding:48px 16px 56px}
+.sg-btns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px}
+.sg-btn{display:inline-block;padding:14px 26px;border-radius:2px;font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;text-decoration:none!important;border:2px solid var(--sg-ink);transition:background .2s,color .2s}
+.sg-btn--p{background:var(--sg-ink);color:#fff!important}
+.sg-btn--p:hover{background:var(--sg-red);border-color:var(--sg-red)}
+.sg-btn--s{background:transparent;color:var(--sg-ink)!important}
+.sg-btn--s:hover{background:var(--sg-ink);color:#fff!important}
+.sg-hero .sg-txt{padding-top:36px}
+.sg-specs{background:var(--sg-dark);color:#fff;padding:44px 16px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px}
+.sg-spec{padding:18px 16px;text-align:center;border-left:1px solid #2a2b30}
+.sg-spec:nth-child(4n+1){border-left:0}
+.sg-spec b{display:block;font-size:clamp(22px,2.6vw,34px);line-height:1.1;font-weight:800;background:linear-gradient(90deg,var(--sg-lime),var(--sg-green));-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:6px}
+.sg-spec span{display:block;font-size:13px;color:#b9bcc3;line-height:1.4}
+.sg-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center;padding:56px 16px}
+.sg-split--rev .sg-split__media{order:2}
+.sg-split .sg-txt{text-align:left;padding:0;margin:0}
+.sg-split .sg-btns{justify-content:flex-start}
+.sg-split video{border-radius:4px;background:#e9eaee}
+.sg-list{list-style:none;padding:0;margin:16px 0 0}
+.sg-list li{position:relative;padding:6px 0 6px 26px;color:var(--sg-muted)}
+.sg-list li:before{content:"";position:absolute;left:0;top:13px;width:12px;height:12px;border-radius:50%;background:linear-gradient(135deg,var(--sg-lime),var(--sg-green))}
+.sg-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;padding:0 16px;margin-top:28px}
+.sg-card{display:flex;flex-direction:column;border:1px solid var(--sg-line);border-radius:4px;overflow:hidden;text-decoration:none!important;color:var(--sg-ink)!important;background:#fff;transition:box-shadow .2s,transform .2s;min-width:0}
+.sg-card:hover{box-shadow:0 10px 30px rgba(0,0,0,.08);transform:translateY(-2px)}
+.sg-card__img{background:#f4f4f6;aspect-ratio:1/1}
+.sg-card__img img{width:100%;height:100%;object-fit:contain}
+.sg-card__body{padding:16px;display:flex;flex-direction:column;gap:6px;flex:1}
+.sg-card__name{font-weight:700;font-size:15px;line-height:1.35}
+.sg-card__note{font-size:13px;color:var(--sg-muted)}
+.sg-card__price{margin-top:auto;font-weight:800;font-size:18px}
+.sg-card__cta{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sg-red)}
+.sg-faq{max-width:860px;margin:0 auto;padding:0 16px}
+.sg-faq details{border-bottom:1px solid var(--sg-line);padding:18px 0}
+.sg-faq summary{cursor:pointer;font-weight:700;font-size:17px;list-style:none;position:relative;padding-right:32px}
+.sg-faq summary::-webkit-details-marker{display:none}
+.sg-faq summary:after{content:"+";position:absolute;right:4px;top:-2px;font-size:24px;font-weight:400}
+.sg-faq details[open] summary:after{content:"–"}
+.sg-faq details p{margin:12px 0 0}
+.sg-note{background:#f4f4f6;border-left:4px solid var(--sg-red);padding:20px 22px;margin:0 16px;font-size:14px}
+.sg-note p{margin:0 0 8px}
+.sg-note p:last-child{margin:0}
+.sg-visit{background:var(--sg-dark);color:#fff;text-align:center;padding:48px 16px;margin-top:56px}
+.sg-visit h2{color:#fff}
+.sg-visit p{color:#b9bcc3;max-width:640px;margin:0 auto 6px}
+.sg-visit .sg-btn--p{background:#fff;color:var(--sg-ink)!important;border-color:#fff}
+.sg-visit .sg-btn--p:hover{background:var(--sg-red);color:#fff!important;border-color:var(--sg-red)}
+@media (max-width:991px){.sg-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.sg-split{grid-template-columns:minmax(0,1fr);gap:24px;padding:40px 16px}.sg-split--rev .sg-split__media{order:0}}
+@media (max-width:767px){.sg-sec{padding:40px 0}.sg-txt.sg-sec{padding:32px 16px 40px}.sg-specs{grid-template-columns:repeat(2,minmax(0,1fr));padding:28px 12px}.sg-spec{border-left:0;border-top:1px solid #2a2b30}.sg-spec:nth-child(-n+2){border-top:0}}
+@media (max-width:767px){.sg-cards{gap:12px}.sg-card__body{padding:12px}.sg-card__name{font-size:14px}}
+@media (max-width:340px){.sg-cards{grid-template-columns:minmax(0,1fr)}}
+</style>
+
+<div class="sg">
+
+<section class="sg-hero">
+  <picture>
+    <source media="(max-width:767px)" srcset="{{IMG}}/hero-m.webp">
+    <img src="{{IMG}}/hero.webp" width="1920" height="600" alt="Vesta airbag Dainese Smart GO văzută din față, din profil și din spate">
+  </picture>
+  <div class="sg-txt">
+    <span class="sg-eyebrow">Dainese Smart GO · airbag moto pentru fiecare zi</span>
+    <h2>Protecția airbag, cu adevărat pentru toată lumea</h2>
+    <p>Smart GO aduce tehnologia D-air® de la Dainese în drumurile de zi cu zi. Este un airbag electronic ultraușor, pe care îl porți peste sau sub echipamentul moto, ori chiar peste hainele obișnuite. Îl alimentezi de la telefon sau de la Smart GO Powerbank, nu are fire și nu se montează pe motocicletă.</p>
+    <div class="sg-btns">
+      <a class="sg-btn sg-btn--p" href="{{URL:1D400022001}}">Vezi vesta Smart GO</a>
+      <a class="sg-btn sg-btn--s" href="#sg-produse">Toate produsele Smart GO</a>
+    </div>
+  </div>
+</section>
+
+<section class="sg-sec">
+  <div class="sg-specs" role="list">
+    <div class="sg-spec" role="listitem"><b>780 g</b><span>greutate totală, cu generatorul de gaz</span></div>
+    <div class="sg-spec" role="listitem"><b>Nivel 2</b><span>protecție certificată pentru piept și spate</span></div>
+    <div class="sg-spec" role="listitem"><b>Smart</b><span>alimentare de la telefon (USB-C, OTG) sau Powerbank</span></div>
+    <div class="sg-spec" role="listitem"><b>72 h</b><span>autonomie cu Smart GO Powerbank</span></div>
+    <div class="sg-spec" role="listitem"><b>One size</b><span>o singură mărime, reglabilă</span></div>
+    <div class="sg-spec" role="listitem"><b>Independent</b><span>fără nicio legătură cu motocicleta</span></div>
+    <div class="sg-spec" role="listitem"><b>3 activări</b><span>generator de gaz înlocuibil de utilizator</span></div>
+    <div class="sg-spec" role="listitem"><b>{{PRICE:1D400022001}}</b><span>fără abonament</span></div>
+  </div>
+</section>
+
+<section>
+  <picture>
+    <source media="(max-width:767px)" srcset="{{IMG}}/gallery-m.webp">
+    <img src="{{IMG}}/gallery.webp" width="1920" height="384" loading="lazy" alt="Vesta Smart GO purtată peste geacă moto, sub geacă și peste haine obișnuite">
+  </picture>
+  <div class="sg-txt sg-sec">
+    <span class="sg-eyebrow">Ușor și compact</span>
+    <h2>Abia îl simți</h2>
+    <p>Cu doar 780 de grame, Smart GO este subțire și se pliază ușor. Partea frontală se întoarce spre interior și se prinde cu magneți, ca să circule aerul în zilele călduroase. Când cobori de pe motocicletă, îl pui sub șaua scuterului, în geantă sau în rucsac.</p>
+    <p>E gândit pentru oraș, pentru drumurile de vacanță și pentru porțiunile ușoare de macadam, pe motocicletă sau pe scuter.</p>
+    <div class="sg-btns"><a class="sg-btn sg-btn--p" href="{{URL:1D400022001}}">Vezi vesta Smart GO</a></div>
+  </div>
+</section>
+
+<section>
+  <picture>
+    <source media="(max-width:767px)" srcset="{{IMG}}/urban-m.webp">
+    <img src="{{IMG}}/urban.webp" width="1920" height="822" loading="lazy" alt="Doi motocicliști cu vesta Smart GO, una peste un tricou, cealaltă sub o geacă de vară">
+  </picture>
+  <div class="sg-split">
+    <div class="sg-txt">
+      <span class="sg-eyebrow">Fără instalare</span>
+      <h2>Fără efort, în fiecare zi</h2>
+      <p>Nu are fire de conectat și nu trebuie montat nimic pe motocicletă. Îl conectezi prin cablul USB-C integrat la telefon (compatibil OTG) sau la Smart GO Powerbank și ești gata de drum.</p>
+      <p>Din aplicația Dainese D-air® îți înregistrezi airbagul, vezi starea sistemului, primești notificări și instalezi actualizările de firmware.</p>
+      <ul class="sg-list">
+        <li>Se armează singur când detectează vibrațiile vehiculului sau o viteză de peste 10 km/h</li>
+        <li>Algoritmul D-air®, dezvoltat pentru drum, recunoaște dinamica accidentului și declanșează protecția în câteva milisecunde</li>
+      </ul>
+    </div>
+    <div class="sg-split__media">
+      <video src="{{IMG}}/aplicatie.mp4" muted loop playsinline autoplay preload="metadata" aria-label="Conectarea vestei Smart GO la telefon și activarea din aplicația D-air®"></video>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sg-split sg-split--rev">
+    <div class="sg-txt">
+      <span class="sg-eyebrow">Peste 30 de ani de cercetare D-air®</span>
+      <h2>Libertatea de a te simți în siguranță</h2>
+      <p>Smart GO oferă protecție airbag certificată Nivel 2 pentru piept și spate, rezultatul a peste 30 de ani de cercetare Dainese în domeniul airbagurilor.</p>
+      <p>Airbagul folosește structura brevetată Diaframma și efectul de arc dinamic (Dynamic Arch Effect), dezvoltate de Dainese pentru a proteja pieptul și spatele la impact.</p>
+    </div>
+    <div class="sg-split__media">
+      <video src="{{IMG}}/umflare.mp4" muted loop playsinline autoplay preload="metadata" aria-label="Umflarea airbagului Smart GO, filmată cu încetinitorul"></video>
+    </div>
+  </div>
+</section>
+
+<section>
+  <picture>
+    <source media="(max-width:767px)" srcset="{{IMG}}/activari-m.webp">
+    <img src="{{IMG}}/activari.webp" width="1920" height="384" loading="lazy" alt="Smart GO se poate activa de trei ori">
+  </picture>
+  <div class="sg-txt sg-sec">
+    <span class="sg-eyebrow">Generator de gaz înlocuibil</span>
+    <h2>Mereu pregătit</h2>
+    <p>Smart GO se poate declanșa de până la trei ori. După fiecare activare, înlocuiești singur generatorul de gaz, prin înșurubare, și airbagul e din nou funcțional. Dacă ai un generator de rezervă în bagaj, îți continui călătoria fără să cauți imediat un dealer.</p>
+    <div class="sg-btns"><a class="sg-btn sg-btn--p" href="{{URL:1D000026999}}">Vezi generatorul de gaz</a></div>
+  </div>
+</section>
+
+<section>
+  <picture>
+    <source media="(max-width:767px)" srcset="{{IMG}}/rucsac-m.webp">
+    <img src="{{IMG}}/rucsac.webp" width="1920" height="822" loading="lazy" alt="Rucsacul Smart GO Backpack prins de vesta Smart GO cu catarame magnetice">
+  </picture>
+  <div class="sg-txt sg-sec">
+    <span class="sg-eyebrow">Smart GO Backpack · 15 litri</span>
+    <h2>Un singur sistem, vestă și rucsac</h2>
+    <p>Rucsacul Smart GO de 15 litri se prinde direct de vestă cu catarame magnetice: bretelele rucsacului se scot, iar locul lor îl iau bretelele airbagului. Totul stă stabil și echilibrat în timpul mersului.</p>
+    <p>Materialul are un tratament rezistent la apă, iar în interior găsești buzunare căptușite pentru laptop de până la 15" și tabletă, plus buzunare pentru sticlă și lucruri mărunte.</p>
+    <div class="sg-btns"><a class="sg-btn sg-btn--p" href="{{URL:19800023001}}">Vezi rucsacul Smart GO</a></div>
+  </div>
+</section>
+
+<section>
+  <picture>
+    <source media="(max-width:767px)" srcset="{{IMG}}/mixt-m.webp">
+    <img src="{{IMG}}/mixt.webp" width="1920" height="822" loading="lazy" alt="Motocicliști care poartă Smart GO în moduri diferite">
+  </picture>
+  <div class="sg-txt sg-sec">
+    <span class="sg-eyebrow">De la oraș la vacanță</span>
+    <h2>Airbag moto pentru fiecare zi</h2>
+    <p>De la drumul zilnic spre birou până la o tură de weekend sau o porțiune de drum neasfaltat, Smart GO te însoțește oriunde mergi. Alege vesta și accesoriile de care ai nevoie mai jos.</p>
+  </div>
+</section>
+
+<section class="sg-sec" id="sg-produse">
+  <div class="sg-txt">
+    <span class="sg-eyebrow">Gama Smart GO pe BikerShop</span>
+    <h2>Produsele Smart GO</h2>
+  </div>
+  <div class="sg-cards">
+    {{CARD:1D400022001}}
+    {{CARD:19800023001}}
+    {{CARD:1D000041001}}
+    {{CARD:1D000026999}}
+  </div>
+</section>
+
+<section class="sg-sec">
+  <div class="sg-txt"><h2>Întrebări frecvente</h2></div>
+  <div class="sg-faq">
+    <details>
+      <summary>Trebuie conectat la motocicletă?</summary>
+      <p>Nu. Smart GO este complet independent: nu are fire și nu se montează nimic pe motocicletă sau pe scuter. Funcționează pe orice vehicul pe două roți.</p>
+    </details>
+    <details>
+      <summary>Cum se alimentează?</summary>
+      <p>Prin cablul USB-C integrat, de la un smartphone compatibil OTG sau de la Smart GO Powerbank (vândut separat). Cu Powerbank-ul, autonomia ajunge la 72 de ore, iar telefonul își păstrează bateria pentru altele.</p>
+    </details>
+    <details>
+      <summary>Când se activează?</summary>
+      <p>Sistemul se armează singur când detectează vibrațiile vehiculului sau o viteză de peste 10 km/h. Pe motocicletele electrice, sub 10 km/h și fără vibrații, protecția nu este garantată.</p>
+    </details>
+    <details>
+      <summary>Ce se întâmplă după o declanșare?</summary>
+      <p>Înlocuiești generatorul de gaz chiar tu, conform instrucțiunilor, și airbagul este din nou funcțional. Smart GO se poate activa de până la trei ori; după a treia activare nu mai poate fi folosit.</p>
+    </details>
+    <details>
+      <summary>Ce mărime aleg?</summary>
+      <p>Smart GO are o singură mărime, reglabilă în talie. Structura reglabilă păstrează spațiul necesar pentru umflarea corectă a airbagului, fie că îl porți peste geacă, fie sub ea.</p>
+    </details>
+    <details>
+      <summary>Există un abonament?</summary>
+      <p>Nu. Plătești o singură dată vesta și o folosești fără abonament. Aplicația Dainese D-air® este gratuită.</p>
+    </details>
+    <details>
+      <summary>Pot lua generatorul de gaz în avion?</summary>
+      <p>Generatorul conține CO₂ și o încărcătură pirotehnică. Înainte de zbor, verifică regulile companiei aeriene și ale autorităților aeroportuare.</p>
+    </details>
+  </div>
+</section>
+
+<div class="sg-note">
+  <p><strong>Important:</strong> sistemul D-air® intervine doar când sunt îndeplinite condițiile de activare. Nu înlocuiește condusul responsabil și nu elimină toate riscurile legate de folosirea vehiculului.</p>
+  <p>Citește cu atenție nota de informare Smart GO înainte de cumpărare. O primești împreună cu produsul, iar dacă vrei să o vezi înainte de comandă, ne-o poți cere oricând.</p>
+</div>
+
+<section class="sg-visit">
+  <h2>Încearcă Smart GO în showroom</h2>
+  <p>Vino în showroom-ul Dual Motors din Pipera, București: probezi vesta peste echipamentul tău și te ajutăm să o configurezi cu aplicația D-air®.</p>
+  <div class="sg-btns"><a class="sg-btn sg-btn--p" href="https://bikershop.ro/contact-bikershop">Contactează-ne</a></div>
+</section>
+
+</div>
