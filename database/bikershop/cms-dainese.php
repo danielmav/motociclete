@@ -40,6 +40,7 @@ const FALLBACK_URL = SHOP_URL . '/777-protectii-pentru-piept-si-spate?producator
 const PAGES = [
     'smart-go' => [
         'link_rewrite' => 'dainese-smart-go-airbag-moto',
+        'og_image' => 'og-smart-go.jpg',   // 1200×630 în img/social/ (ets_seo) — sursa storage/smart-go/
         'title' => 'Dainese Smart GO – vestă airbag moto pentru fiecare zi',
         'desc' => 'Dainese Smart GO: airbag moto D-air® de 780 g, protecție Nivel 2 piept și spate, fără conectare la motocicletă, alimentat de la telefon sau Powerbank. Pe BikerShop.',
         'products' => [
@@ -51,6 +52,7 @@ const PAGES = [
     ],
     'smart-air' => [
         'link_rewrite' => 'vesta-inteligenta-cu-airbag-dainese-d-air-in-romania-prin-bikershop',
+        'og_image' => 'og-smart-air.jpg',  // 1200×630 în img/social/ (ets_seo) — sursa storage/smart-air/
         'title' => 'Vesta inteligentă cu airbag Dainese Smart Air D-air®',
         'desc' => 'Dainese Smart Air: vestă airbag D-air® Nivel 2 pentru piept și spate, moduri ROAD, OFFROAD și EV, până la 18 ore autonomie, fără conectare la motocicletă. Pe BikerShop.',
         'products' => [
@@ -215,6 +217,18 @@ try {
         }
         echo "Pagina CMS #{$id} creată " . ($opt['activate'] ? 'ACTIVĂ' : 'INACTIVĂ (activeaz-o din BO sau cu --apply --activate)') . ".\n";
     }
+    // imaginea Open Graph: modulul ets_seo o ia din ps_ets_seo_cms.social_img (fișier în img/social/);
+    // fără ea, og:image al temei e logo-ul (prea mic) și Facebook alege o imagine oarecare din pagină
+    $has = $pdo->prepare("SELECT id_ets_seo_cms FROM ps_ets_seo_cms WHERE id_cms = ? AND id_shop = ? AND id_lang = ?");
+    $upd = $pdo->prepare("UPDATE ps_ets_seo_cms SET social_img = ? WHERE id_ets_seo_cms = ?");
+    $ins = $pdo->prepare("INSERT INTO ps_ets_seo_cms (id_cms, id_shop, id_lang, social_img) VALUES (?, ?, ?, ?)");
+    foreach ([1, 2] as $s) {
+        foreach ([1, 2] as $l) {
+            $has->execute([$id, $s, $l]);
+            ($row = $has->fetchColumn()) ? $upd->execute([$cfg['og_image'], $row]) : $ins->execute([$id, $s, $l, $cfg['og_image']]);
+        }
+    }
+    echo "og:image: " . SHOP_URL . "/img/social/{$cfg['og_image']}\n";
     $pdo->commit();
 } catch (Throwable $ex) {
     $pdo->rollBack();
