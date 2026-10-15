@@ -104,10 +104,12 @@ $pdo = new PDO(sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $e['BI
 /* ---------- produsele: link + preț ---------- */
 $refs = array_map('strval', array_keys($products));
 $in = implode(',', array_fill(0, count($refs), '?'));
-$st = $pdo->prepare("SELECT p.id_product, p.reference, ps.active, ps.price, pl.link_rewrite
+// URL-ul canonic al temei = /<categoria implicită>/<id>-<slug>.html (fără categorie → 302 spre el)
+$st = $pdo->prepare("SELECT p.id_product, p.reference, ps.active, ps.price, pl.link_rewrite, cl.link_rewrite AS cat_rewrite
     FROM ps_product p
     JOIN ps_product_shop ps ON ps.id_product = p.id_product AND ps.id_shop = 1
     JOIN ps_product_lang pl ON pl.id_product = p.id_product AND pl.id_shop = 1 AND pl.id_lang = 1
+    LEFT JOIN ps_category_lang cl ON cl.id_category = ps.id_category_default AND cl.id_shop = 1 AND cl.id_lang = 1
     WHERE p.reference IN ($in)");
 $st->execute($refs);
 $found = [];
@@ -121,7 +123,7 @@ foreach ($products as $ref => $c) {
     $p = $found[strtoupper($ref)] ?? null;
     $live = $p && (int) $p['active'] === 1;
     $items[$ref] = $c + [
-        'url' => $live ? SHOP_URL . '/' . (int) $p['id_product'] . '-' . $p['link_rewrite'] . '.html' : FALLBACK_URL,
+        'url' => $live ? SHOP_URL . '/' . ($p['cat_rewrite'] ? $p['cat_rewrite'] . '/' : '') . (int) $p['id_product'] . '-' . $p['link_rewrite'] . '.html' : FALLBACK_URL,
         'lei' => $p && (float) $p['price'] > 0 ? (float) $p['price'] * VAT : $c['price'],
         'state' => $p ? ($live ? "activ #{$p['id_product']}" : "INACTIV #{$p['id_product']}") : 'lipsește',
     ];
