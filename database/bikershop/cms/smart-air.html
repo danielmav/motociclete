@@ -1,0 +1,259 @@
+<style>
+.sg{--sg-ink:#111;--sg-muted:#5b5f66;--sg-line:#e6e7ea;--sg-dark:#0e0e10;--sg-lime:#f2f20a;--sg-green:#d8e600;--sg-red:#e10600;color:var(--sg-ink);line-height:1.6;font-size:16px;max-width:1280px;margin:0 auto}
+.sg *{box-sizing:border-box}
+.sg img,.sg video{display:block;width:100%;height:auto;border:0}
+.sg h2{font-size:clamp(26px,3.4vw,42px);line-height:1.1;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;margin:0 0 16px}
+.sg h3{font-size:18px;font-weight:800;margin:0 0 6px;text-transform:uppercase}
+.sg p{margin:0 0 14px;color:var(--sg-muted)}
+.sg-eyebrow{display:inline-block;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--sg-ink);margin-bottom:12px}
+.sg-eyebrow:before{content:"";display:inline-block;vertical-align:middle;width:6px;height:6px;margin:-2px 8px 0 0;border-radius:50%;background:var(--sg-lime);box-shadow:0 0 0 1px #c9c900}
+.sg-sec{padding:56px 0}
+.sg-txt{max-width:760px;margin:0 auto;padding:0 16px;text-align:center}
+.sg-txt.sg-sec{padding:48px 16px 56px}
+.sg-btns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px}
+.sg-btn{display:inline-block;padding:14px 26px;border-radius:2px;font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;text-decoration:none!important;border:2px solid var(--sg-ink);transition:background .2s,color .2s}
+.sg-btn--p{background:var(--sg-ink);color:#fff!important}
+.sg-btn--p:hover{background:var(--sg-red);border-color:var(--sg-red)}
+.sg-btn--s{background:transparent;color:var(--sg-ink)!important}
+.sg-btn--s:hover{background:var(--sg-ink);color:#fff!important}
+.sg-hero{position:relative;background:var(--sg-dark);overflow:hidden}
+.sg-hero video{aspect-ratio:16/7;object-fit:cover;opacity:.85}
+.sg-hero__over{position:absolute;left:0;right:0;bottom:0;padding:48px 40px;background:linear-gradient(0deg,rgba(0,0,0,.75),rgba(0,0,0,0));color:#fff}
+.sg-hero__over h2{color:#fff;font-size:clamp(34px,5vw,64px);margin-bottom:10px}
+.sg-hero__over p{color:#e3e4e8;max-width:620px;margin:0}
+.sg-hero__over .sg-eyebrow{color:#fff}
+.sg-intro .sg-txt{padding-top:40px}
+.sg-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:center;padding:56px 16px}
+.sg-split--rev .sg-split__media{order:2}
+.sg-split .sg-txt{text-align:left;padding:0;margin:0}
+.sg-split .sg-btns{justify-content:flex-start}
+.sg-dark{background:var(--sg-dark);color:#fff}
+.sg-dark h2,.sg-dark h3{color:#fff}
+.sg-dark p{color:#b9bcc3}
+.sg-dark .sg-eyebrow{color:#fff}
+.sg-shield{grid-template-columns:minmax(0,1fr) minmax(0,2fr);padding:56px 40px}
+.sg-shield .sg-split__media{max-width:300px;justify-self:center}
+.sg-feats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#2a2b30;border-top:1px solid #2a2b30}
+.sg-feat{background:var(--sg-dark);padding:28px 24px}
+.sg-feat b{display:block;color:var(--sg-lime);font-size:13px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px}
+.sg-feat p{margin:0;font-size:14px}
+.sg-modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:0 16px;margin-top:8px}
+.sg-mode{border:1px solid var(--sg-line);border-top:4px solid var(--sg-lime);padding:22px 20px;border-radius:2px}
+.sg-mode p{margin:0;font-size:15px}
+.sg-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:#2a2b30}
+.sg-stat{background:var(--sg-dark);padding:32px 20px;text-align:center}
+.sg-stat b{display:block;font-size:clamp(48px,6vw,80px);line-height:1;font-weight:800;color:transparent;-webkit-text-stroke:2px var(--sg-lime);margin-bottom:10px}
+.sg-stat span{display:block;font-size:14px;color:#b9bcc3;line-height:1.4}
+.sg-duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.sg-duo img{border-radius:2px}
+.sg .sg-list{list-style:none!important;padding:0!important;margin:16px 0 0}
+.sg .sg-list li{list-style:none!important;margin-left:0}
+.sg-list li{position:relative;padding:6px 0 6px 26px;color:var(--sg-ink);font-weight:700}
+.sg-list li:before{content:"";position:absolute;left:0;top:13px;width:12px;height:12px;border-radius:50%;background:var(--sg-lime);box-shadow:0 0 0 1px #c9c900}
+.sg-app{max-width:280px;margin:0 auto}
+.sg-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:0 16px;margin:28px auto 0;max-width:1000px}
+.sg-card{display:flex;flex-direction:column;border:1px solid var(--sg-line);border-radius:4px;overflow:hidden;text-decoration:none!important;color:var(--sg-ink)!important;background:#fff;transition:box-shadow .2s,transform .2s;min-width:0}
+.sg-card:hover{box-shadow:0 10px 30px rgba(0,0,0,.08);transform:translateY(-2px)}
+.sg-card__img{background:#f4f4f6;aspect-ratio:1/1}
+.sg-card__img img{width:100%;height:100%;object-fit:contain}
+.sg-card__body{padding:16px;display:flex;flex-direction:column;gap:6px;flex:1}
+.sg-card__name{font-weight:700;font-size:15px;line-height:1.35}
+.sg-card__note{font-size:13px;color:var(--sg-muted)}
+.sg-card__price{margin-top:auto;font-weight:800;font-size:18px}
+.sg-card__cta{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--sg-red)}
+.sg-faq{max-width:860px;margin:0 auto;padding:0 16px}
+.sg-faq details{border-bottom:1px solid var(--sg-line);padding:18px 0}
+.sg-faq summary{cursor:pointer;font-weight:700;font-size:17px;list-style:none;position:relative;padding-right:32px}
+.sg-faq summary::-webkit-details-marker{display:none}
+.sg-faq summary:after{content:"+";position:absolute;right:4px;top:-2px;font-size:24px;font-weight:400}
+.sg-faq details[open] summary:after{content:"–"}
+.sg-faq details p{margin:12px 0 0}
+.sg-note{background:#f4f4f6;border-left:4px solid var(--sg-red);padding:20px 22px;margin:0 16px;font-size:14px}
+.sg-note p{margin:0 0 8px}
+.sg-note p:last-child{margin:0}
+.sg-visit{background:var(--sg-dark);color:#fff;text-align:center;padding:48px 16px;margin-top:56px}
+.sg-visit h2{color:#fff}
+.sg-visit p{color:#b9bcc3;max-width:640px;margin:0 auto 6px}
+.sg-visit .sg-btn--p{background:#fff;color:var(--sg-ink)!important;border-color:#fff}
+.sg-visit .sg-btn--p:hover{background:var(--sg-red);color:#fff!important;border-color:var(--sg-red)}
+@media (max-width:991px){.sg-split,.sg-shield{grid-template-columns:minmax(0,1fr);gap:24px;padding:40px 16px}.sg-split--rev .sg-split__media{order:0}.sg-shield .sg-split__media{max-width:180px}.sg-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:767px){.sg-sec{padding:40px 0}.sg-txt.sg-sec{padding:32px 16px 40px}.sg-hero video{aspect-ratio:4/5}.sg-hero__over{padding:28px 16px}.sg-feats,.sg-modes{grid-template-columns:minmax(0,1fr)}.sg-cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.sg-card__body{padding:12px}.sg-card__name{font-size:14px}}
+@media (max-width:340px){.sg-cards{grid-template-columns:minmax(0,1fr)}}
+</style>
+
+<div class="sg">
+
+<section class="sg-hero">
+  <video src="{{IMG}}/hero.mp4" poster="{{IMG}}/road.webp" muted loop playsinline autoplay preload="metadata" aria-hidden="true"></video>
+  <div class="sg-hero__over">
+    <span class="sg-eyebrow">Dainese D-air® · cea mai nouă generație</span>
+    <h2>Libertatea aerului</h2>
+    <p>Smart Air este evoluția airbagului Dainese: ușor, ergonomic și gândit să se miște odată cu tine, peste sau sub orice ținută.</p>
+  </div>
+</section>
+
+<section class="sg-intro">
+  <div class="sg-txt">
+    <p>Integrează tehnologia D-air® cu protecție pentru piept și spate, moduri dedicate ROAD și OFFROAD, modul EV, până la 18 ore de autonomie și un generator de gaz pe care îl înlocuiești singur.</p>
+    <div class="sg-btns">
+      <a class="sg-btn sg-btn--p" href="{{URL:1D400021001}}">Vezi vesta Smart Air · {{PRICE:1D400021001}}</a>
+      <a class="sg-btn sg-btn--s" href="#sg-produse">Vestă și accesorii</a>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sg-sec">
+    <picture>
+      <source media="(max-width:767px)" srcset="{{IMG}}/road-m.webp">
+      <img src="{{IMG}}/road.webp" width="1920" height="600" loading="lazy" alt="Vesta airbag Dainese Smart Air văzută din față, din profil și din spate">
+    </picture>
+  </div>
+  <div class="sg-txt">
+    <span class="sg-eyebrow">Cea mai avansată tehnologie D-air®</span>
+    <h2>Pe asfalt, pe off-road, în fiecare zi</h2>
+    <p>Smart Air este sistemul airbag Dainese care oferă protecție avansată în orice situație de mers. O unitate electronică cu senzori, giroscoape și accelerometre analizează permanent mișcările motociclistului, recunoaște situațiile periculoase și declanșează airbagul în câteva milisecunde, fără cabluri și fără nicio conexiune la motocicletă.</p>
+    <p>Airbagurile D-air® protejează pieptul și spatele, cu certificare Nivel 2, iar sistemul suportă până la trei declanșări. După fiecare declanșare, înlocuiești singur generatorul de gaz, simplu și rapid.</p>
+    <div class="sg-btns"><a class="sg-btn sg-btn--p" href="{{URL:1D400021001}}">Vezi vesta Smart Air</a></div>
+  </div>
+</section>
+
+<section class="sg-dark" style="margin-top:56px">
+  <div class="sg-split sg-shield">
+    <div class="sg-split__media"><img src="{{IMG}}/x3.webp" width="600" height="724" loading="lazy" alt="Trei declanșări"></div>
+    <div class="sg-txt">
+      <span class="sg-eyebrow">D-air® Road Shield 3x</span>
+      <h2>Un scut, nu un balon</h2>
+      <p>Datorită structurii brevetate cu microfilamente, airbagul D-air® devine un adevărat scut pentru torsul motociclistului. Acoperă pieptul și spatele și, odată umflat, păstrează o grosime uniformă și o formă stabilă pe toată suprafața.</p>
+      <p>Spre deosebire de un balon obișnuit, care se deformează și se umflă în alte zone când e comprimat, airbagul D-air® rămâne structurat. O protecție esențială și discretă, mereu gata: pe drum, în oraș și acolo unde se termină asfaltul.</p>
+    </div>
+  </div>
+  <div class="sg-feats">
+    <div class="sg-feat"><b>Declanșare ultrarapidă</b><p>Sistemul recunoaște situația periculoasă și declanșează airbagul în câteva milisecunde.</p></div>
+    <div class="sg-feat"><b>Analiză continuă</b><p>Senzorii urmăresc permanent mișcările tale și dinamica mersului.</p></div>
+    <div class="sg-feat"><b>Tehnologie autonomă</b><p>Fără cabluri și fără senzori montați pe motocicletă.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="sg-sec">
+    <picture>
+      <source media="(max-width:767px)" srcset="{{IMG}}/moduri-m.webp">
+      <img src="{{IMG}}/moduri.webp" width="1920" height="700" loading="lazy" alt="Vesta Smart Air dezumflată și cu airbagul umflat, față și spate">
+    </picture>
+  </div>
+  <div class="sg-txt">
+    <span class="sg-eyebrow">ROAD / OFFROAD / EV</span>
+    <h2>Un mod pentru fiecare drum</h2>
+    <p>Chiar și acolo unde drumul se termină. Smart Air are moduri de mers dedicate, care îl adaptează exact situației în care te afli.</p>
+  </div>
+  <div class="sg-modes">
+    <div class="sg-mode"><h3>ROAD</h3><p>Pentru drum: de la naveta zilnică până la călătoriile lungi.</p></div>
+    <div class="sg-mode"><h3>OFFROAD</h3><p>Pentru aventură și trasee tehnice de off-road, chiar cu vibrații puternice, obstacole naturale și teren denivelat.</p></div>
+    <div class="sg-mode"><h3>EV</h3><p>Sistemul rămâne armat tot timpul, inclusiv pe motociclete și scutere electrice sau pe vehicule cu vibrații reduse.</p></div>
+  </div>
+</section>
+
+<section class="sg-dark" style="margin-top:56px">
+  <div class="sg-txt sg-sec">
+    <span class="sg-eyebrow">Peste 30 de ani de cercetare D-air®</span>
+    <h2>Testat în MotoGP™, gândit pentru tine</h2>
+    <p>Tehnologia, materialele și logica de declanșare vin din peste 30 de ani de cercetare D-air® și aduc pe drum o protecție inteligentă, autonomă și tot mai versatilă.</p>
+  </div>
+  <div class="sg-stats">
+    <div class="sg-stat"><b>2</b><span>protecție certificată Nivel 2 pentru piept și spate</span></div>
+    <div class="sg-stat"><b>0</b><span>conexiuni la motocicletă, libertate totală</span></div>
+    <div class="sg-stat"><b>18</b><span>ore de autonomie a bateriei</span></div>
+    <div class="sg-stat"><b>3</b><span>declanșări ale airbagului</span></div>
+  </div>
+</section>
+
+<section>
+  <div class="sg-split">
+    <div class="sg-txt">
+      <span class="sg-eyebrow">Ușor · ergonomic · discret</span>
+      <h2>O îmbraci și aproape uiți de ea</h2>
+      <p>Smart Air pornește de la un concept minimalist, ușor și ergonomic, care îți lasă libertate de mișcare și confort în orice situație.</p>
+      <p>Se poartă peste sau sub ținuta ta și se potrivește la fel de bine în oraș, în călătorii și pe traseele de aventură. O protecție avansată, care rămâne discretă până când chiar contează.</p>
+      <ul class="sg-list">
+        <li>Peste sau sub orice geacă</li>
+        <li>Design ușor și ergonomic</li>
+        <li>Libertate totală de mișcare</li>
+      </ul>
+    </div>
+    <div class="sg-split__media sg-duo">
+      <img src="{{IMG}}/purtata1.webp" width="467" height="700" loading="lazy" alt="Smart Air purtată sub o geacă de piele, cu geaca închisă">
+      <img src="{{IMG}}/purtata2.webp" width="467" height="700" loading="lazy" alt="Smart Air purtată sub o geacă de piele, cu geaca deschisă">
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sg-split sg-split--rev">
+    <div class="sg-txt">
+      <span class="sg-eyebrow">Aplicația Dainese D-air®</span>
+      <h2>Control smart, mai intuitiv ca oricând</h2>
+      <p>Noua aplicație Dainese D-air® face folosirea vestei Smart Air și mai simplă. Din telefon verifici starea dispozitivului, schimbi modul de mers, urmărești bateria, actualizezi software-ul și găsești informațiile esențiale despre sistem.</p>
+      <p>Interfața te ajută în fiecare etapă: de la pregătirea dinaintea plecării până la verificările de după o declanșare. Ledurile noi îți arată și mai repede starea sistemului.</p>
+    </div>
+    <div class="sg-split__media"><img class="sg-app" src="{{IMG}}/app.webp" width="414" height="842" loading="lazy" alt="Aplicația Dainese D-air® pe telefon"></div>
+  </div>
+</section>
+
+<section class="sg-sec" id="sg-produse">
+  <div class="sg-txt">
+    <span class="sg-eyebrow">Gama Smart Air pe BikerShop</span>
+    <h2>Vesta și accesoriile</h2>
+  </div>
+  <div class="sg-cards">
+    {{CARD:1D400021001}}
+    {{CARD:1D000008999}}
+    {{CARD:19100049629}}
+  </div>
+</section>
+
+<section class="sg-sec">
+  <div class="sg-txt"><h2>Întrebări frecvente</h2></div>
+  <div class="sg-faq">
+    <details>
+      <summary>Trebuie conectată la motocicletă?</summary>
+      <p>Nu. Smart Air nu are cabluri și nici senzori montați pe motocicletă: unitatea electronică din vestă analizează singură mișcările tale. O poți folosi pe orice motocicletă sau scuter.</p>
+    </details>
+    <details>
+      <summary>Ce diferență e între modurile ROAD, OFFROAD și EV?</summary>
+      <p>ROAD e pentru drumurile obișnuite, de la naveta zilnică la călătorii lungi. OFFROAD e calibrat pentru aventură și trasee tehnice, cu vibrații puternice și teren denivelat. EV ține sistemul armat tot timpul, pentru motociclete și scutere electrice sau vehicule cu vibrații reduse. Modul îl alegi din aplicația D-air®.</p>
+    </details>
+    <details>
+      <summary>Cât ține bateria?</summary>
+      <p>Până la 18 ore de folosire. Bateria e reîncărcabilă, iar nivelul ei îl vezi în aplicație și pe ledurile vestei.</p>
+    </details>
+    <details>
+      <summary>Ce se întâmplă după o declanșare?</summary>
+      <p>Înlocuiești singur generatorul de gaz D-air® Road Shield și vesta e din nou funcțională. Sistemul suportă până la trei declanșări.</p>
+    </details>
+    <details>
+      <summary>Ce mărime aleg?</summary>
+      <p>Smart Air vine în trei mărimi, XS/S, M/L și X/2X, cu reglaj în talie. Alege mărimea după cum o porți, peste sau sub geacă. Cel mai sigur e să o probezi în showroom.</p>
+    </details>
+    <details>
+      <summary>Prin ce diferă de Smart GO?</summary>
+      <p>Ambele sunt airbaguri D-air® Nivel 2 pentru piept și spate, fără conexiune la motocicletă. Smart Air are unitatea electronică și bateria integrate, moduri dedicate ROAD, OFFROAD și EV și e gândită și pentru off-road. Smart GO e varianta ultraușoară (780 g), mărime unică, alimentată de la telefon sau de la un powerbank, pentru drumurile de zi cu zi.</p>
+    </details>
+  </div>
+</section>
+
+<div class="sg-note">
+  <p><strong>Important:</strong> sistemul D-air® intervine doar când sunt îndeplinite condițiile de activare. Nu înlocuiește condusul responsabil și nu elimină toate riscurile legate de folosirea vehiculului.</p>
+  <p>Citește cu atenție nota de informare a produsului înainte de cumpărare. O primești împreună cu vesta, iar dacă vrei să o vezi înainte de comandă, ne-o poți cere oricând.</p>
+</div>
+
+<section class="sg-visit">
+  <h2>Probează Smart Air în showroom</h2>
+  <p>Vino în showroom-ul Dual Motors din Pipera, București: alegi mărimea potrivită peste echipamentul tău și te ajutăm să configurezi vesta în aplicația D-air®.</p>
+  <div class="sg-btns">
+    <a class="sg-btn sg-btn--p" href="https://bikershop.ro/contact-bikershop">Contactează-ne</a>
+    <a class="sg-btn sg-btn--s" style="color:#fff!important;border-color:#fff" href="https://bikershop.ro/content/18-dainese-smart-go-airbag-moto">Vezi și Smart GO</a>
+  </div>
+</section>
+
+</div>
